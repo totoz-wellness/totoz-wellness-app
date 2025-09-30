@@ -20,18 +20,18 @@ It provides a secure REST API for authentication, guides, directory listings, an
 
 ```
 backend/
-  ├── src/
-  │   ├── config/        # DB & environment config
-  │   ├── middleware/    # auth, validation
-  │   ├── models/        # database models (Prisma/Sequelize)
-  │   ├── routes/        # route definitions
-  │   ├── controllers/   # business logic
-  │   ├── services/      # helper functions
-  │   ├── utils/         # small helpers (tokens, hashing)
-  │   └── app.js         # Express app entry
-  ├── package.json
-  ├── .env.example
-  └── README.md
+├── src/
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── controllers/
+│   │   └── auth.controller.js
+│   ├── routes/
+│   │   └── auth.js
+│   └── app.js
+├── prisma/
+│   └── schema.prisma
+├── package.json
+└── .env
 ```
 
 ---
