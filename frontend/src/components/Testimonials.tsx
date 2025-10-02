@@ -4,18 +4,18 @@ import React from 'react';
 const testimonials = [
   {
     quote: "Finally, a resource that understands what parents are going through. Totoz Wellness has been a game-changer for our family's communication.",
-    author: 'Jessica M., Mother of Two',
-    avatar: 'https://picsum.photos/id/1011/100/100',
+    author: 'Davine O., Mother of Two',
+    avatar: 'https://picsum.photos/id/1011/100/10',
   },
   {
     quote: "The GrowTrack feature helped us identify patterns we never would have seen on our own. It's so empowering to have this insight.",
-    author: 'David L., Father of One',
-    avatar: 'https://picsum.photos/id/1012/100/100',
+    author: 'Maigua G., Father of One',
+    avatar: 'https://picsum.photos/id/1012/100/10',
   },
   {
     quote: "Being part of the ParentCircle community makes me feel less alone. Sharing stories and advice with other caregivers is invaluable.",
-    author: 'Sarah P., Guardian',
-    avatar: 'https://picsum.photos/id/1027/100/100',
+    author: 'Arogo C., Guardian',
+    avatar: 'https://picsum.photos/id/1027/100/10',
   },
 ];
 
