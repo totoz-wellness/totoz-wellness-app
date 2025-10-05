@@ -8,6 +8,7 @@ Here's a proposed structure and setup suggestion for our frontend. The goal is t
 
 🗂 **Proposed Folder Structure**
 
+```
 src/
   ├── components/
   │   ├── common/         # Shared UI components (Header, Footer, etc.)
@@ -36,6 +37,7 @@ src/
   ├── main.tsx
   ├── index.css
 
+```
 ---
 
  **Why This Matters**
