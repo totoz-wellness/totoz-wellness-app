@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,8 +14,55 @@ model User {
   email     String   @unique
   password  String
   gender    String
+  role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  articles Article[] // Articles written by this user
+  reviewedArticles Article[] @relation("ArticleReviewer") // Articles reviewed by this user
+
   @@map("users")
+}
+
+model Article {
+  id          String      @id @default(cuid())
+  title       String
+  content     String      // Main article content
+  excerpt     String?     // Short description
+  coverImage  String?     // URL for cover image
+  videoUrl    String?     // Optional video URL
+  status      ArticleStatus @default(DRAFT)
+  category    String?     // e.g., "mental-health", "parenting-tips", "child-development"
+  tags        String[]    // Array of tags
+  readTime    Int?        // Estimated reading time in minutes
+  slug        String?     @unique // URL-friendly version of title
+  
+  // Relationships
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  reviewerId  String?     // Content lead who reviewed
+  reviewer    User?       @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  publishedAt DateTime?   // When it was approved and published
+
+  @@map("articles")
+}
+
+enum UserRole {
+  USER        // Regular user
+  CONTENT_WRITER  // Can create articles
+  CONTENT_LEAD    // Can review and publish articles
+  SUPER_ADMIN     // Full access
+}
+
+enum ArticleStatus {
+  DRAFT
+  SUBMITTED   // Sent for review
+  APPROVED    // Approved by content lead
+  PUBLISHED   // Live on the site
+  REJECTED    // Needs revisions
+  ARCHIVED    // No longer visible
 }
