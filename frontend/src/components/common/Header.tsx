@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MenuIcon } from './icons/MenuIcon';
-import { XIcon } from './icons/XIcon';
+import { MenuIcon } from '../icons/MenuIcon';
+import { XIcon } from '../icons/XIcon';
 
 interface HeaderProps {
-  onGetStartedClick: () => void;
+  onGetStartedClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onGetStartedClick }) => {
@@ -13,7 +13,7 @@ const Header: React.FC<HeaderProps> = ({ onGetStartedClick }) => {
   const navLinks = [
     { name: 'Home', href: '#' },
     { name: 'Features', href: '#features' },
-    { name: 'LearnWell', href: '#learnwell' },
+    { name: 'Awareness Hub', href: '#learnwell' },
     { name: 'Community', href: '#community' },
     { name: 'Contact', href: '#contact' },
   ];
@@ -25,6 +25,25 @@ const Header: React.FC<HeaderProps> = ({ onGetStartedClick }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // For SPA routes, prevent default and manually set hash to ensure hashchange event fires.
+    if (href === '#learnwell' || href === '#') {
+      e.preventDefault();
+      window.location.hash = href;
+    }
+    // For anchor links like #features, allow default browser scroll behavior.
+    if (isOpen) {
+      setIsOpen(false);
+    }
+  };
+
+  const handleGetStartedClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (onGetStartedClick) {
+      onGetStartedClick();
+    }
+  };
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 shadow-md backdrop-blur-sm' : 'bg-transparent'}`}>

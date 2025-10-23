@@ -1,11 +1,21 @@
 
 import React from 'react';
-import { FacebookIcon } from './icons/FacebookIcon';
-import { InstagramIcon } from './icons/InstagramIcon';
-import { LinkedInIcon } from './icons/LinkedInIcon';
-import { XLogo } from './icons/XLogo';
+import { FacebookIcon } from '../icons/FacebookIcon';
+import { InstagramIcon } from '../icons/InstagramIcon';
+import { LinkedInIcon } from '../icons/LinkedInIcon';
+import { XLogo } from '../icons/XLogo';
 
 const Footer: React.FC = () => {
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // For SPA routes, prevent default and manually set hash to ensure hashchange event fires.
+    if (href === '#login' || href === '#') {
+        e.preventDefault();
+        window.location.hash = href;
+    }
+    // For anchor links like #features, allow default browser scroll behavior.
+  };
+
   return (
     <footer id="contact" className="bg-dark-text text-light-text">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -35,6 +45,7 @@ const Footer: React.FC = () => {
                 <li><a href="#" className="text-light-text/70 hover:text-white">FAQ</a></li>
                 <li><a href="#" className="text-light-text/70 hover:text-white">Contact Us</a></li>
                 <li><a href="#" className="text-light-text/70 hover:text-white">Privacy Policy</a></li>
+                <li><a href="#login" onClick={(e) => handleNavClick(e, '#login')} className="text-light-text/70 hover:text-white">Admin Login</a></li>
               </ul>
             </div>
             <div>

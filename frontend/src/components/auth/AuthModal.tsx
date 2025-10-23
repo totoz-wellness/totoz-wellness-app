@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { XIcon } from './icons/XIcon';
-import { MailIcon } from './icons/MailIcon';
-import { LockClosedIcon } from './icons/LockClosedIcon';
-import { UserIcon } from './icons/UserIcon';
+import { XIcon } from '../icons/XIcon';
+import { MailIcon } from '../icons/MailIcon';
+import { LockClosedIcon } from '../icons/LockClosedIcon';
+import { UserIcon } from '../icons/UserIcon';
 
 interface AuthModalProps {
   onClose: () => void;
