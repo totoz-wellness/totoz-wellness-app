@@ -10,22 +10,22 @@ const features = [
   {
     icon: <ChatIcon />,
     title: 'TalkEasy',
-    description: 'Instant caregiver-child chat support to navigate difficult conversations and build stronger connections.',
+    description: 'Instant caregiver-child chat support to navigate difficult conversations and build stronger connections. (Coming soon!)',
   },
   {
     icon: <HeartIcon />,
     title: 'ConnectCare',
-    description: 'Access to a curated network of professional counselors and valuable mental health resources.',
+    description: 'Access to a curated network of professional counselors and valuable mental health resources. (Coming soon!)',
   },
   {
     icon: <ChartBarIcon />,
     title: 'GrowTrack',
-    description: 'A simple and effective tracker for monitoring behavior, wellness patterns, and progress over time.',
+    description: 'A simple and effective tracker for monitoring behavior, wellness patterns, and progress over time. (Coming soon!)',
   },
   {
     icon: <UsersIcon />,
     title: 'ParentCircle',
-    description: 'Join a supportive peer community to share experiences, advice, and encouragement with other caregivers.',
+    description: 'Join a supportive peer community to share experiences, advice, and encouragement with other caregivers. (Coming soon!)',
   },
   {
     icon: <BookOpenIcon />,

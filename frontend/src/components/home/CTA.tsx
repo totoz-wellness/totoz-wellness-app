@@ -7,7 +7,7 @@ interface CTAProps {
 
 const CTA: React.FC<CTAProps> = ({ onJoinClick }) => {
   return (
-    <section id="join" className="py-20 bg-gradient-to-r from-teal to-pastel-green">
+    <section id="join" className="py-20 bg-gradient-to-br from-[#347EAD] to-[#F09232]">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold font-heading text-white mb-6">
           Ready to Start Your Journey?

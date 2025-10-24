@@ -3,7 +3,7 @@ import React from 'react';
 
 const Hero: React.FC = () => {
   return (
-    <section className="bg-gradient-to-br from-pastel-green/50 via-light-bg to-teal/30 pt-10 pb-20 md:pt-20 md:pb-32">
+    <section className="bg-gradient-to-br from-[#347EAD]/50 via-light-bg to-[#F09232]/30 pt-10 pb-20 md:pt-20 md:pb-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 className="text-4xl md:text-6xl font-extrabold font-heading text-dark-text leading-tight mb-6 max-w-3xl mx-auto">
           Supporting Caregivers, Nurturing Children's Mental Health
