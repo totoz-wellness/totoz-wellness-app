@@ -7,7 +7,8 @@ import {
   deleteArticle,
   submitForReview,
   reviewArticle,
-  publishArticle
+  publishArticle,
+  unpublishArticle
 } from '../controllers/article.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
@@ -24,7 +25,7 @@ const router = express.Router();
 // @query   page, limit, category, tags
 router.get('/', getArticles);
 
-// @desc    Get single article by ID
+// @desc    Get single article by ID (public)
 // @route   GET /articles/:id
 // @access  Public
 router.get('/:id', getArticle);
@@ -32,6 +33,11 @@ router.get('/:id', getArticle);
 // ======================================
 // PROTECTED ROUTES (Content Writers & Above)
 // ======================================
+
+// @desc    Get single article by ID (admin - can see any status)
+// @route   GET /articles/:id/admin
+// @access  Private (Author or Admin)
+router.get('/:id/admin', authenticateToken, getArticle);
 
 // @desc    Create a new article
 // @route   POST /articles
@@ -67,5 +73,10 @@ router.patch('/:id/review', authenticateToken, requireRole(['CONTENT_LEAD', 'SUP
 // @route   PATCH /articles/:id/publish
 // @access  Private (Content Lead+)
 router.patch('/:id/publish', authenticateToken, requireRole(['CONTENT_LEAD', 'SUPER_ADMIN']), publishArticle);
+
+// @desc    Unpublish published article
+// @route   PATCH /articles/:id/unpublish
+// @access  Private (Content Lead+)
+router.patch('/:id/unpublish', authenticateToken, requireRole(['CONTENT_LEAD', 'SUPER_ADMIN']), unpublishArticle);
 
 export default router;

@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getProfile } from '../controllers/auth.controller.js';
+import { register, login, getProfile, adminSetup } from '../controllers/auth.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -13,6 +13,11 @@ router.post('/register', register);
 // @route   POST /auth/login
 // @access  Public
 router.post('/login', login);
+
+// @desc    Admin first-time setup
+// @route   POST /auth/admin-setup
+// @access  Public (but requires admin code)
+router.post('/admin-setup', adminSetup);
 
 // @desc    Get user profile
 // @route   GET /auth/profile
