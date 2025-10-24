@@ -6,7 +6,7 @@ import WhyUs from './components/home/WhyUs';
 import Testimonials from './components/home/Testimonials';
 import CTA from './components/home/CTA';
 import Footer from './components/common/Footer';
-import AdminPage from './pages/AdminPage';
+import AdminPage from './pages/Admin/AdminPage';
 import LearnWell from './pages/LearnWell';
 import LoginPage from './pages/LoginPage';
 import AuthModal from './components/auth/AuthModal';
