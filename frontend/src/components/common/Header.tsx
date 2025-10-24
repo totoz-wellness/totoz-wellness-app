@@ -49,10 +49,14 @@ const Header: React.FC<HeaderProps> = ({ onGetStartedClick }) => {
     <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 shadow-md backdrop-blur-sm' : 'bg-transparent'}`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <a href="#" className="text-2xl font-heading font-bold text-teal">
-            Totoz Wellness
-          </a>
-          
+          <a href="#" className="text-2xl font-heading font-bold">
+            <span className="text-[#347EAD]">
+              Totoz
+            </span>
+            <span className="text-[#F09232]">
+              &nbsp;Wellness
+            </span>
+          </a>          
           <nav className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
               <a key={link.name} href={link.href} className="font-semibold text-dark-text/80 hover:text-teal transition-colors">
