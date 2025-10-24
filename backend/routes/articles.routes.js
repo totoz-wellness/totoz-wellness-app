@@ -9,7 +9,7 @@ import {
   reviewArticle,
   publishArticle
 } from '../controllers/article.controller.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
 
 const router = express.Router();
