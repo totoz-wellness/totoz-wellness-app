@@ -1,19 +1,26 @@
-
 import React from 'react';
 import { FacebookIcon } from '../icons/FacebookIcon';
 import { InstagramIcon } from '../icons/InstagramIcon';
 import { LinkedInIcon } from '../icons/LinkedInIcon';
 import { XLogo } from '../icons/XLogo';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onGetStartedClick?: () => void;
+  onNavigateToPage?: (page: string) => void;
+}
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // For SPA routes, prevent default and manually set hash to ensure hashchange event fires.
-    if (href === '#login' || href === '#') {
-        e.preventDefault();
-        window.location.hash = href;
+const Footer: React.FC<FooterProps> = ({ onGetStartedClick, onNavigateToPage }) => {
+
+  const handleNavClick = (page: string) => {
+    if (onNavigateToPage) {
+      onNavigateToPage(page);
     }
-    // For anchor links like #features, allow default browser scroll behavior.
+  };
+
+  const handleGetStartedClick = () => {
+    if (onGetStartedClick) {
+      onGetStartedClick();
+    }
   };
 
   return (
@@ -34,18 +41,20 @@ const Footer: React.FC = () => {
             <div>
               <h4 className="font-bold text-white mb-4">Quick Links</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-light-text/70 hover:text-white">Home</a></li>
-                <li><a href="#features" className="text-light-text/70 hover:text-white">Features</a></li>
-                <li><a href="#why-us" className="text-light-text/70 hover:text-white">Why Us</a></li>
+                <li><button onClick={() => handleNavClick('home')} className="text-light-text/70 hover:text-white">Home</button></li>
+                <li><button onClick={() => handleNavClick('features')} className="text-light-text/70 hover:text-white">Features</button></li>
+                <li><button onClick={() => handleNavClick('whyus')} className="text-light-text/70 hover:text-white">Why Us</button></li>
+                <li><button onClick={() => handleNavClick('community')} className="text-light-text/70 hover:text-white">Community</button></li>
+                <li><button onClick={() => handleNavClick('learnwell')} className="text-light-text/70 hover:text-white">LearnWell</button></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-white mb-4">Support</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-light-text/70 hover:text-white">FAQ</a></li>
-                <li><a href="#" className="text-light-text/70 hover:text-white">Contact Us</a></li>
-                <li><a href="#" className="text-light-text/70 hover:text-white">Privacy Policy</a></li>
-                <li><a href="#login" onClick={(e) => handleNavClick(e, '#login')} className="text-light-text/70 hover:text-white">Admin Login</a></li>
+                <li><button onClick={() => handleNavClick('faq')} className="text-light-text/70 hover:text-white">FAQ</button></li>
+                <li><a href="mailto:contact@totoz.com" className="text-light-text/70 hover:text-white">Contact Us</a></li>
+                <li><button onClick={() => handleNavClick('privacy')} className="text-light-text/70 hover:text-white">Privacy Policy</button></li>
+                <li><button onClick={handleGetStartedClick} className="text-light-text/70 hover:text-white">Admin Login</button></li>
               </ul>
             </div>
             <div>

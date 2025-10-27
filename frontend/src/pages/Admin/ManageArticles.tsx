@@ -1,4 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  ClipboardList, 
+  Plus, 
+  LogOut, 
+  ChevronLeft, 
+  Edit, 
+  Send, 
+  Check, 
+  X, 
+  Rocket, 
+  Package, 
+  Trash2, 
+  RefreshCw, 
+  Info, 
+  User, 
+  Clock, 
+  Tag, 
+  AlertCircle, 
+  Hash, 
+  ChevronRight 
+} from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 import api from '../../config/api';
 
 interface Article {
@@ -33,6 +55,115 @@ interface ManageArticlesProps {
   onLogout: () => void;
 }
 
+// Custom Modal Component for Confirmations
+const ConfirmModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  type?: 'danger' | 'warning' | 'info';
+}> = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirm', cancelText = 'Cancel', type = 'info' }) => {
+  if (!isOpen) return null;
+
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'danger':
+        return 'bg-red-500 hover:bg-red-600';
+      case 'warning':
+        return 'bg-yellow-500 hover:bg-yellow-600';
+      default:
+        return 'bg-blue-500 hover:bg-blue-600';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+        <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
+        <p className="text-gray-600 mb-6 whitespace-pre-line">{message}</p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className={`px-4 py-2 text-white rounded-lg transition-all duration-200 font-medium ${getTypeStyles()}`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Input Modal for Rejection Feedback
+const InputModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (value: string) => void;
+  title: string;
+  message: string;
+  placeholder?: string;
+}> = ({ isOpen, onClose, onSubmit, title, message, placeholder = '' }) => {
+  const [value, setValue] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    if (!value.trim()) {
+      toast.error('Please provide feedback');
+      return;
+    }
+    onSubmit(value.trim());
+    setValue('');
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+        <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
+        <p className="text-gray-600 mb-4">{message}</p>
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          rows={4}
+          autoFocus
+        />
+        <div className="flex gap-3 justify-end mt-4">
+          <button
+            onClick={() => {
+              setValue('');
+              onClose();
+            }}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium"
+          >
+            Submit Rejection
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ManageArticles: React.FC<ManageArticlesProps> = ({ 
   onNavigateBack, 
   onNavigateToCreate, 
@@ -46,7 +177,29 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Current date/time context
+  // Modal states
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    type?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const [inputModal, setInputModal] = useState<{
+    isOpen: boolean;
+    articleId: string | null;
+  }>({
+    isOpen: false,
+    articleId: null,
+  });
+
   const getCurrentDateTime = (): string => {
     return '2025-10-24 14:48:33';
   };
@@ -93,12 +246,21 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         setArticles(response.data.data.articles);
         setTotalPages(response.data.data.pagination.total);
         console.log(`✅ [${getCurrentDateTime()}] Loaded ${response.data.data.articles.length} articles for ArogoClin`);
+        
+        if (response.data.data.articles.length === 0 && !selectedStatus) {
+          toast('No articles found. Create your first article!', {
+            icon: '📝',
+            duration: 3000,
+          });
+        }
       } else {
         throw new Error(response.data.message || 'Failed to fetch articles');
       }
     } catch (err: any) {
       console.error(`❌ [${getCurrentDateTime()}] Failed to fetch articles for ArogoClin:`, err);
-      setError(err.response?.data?.message || err.message || 'Failed to load articles');
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load articles';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -108,64 +270,137 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
 
-    // FIXED: Check current status before submitting
     if (article.status !== 'DRAFT' && article.status !== 'REJECTED') {
-      alert(`Cannot submit article for review. Current status is "${article.status}". Only DRAFT or REJECTED articles can be submitted.`);
+      toast.error(
+        `Cannot submit article for review.\nCurrent status: "${article.status}"\nOnly DRAFT or REJECTED articles can be submitted.`,
+        { duration: 5000 }
+      );
       return;
     }
 
-    if (!confirm(`Submit "${article.title}" for review?\n\nCurrent status: ${article.status}`)) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token');
-
-      console.log(`📝 [${getCurrentDateTime()}] ArogoClin submitting article for review:`, {
-        articleId: articleId.substring(0, 8),
-        currentStatus: article.status,
-        title: article.title.substring(0, 30) + '...'
-      });
-
-      const response = await api.patch(`/articles/${articleId}/submit`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.data.success) {
-        const updatedArticle = response.data.data.article;
-        console.log(`✅ [${getCurrentDateTime()}] Article submitted successfully by ArogoClin:`, {
-          articleId: articleId.substring(0, 8),
-          oldStatus: article.status,
-          newStatus: updatedArticle.status
-        });
+    setConfirmModal({
+      isOpen: true,
+      title: 'Submit for Review',
+      message: `Submit "${article.title}" for review?\n\nCurrent status: ${article.status}`,
+      confirmText: 'Submit',
+      type: 'info',
+      onConfirm: async () => {
+        const loadingToast = toast.loading('Submitting article for review...');
         
-        alert(`Article "${article.title}" submitted for review successfully!\n\nStatus changed from "${article.status}" to "${updatedArticle.status}"`);
-        fetchArticles(); // Refresh the list
-      } else {
-        throw new Error(response.data.message || 'Failed to submit article');
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) throw new Error('No authentication token');
+
+          console.log(`📝 [${getCurrentDateTime()}] ArogoClin submitting article for review:`, {
+            articleId: articleId.substring(0, 8),
+            currentStatus: article.status,
+            title: article.title.substring(0, 30) + '...'
+          });
+
+          const response = await api.patch(`/articles/${articleId}/submit`, {}, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.data.success) {
+            const updatedArticle = response.data.data.article;
+            console.log(`✅ [${getCurrentDateTime()}] Article submitted successfully by ArogoClin:`, {
+              articleId: articleId.substring(0, 8),
+              oldStatus: article.status,
+              newStatus: updatedArticle.status
+            });
+            
+            toast.success(
+              `Article "${article.title}" submitted successfully!\nStatus: ${article.status} → ${updatedArticle.status}`,
+              { id: loadingToast, duration: 4000 }
+            );
+            fetchArticles();
+          } else {
+            throw new Error(response.data.message || 'Failed to submit article');
+          }
+        } catch (err: any) {
+          console.error(`❌ [${getCurrentDateTime()}] Failed to submit article for ArogoClin:`, err);
+          toast.error(
+            err.response?.data?.message || err.message || 'Failed to submit article for review',
+            { id: loadingToast, duration: 5000 }
+          );
+        }
       }
-    } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Failed to submit article for ArogoClin:`, err);
-      alert(err.response?.data?.message || err.message || 'Failed to submit article for review');
-    }
+    });
   };
 
   const handleReviewArticle = async (articleId: string, action: 'approve' | 'reject'): Promise<void> => {
-    const feedback = action === 'reject' ? prompt('Please provide feedback for rejection:') : '';
-    if (action === 'reject' && !feedback?.trim()) {
-      alert('Feedback is required when rejecting an article.');
+    if (action === 'reject') {
+      setInputModal({ isOpen: true, articleId });
       return;
     }
 
+    // Approve action
+    const article = articles.find(a => a.id === articleId);
+    if (!article) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Approve Article',
+      message: `Approve "${article.title}"?\n\nThis article will be ready for publishing.`,
+      confirmText: 'Approve',
+      type: 'info',
+      onConfirm: async () => {
+        const loadingToast = toast.loading('Approving article...');
+        
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) throw new Error('No authentication token');
+
+          console.log(`🔍 [${getCurrentDateTime()}] ArogoClin approving article:`, articleId.substring(0, 8));
+
+          const response = await api.patch(`/articles/${articleId}/review`, 
+            { action: 'approve' }, 
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+
+          if (response.data.success) {
+            console.log(`✅ [${getCurrentDateTime()}] Article approved successfully by ArogoClin`);
+            toast.success(`Article "${article.title}" approved successfully!`, {
+              id: loadingToast,
+              duration: 4000,
+              icon: '✅'
+            });
+            fetchArticles();
+          }
+        } catch (err: any) {
+          console.error(`❌ [${getCurrentDateTime()}] Failed to approve article:`, err);
+          toast.error(
+            err.response?.data?.message || err.message || 'Failed to approve article',
+            { id: loadingToast, duration: 5000 }
+          );
+        }
+      }
+    });
+  };
+
+  const handleRejectWithFeedback = async (feedback: string): Promise<void> => {
+    const articleId = inputModal.articleId;
+    if (!articleId) return;
+
+    const article = articles.find(a => a.id === articleId);
+    if (!article) return;
+
+    const loadingToast = toast.loading('Rejecting article...');
+    
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      console.log(`🔍 [${getCurrentDateTime()}] ArogoClin ${action}ing article:`, articleId.substring(0, 8));
+      console.log(`🔍 [${getCurrentDateTime()}] ArogoClin rejecting article:`, articleId.substring(0, 8));
 
       const response = await api.patch(`/articles/${articleId}/review`, 
-        { action, feedback: feedback?.trim() || undefined }, 
+        { action: 'reject', feedback }, 
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -174,13 +409,20 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       );
 
       if (response.data.success) {
-        console.log(`✅ [${getCurrentDateTime()}] Article ${action}d successfully by ArogoClin`);
-        alert(`Article ${action}d successfully!`);
+        console.log(`✅ [${getCurrentDateTime()}] Article rejected successfully by ArogoClin`);
+        toast.success(`Article "${article.title}" rejected with feedback`, {
+          id: loadingToast,
+          duration: 4000,
+          icon: '❌'
+        });
         fetchArticles();
       }
     } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Failed to ${action} article:`, err);
-      alert(err.response?.data?.message || err.message || `Failed to ${action} article`);
+      console.error(`❌ [${getCurrentDateTime()}] Failed to reject article:`, err);
+      toast.error(
+        err.response?.data?.message || err.message || 'Failed to reject article',
+        { id: loadingToast, duration: 5000 }
+      );
     }
   };
 
@@ -188,87 +430,153 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
 
-    if (!confirm(`Publish "${article.title}"?\n\nIt will be visible to all users on the LearnWell page.`)) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Publish Article',
+      message: `Publish "${article.title}"?\n\nIt will be visible to all users on the LearnWell page.`,
+      confirmText: 'Publish',
+      type: 'info',
+      onConfirm: async () => {
+        const loadingToast = toast.loading('Publishing article...');
+        
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) throw new Error('No authentication token');
 
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token');
+          console.log(`🚀 [${getCurrentDateTime()}] ArogoClin publishing article:`, articleId.substring(0, 8));
 
-      console.log(`🚀 [${getCurrentDateTime()}] ArogoClin publishing article:`, articleId.substring(0, 8));
+          const response = await api.patch(`/articles/${articleId}/publish`, {}, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-      const response = await api.patch(`/articles/${articleId}/publish`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+          if (response.data.success) {
+            console.log(`📤 [${getCurrentDateTime()}] Article published successfully by ArogoClin`);
+            toast.success(
+              `"${article.title}" published successfully!\nNow visible on LearnWell page 🎉`,
+              { id: loadingToast, duration: 4000, icon: '🚀' }
+            );
+            fetchArticles();
+          }
+        } catch (err: any) {
+          console.error(`❌ [${getCurrentDateTime()}] Publish error for ArogoClin:`, err);
+          toast.error(
+            err.response?.data?.message || err.message || 'Failed to publish article',
+            { id: loadingToast, duration: 5000 }
+          );
         }
-      });
-
-      if (response.data.success) {
-        console.log(`📤 [${getCurrentDateTime()}] Article published successfully by ArogoClin`);
-        alert(`"${article.title}" published successfully! It is now visible on the LearnWell page.`);
-        fetchArticles();
       }
-    } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Publish error for ArogoClin:`, err);
-      alert(err.response?.data?.message || err.message || 'Failed to publish article');
-    }
+    });
   };
 
   const handleUnpublishArticle = async (articleId: string): Promise<void> => {
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
 
-    if (!confirm(`Unpublish "${article.title}"?\n\nIt will no longer be visible to the public.`)) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Unpublish Article',
+      message: `Unpublish "${article.title}"?\n\nIt will no longer be visible to the public.`,
+      confirmText: 'Unpublish',
+      type: 'warning',
+      onConfirm: async () => {
+        const loadingToast = toast.loading('Unpublishing article...');
+        
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) throw new Error('No authentication token');
 
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token');
+          console.log(`📤 [${getCurrentDateTime()}] ArogoClin unpublishing article:`, articleId.substring(0, 8));
 
-      console.log(`📤 [${getCurrentDateTime()}] ArogoClin unpublishing article:`, articleId.substring(0, 8));
+          const response = await api.patch(`/articles/${articleId}/unpublish`, {}, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-      const response = await api.patch(`/articles/${articleId}/unpublish`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+          if (response.data.success) {
+            console.log(`✅ [${getCurrentDateTime()}] Article unpublished successfully by ArogoClin`);
+            toast.success(`"${article.title}" unpublished successfully!`, {
+              id: loadingToast,
+              duration: 4000
+            });
+            fetchArticles();
+          }
+        } catch (err: any) {
+          console.error(`❌ [${getCurrentDateTime()}] Unpublish error for ArogoClin:`, err);
+          toast.error(
+            err.response?.data?.message || err.message || 'Failed to unpublish article',
+            { id: loadingToast, duration: 5000 }
+          );
         }
-      });
-
-      if (response.data.success) {
-        console.log(`✅ [${getCurrentDateTime()}] Article unpublished successfully by ArogoClin`);
-        alert(`"${article.title}" unpublished successfully!`);
-        fetchArticles();
       }
-    } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Unpublish error for ArogoClin:`, err);
-      alert(err.response?.data?.message || err.message || 'Failed to unpublish article');
-    }
+    });
   };
 
   const handleDeleteArticle = async (articleId: string): Promise<void> => {
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
 
-    if (!confirm(`Are you sure you want to delete "${article.title}"?\n\nThis action cannot be undone.`)) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Article',
+      message: `Are you sure you want to delete "${article.title}"?\n\nThis action cannot be undone.`,
+      confirmText: 'Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        const loadingToast = toast.loading('Deleting article...');
+        
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) throw new Error('No authentication token');
 
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token');
+          console.log(`🗑️ [${getCurrentDateTime()}] ArogoClin deleting article:`, articleId.substring(0, 8));
 
-      console.log(`🗑️ [${getCurrentDateTime()}] ArogoClin deleting article:`, articleId.substring(0, 8));
+          const response = await api.delete(`/articles/${articleId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-      const response = await api.delete(`/articles/${articleId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+          if (response.data.success) {
+            console.log(`✅ [${getCurrentDateTime()}] Article deleted successfully by ArogoClin`);
+            toast.success(`"${article.title}" deleted successfully!`, {
+              id: loadingToast,
+              duration: 4000,
+              icon: '🗑️'
+            });
+            fetchArticles();
+          }
+        } catch (err: any) {
+          console.error(`❌ [${getCurrentDateTime()}] Delete error for ArogoClin:`, err);
+          toast.error(
+            err.response?.data?.message || err.message || 'Failed to delete article',
+            { id: loadingToast, duration: 5000 }
+          );
         }
-      });
-
-      if (response.data.success) {
-        console.log(`✅ [${getCurrentDateTime()}] Article deleted successfully by ArogoClin`);
-        alert(`"${article.title}" deleted successfully!`);
-        fetchArticles();
       }
-    } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Delete error for ArogoClin:`, err);
-      alert(err.response?.data?.message || err.message || 'Failed to delete article');
+    });
+  };
+
+  const handleEditArticle = (article: Article): void => {
+    if (article.status === 'DRAFT' || article.status === 'REJECTED') {
+      onNavigateToEdit(article.id);
+      return;
     }
+
+    // For published/approved/submitted articles, show confirmation
+    setConfirmModal({
+      isOpen: true,
+      title: 'Edit Article',
+      message: `This article is ${article.status.toLowerCase()}.\n\nEditing it will change its status to DRAFT and require re-approval.\n\nContinue editing "${article.title}"?`,
+      confirmText: 'Continue Editing',
+      type: 'warning',
+      onConfirm: () => {
+        toast.loading('Opening editor...', { duration: 1000 });
+        onNavigateToEdit(article.id);
+      }
+    });
   };
 
   const getStatusColor = (status: string): string => {
@@ -295,35 +603,17 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   const getActionButtons = (article: Article) => {
     const buttons = [];
 
-    // Edit button - Allow editing for ALL articles
-    if (article.status === 'DRAFT' || article.status === 'REJECTED') {
-      buttons.push(
-        <button
-          key="edit"
-          onClick={() => onNavigateToEdit(article.id)}
-          className="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium shadow-sm"
-        >
-          ✏️ Edit
-        </button>
-      );
-    } else if (article.status === 'PUBLISHED' || article.status === 'APPROVED' || article.status === 'SUBMITTED') {
-      buttons.push(
-        <button
-          key="edit"
-          onClick={() => {
-            const confirmEdit = confirm(
-              `This article is ${article.status.toLowerCase()}.\n\nEditing it will change its status to DRAFT and require re-approval.\n\nContinue editing "${article.title}"?`
-            );
-            if (confirmEdit) {
-              onNavigateToEdit(article.id);
-            }
-          }}
-          className="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium shadow-sm"
-        >
-          ✏️ Edit
-        </button>
-      );
-    }
+    // Edit button for all articles
+    buttons.push(
+      <button
+        key="edit"
+        onClick={() => handleEditArticle(article)}
+        className="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
+      >
+        <Edit className="w-4 h-4" />
+        Edit
+      </button>
+    );
 
     // Submit button for DRAFT and REJECTED articles
     if (article.status === 'DRAFT' || article.status === 'REJECTED') {
@@ -331,31 +621,34 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         <button
           key="submit"
           onClick={() => handleSubmitForReview(article.id)}
-          className="px-3 py-2 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all duration-200 font-medium shadow-sm"
+          className="px-3 py-2 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
         >
-          📝 Submit for Review
+          <Send className="w-4 h-4" />
+          Submit for Review
         </button>
       );
     }
 
-    // Review buttons for SUBMITTED articles (if user is content lead)
+    // Review buttons for SUBMITTED articles
     if (article.status === 'SUBMITTED') {
       buttons.push(
         <button
           key="approve"
           onClick={() => handleReviewArticle(article.id, 'approve')}
-          className="px-3 py-2 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all duration-200 font-medium shadow-sm"
+          className="px-3 py-2 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
         >
-          ✅ Approve
+          <Check className="w-4 h-4" />
+          Approve
         </button>
       );
       buttons.push(
         <button
           key="reject"
           onClick={() => handleReviewArticle(article.id, 'reject')}
-          className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-sm"
+          className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
         >
-          ❌ Reject
+          <X className="w-4 h-4" />
+          Reject
         </button>
       );
     }
@@ -366,9 +659,10 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         <button
           key="publish"
           onClick={() => handlePublishArticle(article.id)}
-          className="px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 font-bold shadow-sm"
+          className="px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 font-bold shadow-sm flex items-center gap-2"
         >
-          🚀 Publish
+          <Rocket className="w-4 h-4" />
+          Publish
         </button>
       );
     }
@@ -379,9 +673,10 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         <button
           key="unpublish"
           onClick={() => handleUnpublishArticle(article.id)}
-          className="px-3 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 font-medium shadow-sm"
+          className="px-3 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
         >
-          📤 Unpublish
+          <Package className="w-4 h-4" />
+          Unpublish
         </button>
       );
     }
@@ -391,9 +686,10 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       <button
         key="delete"
         onClick={() => handleDeleteArticle(article.id)}
-        className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-sm"
+        className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
       >
-        🗑️ Delete
+        <Trash2 className="w-4 h-4" />
+        Delete
       </button>
     );
 
@@ -402,13 +698,63 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Toast Container */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#fff',
+            color: '#363636',
+            padding: '16px',
+            borderRadius: '10px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            maxWidth: '500px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+      />
+
+      {/* Rejection Input Modal */}
+      <InputModal
+        isOpen={inputModal.isOpen}
+        onClose={() => setInputModal({ isOpen: false, articleId: null })}
+        onSubmit={handleRejectWithFeedback}
+        title="Reject Article"
+        message="Please provide feedback explaining why this article is being rejected:"
+        placeholder="Enter detailed feedback for the author..."
+      />
+
       {/* Header */}
       <header className="bg-white shadow-lg border-b-4 border-blue-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center">
             <div className="mb-4 md:mb-0">
-              <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-                📋 Manage Articles
+              <h1 className="text-4xl font-extrabold text-gray-900 mb-2 flex items-center gap-3">
+                <ClipboardList className="w-10 h-10 text-blue-600" />
+                Manage Articles
               </h1>
               <p className="text-lg text-gray-600">
                 View and manage all articles - Create, Edit, Review, Publish
@@ -423,27 +769,21 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                 onClick={onNavigateBack}
                 className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ChevronLeft className="w-4 h-4 mr-2" />
                 Back to Articles Hub
               </button>
               <button
                 onClick={onNavigateToCreate}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 font-medium shadow-md"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+                <Plus className="w-4 h-4 mr-2" />
                 New Article
               </button>
               <button 
                 onClick={onLogout} 
                 className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-md"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+                <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </button>
             </div>
@@ -454,12 +794,10 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Info Banner */}
         <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 mb-8 shadow-lg">
-          <div className="flex items-center">
-            <svg className="w-8 h-8 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
+                      <div className="flex items-center">
+            <Info className="w-8 h-8 text-blue-600 mr-3" />
             <div className="text-blue-800">
-              <h4 className="font-bold mb-1">📝 Article Management Guide</h4>
+              <h4 className="font-bold mb-1">Article Management Guide</h4>
               <p>You can edit any article. Editing published/approved articles will reset them to DRAFT status and require re-approval. REJECTED articles will become DRAFT when edited.</p>
             </div>
           </div>
@@ -492,10 +830,14 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                 <span className="font-semibold">{articles.length}</span> article{articles.length !== 1 ? 's' : ''} found
               </div>
               <button
-                onClick={fetchArticles}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all duration-200 font-medium"
+                onClick={() => {
+                  toast.loading('Refreshing articles...', { duration: 1000 });
+                  fetchArticles();
+                }}
+                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all duration-200 font-medium flex items-center gap-2"
               >
-                🔄 Refresh
+                <RefreshCw className="w-4 h-4" />
+                Refresh
               </button>
             </div>
           </div>
@@ -514,17 +856,16 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         {error && (
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8 shadow-lg">
             <div className="flex items-center mb-4">
-              <svg className="w-8 h-8 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <AlertCircle className="w-8 h-8 text-red-500 mr-3" />
               <h3 className="text-lg font-bold text-red-800">Error Loading Articles</h3>
             </div>
             <p className="text-red-700 mb-4">{error}</p>
             <button
               onClick={fetchArticles}
-              className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-md"
+              className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-md flex items-center gap-2"
             >
-              🔄 Try Again
+              <RefreshCw className="w-4 h-4" />
+              Try Again
             </button>
           </div>
         )}
@@ -534,7 +875,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           <>
             {articles.length === 0 ? (
               <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-                <div className="text-6xl mb-6">📝</div>
+                <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-6" />
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">No Articles Found</h3>
                 <p className="text-lg text-gray-500 mb-6">
                   {selectedStatus 
@@ -543,9 +884,10 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                 </p>
                 <button
                   onClick={onNavigateToCreate}
-                  className="px-8 py-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 font-bold text-lg shadow-lg"
+                  className="px-8 py-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 font-bold text-lg shadow-lg flex items-center gap-3 mx-auto"
                 >
-                  🖊️ Create Your First Article
+                  <Edit className="w-5 h-5" />
+                  Create Your First Article
                 </button>
               </div>
             ) : (
@@ -557,8 +899,9 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                         <div className="flex-1 pr-6">
                           {/* Article Header */}
                           <div className="flex items-center gap-3 mb-4">
-                            <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">
-                              #{index + 1 + (currentPage - 1) * 10}
+                            <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                              <Hash className="w-3 h-3" />
+                              {index + 1 + (currentPage - 1) * 10}
                             </span>
                             <h3 className="text-2xl font-bold text-gray-900 flex-1">{article.title}</h3>
                             <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(article.status)}`}>
@@ -569,25 +912,19 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                           {/* Article Metadata */}
                           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
                             <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
+                              <User className="w-4 h-4" />
                               <span className="font-medium">By {article.author.name}</span>
                             </div>
                             <span>•</span>
                             <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
+                              <Clock className="w-4 h-4" />
                               <span>Created {formatDate(article.createdAt)}</span>
                             </div>
                             {article.category && (
                               <>
                                 <span>•</span>
                                 <div className="flex items-center gap-2">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a1.994 1.994 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                  </svg>
+                                  <Tag className="w-4 h-4" />
                                   <span className="text-blue-600 font-medium">{article.category}</span>
                                 </div>
                               </>
@@ -665,9 +1002,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                   disabled={currentPage === 1}
                   className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                  <ChevronLeft className="w-4 h-4 mr-2" />
                   Previous
                 </button>
                 
@@ -706,9 +1041,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                   className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                 >
                   Next
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className="w-4 h-4 ml-2" />
                 </button>
               </div>
             )}

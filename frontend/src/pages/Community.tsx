@@ -11,45 +11,25 @@ const testimonials = [
   {
     quote: "Finally, a resource that understands what parents are going through. Totoz Wellness has been a game-changer for our family's communication.",
     author: 'Davine O., Mother of Two',
-    avatar: 'https://picsum.photos/id/1011/100/100',
+    avatar: 'https://picsum.photos/id/1027/100/100',
     location: 'Nairobi, Kenya',
-    rating: 5
-  },
-  {
-    quote: "The GrowTrack feature helped us identify patterns we never would have seen on our own. It's so empowering to have this insight.",
-    author: 'Maigua G., Father of One',
-    avatar: 'https://picsum.photos/id/1012/100/100',
-    location: 'Mombasa, Kenya',
     rating: 5
   },
   {
     quote: "Being part of the ParentCircle community makes me feel less alone. Sharing stories and advice with other caregivers is invaluable.",
     author: 'Arogo C., Guardian',
-    avatar: 'https://picsum.photos/id/1027/100/100',
+    avatar: 'https://picsum.photos/id/1005/100/100',
     location: 'Kisumu, Kenya',
     rating: 5
   },
   {
     quote: "LearnWell has become my go-to resource for understanding my child's emotional needs. The articles are practical and easy to implement.",
     author: 'Grace M., Single Mother',
-    avatar: 'https://picsum.photos/id/1005/100/100',
+    avatar: 'https://picsum.photos/id/1011/100/100',
     location: 'Eldoret, Kenya',
     rating: 5
   },
-  {
-    quote: "As a working parent, having 24/7 access to mental health resources has been a lifesaver. Totoz Wellness fits perfectly into our busy schedule.",
-    author: 'John K., Father of Three',
-    avatar: 'https://picsum.photos/id/1025/100/100',
-    location: 'Nakuru, Kenya',
-    rating: 5
-  },
-  {
-    quote: "The community support here is amazing. Other parents share real experiences and practical advice that actually works.",
-    author: 'Mary W., Grandmother & Caregiver',
-    avatar: 'https://picsum.photos/id/1003/100/100',
-    location: 'Thika, Kenya',
-    rating: 5
-  }
+  
 ];
 
 const communityStats = [
@@ -77,10 +57,6 @@ const Community: React.FC<CommunityProps> = ({ onGetStartedClick, onNavigateToPa
             <p className="text-lg md:text-xl text-dark-text/70 mb-8 max-w-3xl mx-auto">
               Hear from caregivers who have found support and guidance with Totoz Wellness. 
               Join a community that understands your journey.
-            </p>
-            <p className="text-sm text-dark-text/60">
-              Community member: <span className="font-semibold text-teal">ArogoClin</span> | 
-              Updated: <span className="font-semibold">2025-10-24 13:56:17</span>
             </p>
           </div>
         </section>

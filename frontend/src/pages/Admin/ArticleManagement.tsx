@@ -48,13 +48,6 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugMode, setDebugMode] = useState(false);
-  const [allArticles, setAllArticles] = useState<Article[]>([]);
-
-  // Current date/time for consistency
-  const getCurrentDateTime = (): string => {
-    return '2025-10-24 14:33:38';
-  };
 
   useEffect(() => {
     fetchStats();
@@ -70,54 +63,22 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
         throw new Error('No authentication token found');
       }
 
-      console.log(`📊 [${getCurrentDateTime()}] Fetching article statistics for ArogoClin...`);
-
-      // FIXED: Fetch ALL articles by the current user and filter by status on frontend
-      // This ensures we get accurate counts per status for this specific user
       const response = await api.get('/articles?publishedOnly=false&limit=1000', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      console.log(`📦 [${getCurrentDateTime()}] Raw API response for ArogoClin:`, response.data);
 
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to fetch articles');
       }
 
       const articles: Article[] = response.data.data?.articles || [];
-      setAllArticles(articles); // Store for debugging
 
-      console.log(`📋 [${getCurrentDateTime()}] All articles fetched:`, articles.length);
-      console.log(`📝 [${getCurrentDateTime()}] Article details:`, articles.map(a => ({
-        id: a.id,
-        title: a.title.substring(0, 30) + '...',
-        status: a.status,
-        author: a.author.name
-      })));
-
-      // FIXED: Count articles by status from the actual returned data with type safety
-      const publishedCount: number = articles.filter(a => a.status === 'PUBLISHED').length;
-      const draftCount: number = articles.filter(a => a.status === 'DRAFT').length;
-      const submittedCount: number = articles.filter(a => a.status === 'SUBMITTED').length;
-      const approvedCount: number = articles.filter(a => a.status === 'APPROVED').length;
-      const rejectedCount: number = articles.filter(a => a.status === 'REJECTED').length;
-      const totalCount: number = articles.length;
-
-      console.log(`📈 [${getCurrentDateTime()}] Article counts for ArogoClin:`, {
-        total: totalCount,
-        published: publishedCount,
-        draft: draftCount,
-        submitted: submittedCount,
-        approved: approvedCount,
-        rejected: rejectedCount,
-        verification: publishedCount + draftCount + submittedCount + approvedCount + rejectedCount
-      });
-
-      // Verify counts add up
-      const calculatedTotal = publishedCount + draftCount + submittedCount + approvedCount + rejectedCount;
-      if (calculatedTotal !== totalCount) {
-        console.warn(`⚠️ Count mismatch: calculated ${calculatedTotal} vs actual ${totalCount}`);
-      }
+      const publishedCount = articles.filter(a => a.status === 'PUBLISHED').length;
+      const draftCount = articles.filter(a => a.status === 'DRAFT').length;
+      const submittedCount = articles.filter(a => a.status === 'SUBMITTED').length;
+      const approvedCount = articles.filter(a => a.status === 'APPROVED').length;
+      const rejectedCount = articles.filter(a => a.status === 'REJECTED').length;
+      const totalCount = articles.length;
 
       setStats({
         totalArticles: totalCount,
@@ -129,35 +90,10 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
       });
 
     } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Failed to fetch stats for ArogoClin:`, err);
       setError(err.response?.data?.message || err.message || 'Failed to load statistics');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCreateClick = (): void => {
-    console.log(`🖊️ [${getCurrentDateTime()}] Create Article button clicked by ArogoClin`);
-    onNavigateToCreate();
-  };
-
-  const handleManageClick = (): void => {
-    console.log(`📋 [${getCurrentDateTime()}] Manage Articles button clicked by ArogoClin`);
-    onNavigateToManage();
-  };
-
-  const handleReviewClick = (): void => {
-    console.log(`🔍 [${getCurrentDateTime()}] Review Queue button clicked by ArogoClin`);
-    onNavigateToReview();
-  };
-
-  // Get status breakdown for debug with proper typing
-  const getStatusBreakdown = (): Record<string, number> => {
-    const breakdown: Record<string, number> = {};
-    allArticles.forEach((article: Article) => {
-      breakdown[article.status] = (breakdown[article.status] || 0) + 1;
-    });
-    return breakdown;
   };
 
   return (
@@ -173,10 +109,6 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
               <p className="text-lg text-gray-600">
                 Manage all your wellness articles from one centralized location
               </p>
-              <div className="mt-2 text-sm text-gray-500">
-                <span className="font-semibold text-[#3AAFA9]">User:</span> ArogoClin | 
-                <span className="font-semibold text-[#3AAFA9] ml-2">Date:</span> {getCurrentDateTime()} UTC
-              </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button
@@ -187,12 +119,6 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Dashboard
-              </button>
-              <button 
-                onClick={() => setDebugMode(!debugMode)}
-                className="px-3 py-2 text-xs bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-all duration-200 font-medium"
-              >
-                {debugMode ? 'Hide Debug' : 'Show Debug'}
               </button>
               <button 
                 onClick={onLogout} 
@@ -209,105 +135,12 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Debug Panel */}
-        {debugMode && (
-          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 mb-8 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-yellow-800 flex items-center">
-                🐛 Debug Information Panel
-              </h3>
-              <button
-                onClick={() => setDebugMode(false)}
-                className="text-yellow-600 hover:text-yellow-800 font-medium"
-              >
-                ✕ Close
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              <div className="bg-yellow-100 p-4 rounded-lg">
-                <h4 className="font-bold text-yellow-800 mb-3">📊 Current Statistics</h4>
-                <ul className="space-y-2 text-yellow-700">
-                  <li className="flex justify-between">
-                    <span>📝 Total Articles:</span>
-                    <span className="font-bold">{stats.totalArticles}</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>✅ Published:</span>
-                    <span className="font-bold text-green-600">{stats.publishedArticles}</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>🔵 Approved:</span>
-                    <span className="font-bold text-blue-600">{stats.approvedArticles}</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>🟡 Submitted:</span>
-                    <span className="font-bold text-yellow-600">{stats.submittedArticles}</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>⚪ Draft:</span>
-                    <span className="font-bold text-gray-600">{stats.draftArticles}</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>🔴 Rejected:</span>
-                    <span className="font-bold text-red-600">{stats.rejectedArticles}</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="bg-yellow-100 p-4 rounded-lg">
-                <h4 className="font-bold text-yellow-800 mb-3">⚙️ System Information</h4>
-                <ul className="space-y-2 text-yellow-700">
-                  <li><strong>🕐 Last Updated:</strong> {new Date().toLocaleTimeString()}</li>
-                  <li><strong>👤 Current User:</strong> ArogoClin</li>
-                  <li><strong>🗓️ Session Date:</strong> 2025-10-24</li>
-                  <li><strong>🔄 Fetch Method:</strong> Single API call + frontend filtering</li>
-                  <li><strong>📡 API Status:</strong> {error ? 'Error' : 'Connected'}</li>
-                  <li><strong>🎯 Total Articles Found:</strong> {allArticles.length}</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Article Breakdown */}
-            {allArticles.length > 0 && (
-              <div className="mt-4 bg-yellow-100 p-4 rounded-lg">
-                <h4 className="font-bold text-yellow-800 mb-3">📋 Your Articles by Status</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  {Object.entries(getStatusBreakdown()).map(([status, count]: [string, number]) => (
-                    <div key={status} className="flex justify-between">
-                      <span className="text-yellow-700">{status}:</span>
-                      <span className="font-bold text-yellow-800">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={fetchStats}
-                className="px-4 py-2 bg-yellow-200 text-yellow-800 rounded-lg hover:bg-yellow-300 transition-all duration-200 font-medium"
-              >
-                🔄 Refresh Statistics
-              </button>
-              <button
-                onClick={() => {
-                  console.log('📊 Current stats:', stats);
-                  console.log('📋 All articles:', allArticles);
-                  console.log('🔍 Status breakdown:', getStatusBreakdown());
-                }}
-                className="px-4 py-2 bg-yellow-200 text-yellow-800 rounded-lg hover:bg-yellow-300 transition-all duration-200 font-medium"
-              >
-                📋 Log to Console
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Loading State */}
         {loading && (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-[#3AAFA9] border-t-transparent"></div>
             <h3 className="mt-4 text-xl font-semibold text-gray-700">Loading Statistics...</h3>
-            <p className="mt-2 text-gray-500">Fetching your article data for ArogoClin</p>
+            <p className="mt-2 text-gray-500">Fetching your article data</p>
           </div>
         )}
 
@@ -340,7 +173,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                   <div>
                     <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Articles</p>
                     <p className="text-4xl font-bold text-gray-900 mt-2">{stats.totalArticles}</p>
-                    <p className="text-sm text-gray-500 mt-1">All content by ArogoClin</p>
+                    <p className="text-sm text-gray-500 mt-1">All content</p>
                   </div>
                   <div className="bg-[#3AAFA9] bg-opacity-20 p-4 rounded-full">
                     <svg className="w-8 h-8 text-[#3AAFA9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,7 +236,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                       : 'Start writing a new wellness article for the community.'}
                   </p>
                   <button
-                    onClick={handleCreateClick}
+                    onClick={onNavigateToCreate}
                     className="w-full bg-white text-[#3AAFA9] px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
                   >
                     🖊️ Start Writing Now
@@ -429,7 +262,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                       : 'View, edit, and organize all your articles.'}
                   </p>
                   <button
-                    onClick={handleManageClick}
+                    onClick={onNavigateToManage}
                     className="w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
                   >
                     📋 Manage All Articles
@@ -455,7 +288,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                       : 'No articles currently pending review.'}
                   </p>
                   <button
-                    onClick={handleReviewClick}
+                    onClick={onNavigateToReview}
                     className="w-full bg-white text-purple-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
                   >
                     🔍 Review Articles
@@ -516,7 +349,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                         to all users on the LearnWell page.
                       </p>
                       <button
-                        onClick={handleManageClick}
+                        onClick={onNavigateToManage}
                         className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium shadow-md"
                       >
                         📤 Go to Manage Articles
@@ -533,7 +366,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                   <h4 className="text-xl font-bold text-gray-700 mb-2">No Articles Yet</h4>
                   <p className="text-gray-500 mb-6">Start your wellness content journey by creating your first article.</p>
                   <button
-                    onClick={handleCreateClick}
+                    onClick={onNavigateToCreate}
                     className="px-8 py-4 bg-[#3AAFA9] text-white rounded-lg hover:bg-[#2D8B87] transition-all duration-200 font-bold text-lg shadow-lg"
                   >
                     🖊️ Create Your First Article
