@@ -9,6 +9,7 @@ import CreateArticle from './pages/Admin/CreateArticle';
 import ManageArticles from './pages/Admin/ManageArticles';
 import EditArticle from './pages/Admin/EditArticle';
 import ReviewQueue from './pages/Admin/ReviewQueue';
+import ConnectCareAdmin from './pages/Admin/ConnectCareAdmin';
 import LearnWell from './pages/LearnWell';
 import ArticleReader from './pages/ArticleReader';
 import LoginPage from './pages/Admin/LoginPage';
@@ -49,15 +50,16 @@ const App: React.FC = () => {
       else if (page === 'whyus') url = '/whyus';
       else if (page === 'community') url = '/community';
       else if (page === 'learnwell') url = '/learnwell';
+      else if (page === 'connectcare') url = '/connectcare';
       else if (page === 'admin-dashboard') url = '/admin';
       else if (page === 'admin-articles') url = '/admin/articles';
       else if (page === 'admin-create-article') url = '/admin/articles/create';
       else if (page === 'admin-manage-articles') url = '/admin/articles/manage';
       else if (page === 'admin-edit-article') url = `/admin/articles/edit/${articleId}`;
       else if (page === 'admin-review-queue') url = '/admin/articles/review';
+      else if (page === 'admin-connectcare') url = '/admin/connectcare';
       else if (page === 'read-article') url = `/article/${articleId}`;
       else if (page === 'login') url = '/login';
-      else if (page === 'connectcare') url = '/connectcare';
       
       window.history.pushState({ page, articleId }, '', url);
     }
@@ -98,6 +100,7 @@ const App: React.FC = () => {
   const handleNavigateToCreateArticle = () => navigateTo('admin-create-article');
   const handleNavigateToManageArticles = () => navigateTo('admin-manage-articles');
   const handleNavigateToReviewQueue = () => navigateTo('admin-review-queue');
+  const handleNavigateToConnectCare = () => navigateTo('admin-connectcare');
 
   const getPageFromPath = (path: string): { page: string; articleId?: string } => {
     const cleanPath = path.replace(/^\//, '');
@@ -113,6 +116,7 @@ const App: React.FC = () => {
     if (cleanPath === 'admin/articles/create') return { page: 'admin-create-article' };
     if (cleanPath === 'admin/articles/manage') return { page: 'admin-manage-articles' };
     if (cleanPath === 'admin/articles/review') return { page: 'admin-review-queue' };
+    if (cleanPath === 'admin/connectcare') return { page: 'admin-connectcare' };
     if (cleanPath.startsWith('admin/articles/edit/')) {
       const articleId = cleanPath.split('/')[3];
       return { page: 'admin-edit-article', articleId };
@@ -157,7 +161,8 @@ const App: React.FC = () => {
     'admin-create-article', 
     'admin-manage-articles', 
     'admin-edit-article', 
-    'admin-review-queue'
+    'admin-review-queue',
+    'admin-connectcare'
   ];
   
   if (adminPages.includes(currentPage) && !isAdminAuthenticated) {
@@ -215,7 +220,7 @@ const App: React.FC = () => {
         </div>
       );
 
-    case 'connectcare': // <--- NEW CASE TO RENDER CONNECTCARE
+    case 'connectcare':
       return (
         <div className="bg-light-bg overflow-x-hidden min-h-screen flex flex-col">
           <Navbar 
@@ -223,7 +228,6 @@ const App: React.FC = () => {
             onNavigateToPage={handleNavigateToPage}
           />
           <main className="flex-grow">
-            {/* Pass handleNavigateToPage for the 'Back to Home' button */}
             <ConnectCare onNavigate={handleNavigateToPage} />
           </main>
           <Footer />
@@ -244,6 +248,7 @@ const App: React.FC = () => {
         <AdminDashboard 
           onLogout={handleLogout} 
           onNavigateToArticles={handleNavigateToArticles}
+          onNavigateToConnectCare={handleNavigateToConnectCare}
         />
       );
 
@@ -291,6 +296,13 @@ const App: React.FC = () => {
         <ReviewQueue 
           onNavigateBack={handleNavigateToArticles}
           onLogout={handleLogout}
+        />
+      );
+
+    case 'admin-connectcare':
+      return (
+        <ConnectCareAdmin 
+          onBack={handleNavigateToDashboard}
         />
       );
 

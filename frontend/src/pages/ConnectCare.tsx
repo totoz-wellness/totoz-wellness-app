@@ -3,132 +3,59 @@ import { XIcon } from '../components/icons/XIcon';
 import { LocationMarkerIcon } from '../components/icons/LocationMarkerIcon';
 import { PhoneIcon } from '../components/icons/PhoneIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
+import api from '../config/api';
 
-type ResourceType = 'Counselor' | 'Helpline' | 'NGO';
+type ResourceType = 'NGO' | 'COUNSELOR' | 'HELPLINE' | 'SUPPORT_GROUP' | 'HOSPITAL' | 'CLINIC' | 'THERAPIST' | 'PSYCHIATRIST' | 'COMMUNITY_CENTER' | 'ONLINE_SERVICE';
 
 interface Resource {
+  id: string;
   name: string;
   type: ResourceType;
   description: string;
+  excerpt?: string;
   specializations: string[];
   contact: {
-    phone: string;
+    phone?: string;
     email?: string;
     website?: string;
   };
   location: {
-    address: string;
-    city: string;
-    county: string;
+    address?: string;
+    city?: string;
+    county?: string;
     region?: string;
   };
-  operatingHours: string;
+  operatingHours?: string;
+  languages: string[];
+  tags: string[];
+  isVerified: boolean;
+  isFeatured: boolean;
 }
 
-const resources: Resource[] = [
-  {
-    name: 'Mindful Kenya Counselors',
-    type: 'Counselor',
-    description: 'A team of certified professional counselors specializing in child and adolescent psychology. We offer one-on-one and family sessions.',
-    specializations: ['Child Psychology', 'Family Therapy', 'Anxiety', 'Depression'],
-    contact: {
-      phone: '+254 712 345 678',
-      email: 'contact@mindfulkenya.co.ke',
-      website: 'www.mindfulkenya.co.ke',
-    },
-    location: {
-      address: '123 Ngong Road',
-      city: 'Nairobi',
-      county: 'Nairobi',
-    },
-    operatingHours: 'Mon - Fri, 9:00 AM - 6:00 PM',
-  },
-  {
-    name: 'Kenya Childline',
-    type: 'Helpline',
-    description: 'A 24/7 toll-free helpline for children in distress. We provide a safe space for children to share their problems and receive support.',
-    specializations: ['24/7 Support', 'Crisis Intervention', 'Child Safety'],
-    contact: {
-      phone: '116',
-      website: 'www.childlinekenya.co.ke',
-    },
-    location: {
-      address: 'National Service',
-      city: 'Nairobi',
-      county: 'Nairobi',
-    },
-    operatingHours: '24 hours, 7 days a week',
-  },
-  {
-    name: 'Bright Futures NGO',
-    type: 'NGO',
-    description: 'A non-profit organization dedicated to promoting mental wellness in schools through workshops, resources, and community programs for children and parents.',
-    specializations: ['School Programs', 'Parent Workshops', 'Community Outreach'],
-    contact: {
-      phone: '+254 700 111 222',
-      email: 'info@brightfutures.or.ke',
-      website: 'www.brightfutures.or.ke',
-    },
-    location: {
-      address: '45 Mfangano Street',
-      city: 'Mombasa',
-      county: 'Mombasa',
-    },
-    operatingHours: 'Mon - Fri, 8:30 AM - 5:00 PM',
-  },
-  {
-    name: 'Valley Counseling Services',
-    type: 'Counselor',
-    description: 'Providing affordable and accessible mental health support for families in the Rift Valley region, with a focus on play therapy for young children.',
-    specializations: ['Play Therapy', 'Adolescent Counseling', 'Grief Support'],
-    contact: {
-      phone: '+254 722 987 654',
-      email: 'support@valleycounseling.co.ke',
-    },
-    location: {
-      address: 'Kenyatta Avenue',
-      city: 'Nakuru',
-      county: 'Nakuru',
-    },
-    operatingHours: 'Mon - Sat, 10:00 AM - 4:00 PM',
-  },
-  {
-    name: 'HopeLine Kenya',
-    type: 'Helpline',
-    description: 'A confidential helpline offering emotional support and guidance to young people and their caregivers dealing with mental health challenges.',
-    specializations: ['Youth Support', 'Confidential', 'Emotional Guidance'],
-    contact: {
-      phone: '0800 221 333',
-    },
-    location: {
-      address: 'National Helpline',
-      city: 'Nairobi',
-      county: 'Nairobi',
-    },
-    operatingHours: 'Daily, 8:00 AM - 8:00 PM',
-  },
-  {
-    name: 'Pamoja Community Wellness',
-    type: 'NGO',
-    description: 'A community-based organization in Kisumu focused on destigmatizing mental health through local events, support groups, and educational materials.',
-    specializations: ['Support Groups', 'Mental Health Awareness', 'Community Events'],
-    contact: {
-      phone: '+254 733 444 555',
-      website: 'www.pamojawellness.or.ke',
-    },
-    location: {
-      address: 'Oginga Odinga Street',
-      city: 'Kisumu',
-      county: 'Kisumu',
-    },
-    operatingHours: 'Office Hours: Mon - Fri, 9:00 AM - 5:00 PM',
-  },
-];
-
 const TypeColors: { [key in ResourceType]: string } = {
-  Counselor: 'bg-teal/20 text-teal',
-  Helpline: 'bg-blue-500/20 text-blue-600',
   NGO: 'bg-purple-500/20 text-purple-600',
+  COUNSELOR: 'bg-teal/20 text-teal',
+  HELPLINE: 'bg-blue-500/20 text-blue-600',
+  SUPPORT_GROUP: 'bg-pink-500/20 text-pink-600',
+  HOSPITAL: 'bg-red-500/20 text-red-600',
+  CLINIC: 'bg-green-500/20 text-green-600',
+  THERAPIST: 'bg-indigo-500/20 text-indigo-600',
+  PSYCHIATRIST: 'bg-orange-500/20 text-orange-600',
+  COMMUNITY_CENTER: 'bg-yellow-500/20 text-yellow-600',
+  ONLINE_SERVICE: 'bg-cyan-500/20 text-cyan-600',
+};
+
+const TypeLabels: { [key in ResourceType]: string } = {
+  NGO: 'NGO',
+  COUNSELOR: 'Counselor',
+  HELPLINE: 'Helpline',
+  SUPPORT_GROUP: 'Support Group',
+  HOSPITAL: 'Hospital',
+  CLINIC: 'Clinic',
+  THERAPIST: 'Therapist',
+  PSYCHIATRIST: 'Psychiatrist',
+  COMMUNITY_CENTER: 'Community Center',
+  ONLINE_SERVICE: 'Online Service',
 };
 
 interface ConnectCareProps {
@@ -139,6 +66,68 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<ResourceType | 'All'>('All');
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchResources();
+  }, []);
+
+  const fetchResources = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.get('/directory?limit=100');
+      
+      if (response.data.success) {
+        const directories = response.data.data.directories;
+        
+        // Transform backend data to match frontend interface
+        const transformedResources: Resource[] = directories.map((dir: any) => ({
+          id: dir.id,
+          name: dir.name,
+          type: dir.type,
+          description: dir.description,
+          excerpt: dir.excerpt,
+          specializations: dir.specializations || [],
+          contact: {
+            phone: dir.phone,
+            email: dir.email,
+            website: dir.website,
+          },
+          location: {
+            address: dir.address,
+            city: dir.city,
+            county: dir.county,
+            region: dir.region,
+          },
+          operatingHours: dir.operatingHours,
+          languages: dir.languages || [],
+          tags: dir.tags || [],
+          isVerified: dir.isVerified,
+          isFeatured: dir.isFeatured,
+        }));
+        
+        // Sort: Featured first, then verified, then by name
+        transformedResources.sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          if (a.isVerified && !b.isVerified) return -1;
+          if (!a.isVerified && b.isVerified) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        
+        setResources(transformedResources);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch resources:', err);
+      setError('Failed to load resources. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredResources = useMemo(() => {
     return resources
@@ -148,12 +137,19 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
         return (
           r.name.toLowerCase().includes(lowercasedTerm) ||
           r.description.toLowerCase().includes(lowercasedTerm) ||
-          r.location.city.toLowerCase().includes(lowercasedTerm) ||
-          r.location.county.toLowerCase().includes(lowercasedTerm) ||
-          r.specializations.some(s => s.toLowerCase().includes(lowercasedTerm))
+          r.location.city?.toLowerCase().includes(lowercasedTerm) ||
+          r.location.county?.toLowerCase().includes(lowercasedTerm) ||
+          r.specializations.some(s => s.toLowerCase().includes(lowercasedTerm)) ||
+          r.tags.some(t => t.toLowerCase().includes(lowercasedTerm))
         );
       });
-  }, [searchTerm, activeFilter]);
+  }, [searchTerm, activeFilter, resources]);
+
+  // Get unique types from resources for filter buttons
+  const availableTypes = useMemo(() => {
+    const types = new Set(resources.map(r => r.type));
+    return Array.from(types).sort();
+  }, [resources]);
 
   useEffect(() => {
     const body = document.querySelector('body');
@@ -174,9 +170,45 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
           : 'bg-white text-dark-text/80 hover:bg-teal/10'
       }`}
     >
-      {type}
+      {type === 'All' ? 'All' : TypeLabels[type as ResourceType]}
     </button>
   );
+
+  if (loading) {
+    return (
+      <section id="connect-care" className="py-20 bg-white min-h-screen">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-teal border-t-transparent"></div>
+              <h3 className="mt-4 text-xl font-semibold text-gray-700">Loading resources...</h3>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="connect-care" className="py-20 bg-white min-h-screen">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="text-red-500 text-6xl mb-4">⚠️</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{error}</h3>
+              <button
+                onClick={fetchResources}
+                className="mt-4 px-6 py-3 bg-teal text-white rounded-full hover:bg-teal/90 transition-all font-semibold"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="connect-care" className="py-20 bg-white min-h-screen">
@@ -212,29 +244,54 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
           />
           <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
             <FilterButton type="All" />
-            <FilterButton type="Counselor" />
-            <FilterButton type="Helpline" />
-            <FilterButton type="NGO" />
+            {availableTypes.map(type => (
+              <FilterButton key={type} type={type} />
+            ))}
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredResources.map(resource => (
             <div
-              key={resource.name}
+              key={resource.id}
               onClick={() => setSelectedResource(resource)}
-              className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border border-gray-100 flex flex-col"
+              className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border border-gray-100 flex flex-col relative"
             >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold font-heading text-dark-text pr-2">{resource.name}</h3>
+              {resource.isFeatured && (
+                <div className="absolute top-3 left-3">
+                  <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
+                    ⭐ Featured
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-start mb-4 mt-6">
+                <div className="flex-1 pr-2">
+                  <h3 className="text-xl font-bold font-heading text-dark-text">
+                    {resource.name}
+                    {resource.isVerified && (
+                      <span className="ml-2 text-blue-500 text-sm">✓</span>
+                    )}
+                  </h3>
+                </div>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap ${TypeColors[resource.type]}`}>
-                  {resource.type}
+                  {TypeLabels[resource.type]}
                 </span>
               </div>
-              <p className="text-dark-text/70 mb-4 text-sm">{resource.location.city}, {resource.location.county}</p>
+              <p className="text-dark-text/70 mb-4 text-sm">
+                {resource.location.city && resource.location.county 
+                  ? `${resource.location.city}, ${resource.location.county}`
+                  : resource.location.city || resource.location.county || 'Location not specified'}
+              </p>
               <div className="flex-grow">
-                <p className="text-dark-text/60 text-sm italic">"{resource.specializations[0]}, {resource.specializations[1]}..."</p>
+                <p className="text-dark-text/60 text-sm italic">
+                  {resource.excerpt || resource.description.substring(0, 100) + '...'}
+                </p>
               </div>
+              {resource.specializations.length > 0 && (
+                <p className="text-dark-text/60 text-sm italic mt-2">
+                  "{resource.specializations.slice(0, 2).join(', ')}{resource.specializations.length > 2 ? '...' : ''}"
+                </p>
+              )}
               <div className="mt-6 text-center">
                  <span className="font-bold text-teal hover:text-teal/80">View Details &rarr;</span>
               </div>
@@ -254,28 +311,76 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
               <XIcon />
             </button>
             <div className="flex justify-between items-start mb-4">
-                <h3 className="text-2xl md:text-3xl font-bold font-heading text-dark-text pr-4">{selectedResource.name}</h3>
+                <h3 className="text-2xl md:text-3xl font-bold font-heading text-dark-text pr-4">
+                  {selectedResource.name}
+                  {selectedResource.isVerified && (
+                    <span className="ml-2 text-blue-500 text-lg" title="Verified">✓</span>
+                  )}
+                </h3>
                 <span className={`text-sm font-bold px-3 py-1 rounded-full whitespace-nowrap mt-1 ${TypeColors[selectedResource.type]}`}>
-                  {selectedResource.type}
+                  {TypeLabels[selectedResource.type]}
                 </span>
             </div>
+            
+            {selectedResource.isFeatured && (
+              <div className="mb-4">
+                <span className="bg-yellow-400 text-yellow-900 text-sm font-bold px-3 py-1 rounded-full">
+                  ⭐ Featured Provider
+                </span>
+              </div>
+            )}
+            
             <p className="text-dark-text/80 mb-6">{selectedResource.description}</p>
             
-            <div className="mb-6">
-                <h4 className="font-bold text-dark-text mb-2">Specializations</h4>
-                <div className="flex flex-wrap gap-2">
-                    {selectedResource.specializations.map(spec => (
-                        <span key={spec} className="bg-pastel-green/60 text-dark-text/80 text-sm px-3 py-1 rounded-full">{spec}</span>
-                    ))}
-                </div>
-            </div>
+            {selectedResource.specializations.length > 0 && (
+              <div className="mb-6">
+                  <h4 className="font-bold text-dark-text mb-2">Specializations</h4>
+                  <div className="flex flex-wrap gap-2">
+                      {selectedResource.specializations.map((spec, idx) => (
+                          <span key={idx} className="bg-pastel-green/60 text-dark-text/80 text-sm px-3 py-1 rounded-full">{spec}</span>
+                      ))}
+                  </div>
+              </div>
+            )}
+
+            {selectedResource.languages.length > 0 && (
+              <div className="mb-6">
+                  <h4 className="font-bold text-dark-text mb-2">Languages</h4>
+                  <div className="flex flex-wrap gap-2">
+                      {selectedResource.languages.map((lang, idx) => (
+                          <span key={idx} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">{lang}</span>
+                      ))}
+                  </div>
+              </div>
+            )}
+
+            {selectedResource.tags.length > 0 && (
+              <div className="mb-6">
+                  <h4 className="font-bold text-dark-text mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                      {selectedResource.tags.map((tag, idx) => (
+                          <span key={idx} className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">{tag}</span>
+                      ))}
+                  </div>
+              </div>
+            )}
 
             <div className="space-y-4 text-dark-text/90 bg-light-bg p-4 rounded-lg">
-                 <p><ClockIcon /> <strong>Hours:</strong> {selectedResource.operatingHours}</p>
-                 <p><LocationMarkerIcon /> <strong>Location:</strong> {selectedResource.location.address}, {selectedResource.location.city}, {selectedResource.location.county}</p>
-                 <p><PhoneIcon /> <strong>Phone:</strong> <a href={`tel:${selectedResource.contact.phone}`} className="text-teal hover:underline">{selectedResource.contact.phone}</a></p>
-                 {selectedResource.contact.email && <p><strong>Email:</strong> <a href={`mailto:${selectedResource.contact.email}`} className="text-teal hover:underline">{selectedResource.contact.email}</a></p>}
-                 {selectedResource.contact.website && <p><strong>Website:</strong> <a href={`https://${selectedResource.contact.website}`} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">{selectedResource.contact.website}</a></p>}
+                 {selectedResource.operatingHours && (
+                   <p><ClockIcon /> <strong>Hours:</strong> {selectedResource.operatingHours}</p>
+                 )}
+                 {(selectedResource.location.address || selectedResource.location.city || selectedResource.location.county) && (
+                   <p><LocationMarkerIcon /> <strong>Location:</strong> {[selectedResource.location.address, selectedResource.location.city, selectedResource.location.county].filter(Boolean).join(', ')}</p>
+                 )}
+                 {selectedResource.contact.phone && (
+                   <p><PhoneIcon /> <strong>Phone:</strong> <a href={`tel:${selectedResource.contact.phone}`} className="text-teal hover:underline">{selectedResource.contact.phone}</a></p>
+                 )}
+                 {selectedResource.contact.email && (
+                   <p><strong>Email:</strong> <a href={`mailto:${selectedResource.contact.email}`} className="text-teal hover:underline">{selectedResource.contact.email}</a></p>
+                 )}
+                 {selectedResource.contact.website && (
+                   <p><strong>Website:</strong> <a href={selectedResource.contact.website.startsWith('http') ? selectedResource.contact.website : `https://${selectedResource.contact.website}`} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">{selectedResource.contact.website}</a></p>
+                 )}
             </div>
 
           </div>

@@ -43,6 +43,11 @@ const Navbar: React.FC<NavbarProps> = ({ onGetStartedClick, onNavigateToPage }) 
       page: 'learnwell',
       isPage: true 
     },
+    { 
+      name: 'ConnectCare', 
+      page: 'connectcare',
+      isPage: true 
+    },
   ];
 
   useEffect(() => {
