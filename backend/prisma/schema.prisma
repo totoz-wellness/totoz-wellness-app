@@ -20,6 +20,7 @@ model User {
 
   articles Article[] // Articles written by this user
   reviewedArticles Article[] @relation("ArticleReviewer") // Articles reviewed by this user
+  createdDirectories Directory[] // Directories created by this user
 
   @@map("users")
 }
@@ -51,6 +52,46 @@ model Article {
   @@map("articles")
 }
 
+model Directory {
+  id          String         @id @default(cuid())
+  name        String         // Name of organization/professional
+  type        DirectoryType  // Type of service provider
+  description String         // Detailed description of services
+  excerpt     String?        // Short summary for listings
+  
+  // Contact Information
+  phone       String?
+  email       String?
+  website     String?
+  
+  // Location
+  address     String?
+  city        String?
+  county      String?        // For Kenya: e.g., "Nairobi", "Mombasa"
+  region      String?        // Can be used for broader regions
+  coordinates String?        // Lat,Long for mapping (optional)
+  
+  // Additional Info
+  operatingHours String?     // e.g., "Mon-Fri 9AM-5PM"
+  languages      String[]    // Languages spoken/supported
+  specializations String[]   // Areas of expertise
+  isVerified     Boolean     @default(false) // Verified by admin
+  isFeatured     Boolean     @default(false) // Featured listing
+  
+  // SEO & Discovery
+  slug        String         @unique
+  tags        String[]       // For filtering/search
+  
+  // Metadata
+  createdById String
+  createdBy   User           @relation(fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  @@map("directories")
+}
+
+
 enum UserRole {
   USER        // Regular user
   CONTENT_WRITER  // Can create articles
@@ -65,4 +106,17 @@ enum ArticleStatus {
   PUBLISHED   // Live on the site
   REJECTED    // Needs revisions
   ARCHIVED    // No longer visible
+}
+
+enum DirectoryType {
+  NGO              // Non-governmental organizations
+  COUNSELOR        // Individual therapists/counselors
+  HELPLINE         // Crisis helplines
+  SUPPORT_GROUP    // Community support groups
+  HOSPITAL         // Mental health hospitals/facilities
+  CLINIC           // Mental health clinics
+  THERAPIST        // Licensed therapists
+  PSYCHIATRIST     // Medical professionals
+  COMMUNITY_CENTER // Community resource centers
+  ONLINE_SERVICE   // Telehealth/online services
 }

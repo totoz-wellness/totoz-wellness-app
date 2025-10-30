@@ -1,6 +1,7 @@
 import express from 'express';
 import authRoutes from './routes/auth.routes.js';
 import articleRoutes from './routes/articles.routes.js';
+import directoryRoutes from './routes/directory.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/articles', articleRoutes);
+app.use('/directory', directoryRoutes);
 
 // Health check route
 app.get('/', (req, res) => {
