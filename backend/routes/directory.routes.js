@@ -13,22 +13,7 @@ import { requireRole } from '../middleware/role.middleware.js';
 const router = express.Router();
 
 // ======================================
-// PUBLIC ROUTES
-// ======================================
-
-// @desc    Get all directory entries with optional filtering
-// @route   GET /directory
-// @access  Public
-// @query   page, limit, type, county, city, verified, featured, search
-router.get('/', getDirectories);
-
-// @desc    Get single directory entry by ID
-// @route   GET /directory/:id
-// @access  Public
-router.get('/:id', getDirectory);
-
-// ======================================
-// ADMIN ROUTES
+// ADMIN ROUTES (Must come BEFORE /:id route)
 // ======================================
 
 // @desc    Get directory statistics
@@ -48,6 +33,26 @@ router.post('/',
   requireRole(['SUPER_ADMIN', 'CONTENT_LEAD']), 
   createDirectory
 );
+
+// ======================================
+// PUBLIC ROUTES
+// ======================================
+
+// @desc    Get all directory entries with optional filtering
+// @route   GET /directory
+// @access  Public
+// @query   page, limit, type, county, city, verified, featured, search
+router.get('/', getDirectories);
+
+// @desc    Get single directory entry by ID
+// @route   GET /directory/:id
+// @access  Public
+// IMPORTANT: This must come AFTER /stats route
+router.get('/:id', getDirectory);
+
+// ======================================
+// ADMIN UPDATE/DELETE ROUTES
+// ======================================
 
 // @desc    Update a directory entry
 // @route   PUT /directory/:id
