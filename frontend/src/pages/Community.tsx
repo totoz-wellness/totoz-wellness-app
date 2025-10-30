@@ -150,7 +150,10 @@ const Community: React.FC<CommunityProps> = ({ onGetStartedClick, onNavigateToPa
         </section>
       </main>
       
-      <Footer />
+      <Footer
+        onGetStartedClick={onGetStartedClick}
+        onNavigateToPage={onNavigateToPage}
+      />
     </div>
   );
 };

@@ -323,7 +323,10 @@ const WhyUs: React.FC<WhyUsProps> = ({ onGetStartedClick, onNavigateToPage }) =>
         </section>
       </main>
       
-      <Footer />
+      <Footer
+        onGetStartedClick={onGetStartedClick}
+        onNavigateToPage={onNavigateToPage}
+      />
     </div>
   );
 };

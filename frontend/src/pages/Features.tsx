@@ -24,8 +24,10 @@ const features = [
     icon: <HeartIcon />,
     title: 'ConnectCare',
     description: 'Access to a curated network of professional counselors and valuable mental health resources.',
-    status: 'Coming Soon',
+    status: 'Available Now',
     color: 'bg-pink-50 border-pink-200',
+    isAvailable: true,
+    action: 'connectcare'
   },
   {
     icon: <ChartBarIcon />,
@@ -176,8 +178,11 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
           </div>
         </section>
       </main>
+      <Footer
+        onGetStartedClick={onGetStartedClick}
+        onNavigateToPage={onNavigateToPage}
+      />
       
-      <Footer />
     </div>
   );
 };

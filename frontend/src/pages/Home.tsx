@@ -88,7 +88,10 @@ const Home: React.FC<HomeProps> = ({ onGetStartedClick, onNavigateToPage }) => {
         <Hero onNavigateToPage={onNavigateToPage} />
         <CTA onGetStartedClick={onGetStartedClick} />
       </main>
-      <Footer />
+      <Footer
+        onGetStartedClick={onGetStartedClick}
+        onNavigateToPage={onNavigateToPage}
+      />
     </div>
   );
 };

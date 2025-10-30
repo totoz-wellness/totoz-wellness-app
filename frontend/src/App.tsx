@@ -15,6 +15,7 @@ import LoginPage from './pages/Admin/LoginPage';
 import AuthModal from './components/auth/AuthModal';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
+import ConnectCare from './pages/ConnectCare';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -56,6 +57,7 @@ const App: React.FC = () => {
       else if (page === 'admin-review-queue') url = '/admin/articles/review';
       else if (page === 'read-article') url = `/article/${articleId}`;
       else if (page === 'login') url = '/login';
+      else if (page === 'connectcare') url = '/connectcare';
       
       window.history.pushState({ page, articleId }, '', url);
     }
@@ -105,6 +107,7 @@ const App: React.FC = () => {
     if (cleanPath === 'whyus') return { page: 'whyus' };
     if (cleanPath === 'community') return { page: 'community' };
     if (cleanPath === 'learnwell') return { page: 'learnwell' };
+    if (cleanPath === 'connectcare') return { page: 'connectcare' };
     if (cleanPath === 'admin') return { page: 'admin-dashboard' };
     if (cleanPath === 'admin/articles') return { page: 'admin-articles' };
     if (cleanPath === 'admin/articles/create') return { page: 'admin-create-article' };
@@ -205,9 +208,27 @@ const App: React.FC = () => {
           <main className="flex-grow">
             <LearnWell onNavigateToArticle={handleNavigateToArticle} />
           </main>
-          <Footer />
+          <Footer
+            onGetStartedClick={() => setIsAuthModalOpen(true)}
+            onNavigateToPage={handleNavigateToPage}
+          />
         </div>
       );
+
+    case 'connectcare': // <--- NEW CASE TO RENDER CONNECTCARE
+      return (
+        <div className="bg-light-bg overflow-x-hidden min-h-screen flex flex-col">
+          <Navbar 
+            onGetStartedClick={() => setIsAuthModalOpen(true)}
+            onNavigateToPage={handleNavigateToPage}
+          />
+          <main className="flex-grow">
+            {/* Pass handleNavigateToPage for the 'Back to Home' button */}
+            <ConnectCare onNavigate={handleNavigateToPage} />
+          </main>
+          <Footer />
+        </div>
+      );      
 
     case 'read-article':
       if (!currentArticleId) return <div>Article not found</div>;
