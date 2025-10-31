@@ -18,10 +18,12 @@ import {
   Tag, 
   AlertCircle, 
   Hash, 
-  ChevronRight 
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import api from '../../config/api';
+import { getCurrentUser, getRolePermissions, hasRole, getRoleDisplayName } from '../../utils/roleUtils';
 
 interface Article {
   id: string;
@@ -177,6 +179,14 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Get current user and permissions
+  const currentUser = getCurrentUser();
+  const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
+  const canReview = permissions?.canReviewArticles || false;
+  const canPublish = permissions?.canPublishArticles || false;
+  const canEditAll = permissions?.canEditAllArticles || false;
+  const canDeleteAll = permissions?.canDeleteAllArticles || false;
+
   // Modal states
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -201,7 +211,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   });
 
   const getCurrentDateTime = (): string => {
-    return '2025-10-24 14:48:33';
+    return '2025-10-31 14:54:43';
   };
 
   useEffect(() => {
@@ -228,7 +238,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         params.append('status', selectedStatus);
       }
 
-      console.log(`🔍 [${getCurrentDateTime()}] ArogoClin fetching articles with params:`, params.toString());
+      console.log(`🔍 [${getCurrentDateTime()}] ${currentUser?.name} fetching articles with params:`, params.toString());
 
       const response = await api.get(`/articles?${params.toString()}`, {
         headers: {
@@ -236,7 +246,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         }
       });
 
-      console.log(`📦 [${getCurrentDateTime()}] Articles response for ArogoClin:`, {
+      console.log(`📦 [${getCurrentDateTime()}] Articles response for ${currentUser?.name}:`, {
         success: response.data.success,
         articlesCount: response.data.data?.articles?.length || 0,
         articleStatuses: response.data.data?.articles?.map((a: Article) => ({ id: a.id.substring(0, 8), status: a.status })) || []
@@ -245,7 +255,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       if (response.data.success) {
         setArticles(response.data.data.articles);
         setTotalPages(response.data.data.pagination.total);
-        console.log(`✅ [${getCurrentDateTime()}] Loaded ${response.data.data.articles.length} articles for ArogoClin`);
+        console.log(`✅ [${getCurrentDateTime()}] Loaded ${response.data.data.articles.length} articles for ${currentUser?.name}`);
         
         if (response.data.data.articles.length === 0 && !selectedStatus) {
           toast('No articles found. Create your first article!', {
@@ -257,7 +267,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
         throw new Error(response.data.message || 'Failed to fetch articles');
       }
     } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Failed to fetch articles for ArogoClin:`, err);
+      console.error(`❌ [${getCurrentDateTime()}] Failed to fetch articles for ${currentUser?.name}:`, err);
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load articles';
       setError(errorMessage);
       toast.error(errorMessage);
@@ -266,9 +276,29 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
     }
   };
 
+  // Check if user can edit this article
+  const canEditArticle = (article: Article): boolean => {
+    if (!currentUser) return false;
+    return canEditAll || article.author.id === currentUser.id;
+  };
+
+  // Check if user can delete this article
+  const canDeleteArticle = (article: Article): boolean => {
+    if (!currentUser) return false;
+    if (canDeleteAll) return true; // Super admins can delete any
+    // Writers can delete their own drafts only
+    return article.author.id === currentUser.id && article.status === 'DRAFT';
+  };
+
   const handleSubmitForReview = async (articleId: string): Promise<void> => {
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
+
+    // Check ownership for content writers
+    if (!canEditAll && currentUser && article.author.id !== currentUser.id) {
+      toast.error('You can only submit your own articles for review');
+      return;
+    }
 
     if (article.status !== 'DRAFT' && article.status !== 'REJECTED') {
       toast.error(
@@ -291,7 +321,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           const token = localStorage.getItem('token');
           if (!token) throw new Error('No authentication token');
 
-          console.log(`📝 [${getCurrentDateTime()}] ArogoClin submitting article for review:`, {
+          console.log(`📝 [${getCurrentDateTime()}] ${currentUser?.name} submitting article for review:`, {
             articleId: articleId.substring(0, 8),
             currentStatus: article.status,
             title: article.title.substring(0, 30) + '...'
@@ -305,7 +335,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
 
           if (response.data.success) {
             const updatedArticle = response.data.data.article;
-            console.log(`✅ [${getCurrentDateTime()}] Article submitted successfully by ArogoClin:`, {
+            console.log(`✅ [${getCurrentDateTime()}] Article submitted successfully by ${currentUser?.name}:`, {
               articleId: articleId.substring(0, 8),
               oldStatus: article.status,
               newStatus: updatedArticle.status
@@ -320,7 +350,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
             throw new Error(response.data.message || 'Failed to submit article');
           }
         } catch (err: any) {
-          console.error(`❌ [${getCurrentDateTime()}] Failed to submit article for ArogoClin:`, err);
+          console.error(`❌ [${getCurrentDateTime()}] Failed to submit article for ${currentUser?.name}:`, err);
           toast.error(
             err.response?.data?.message || err.message || 'Failed to submit article for review',
             { id: loadingToast, duration: 5000 }
@@ -331,6 +361,11 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   };
 
   const handleReviewArticle = async (articleId: string, action: 'approve' | 'reject'): Promise<void> => {
+    if (!canReview) {
+      toast.error('You do not have permission to review articles');
+      return;
+    }
+
     if (action === 'reject') {
       setInputModal({ isOpen: true, articleId });
       return;
@@ -353,7 +388,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           const token = localStorage.getItem('token');
           if (!token) throw new Error('No authentication token');
 
-          console.log(`🔍 [${getCurrentDateTime()}] ArogoClin approving article:`, articleId.substring(0, 8));
+          console.log(`🔍 [${getCurrentDateTime()}] ${currentUser?.name} approving article:`, articleId.substring(0, 8));
 
           const response = await api.patch(`/articles/${articleId}/review`, 
             { action: 'approve' }, 
@@ -365,7 +400,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           );
 
           if (response.data.success) {
-            console.log(`✅ [${getCurrentDateTime()}] Article approved successfully by ArogoClin`);
+            console.log(`✅ [${getCurrentDateTime()}] Article approved successfully by ${currentUser?.name}`);
             toast.success(`Article "${article.title}" approved successfully!`, {
               id: loadingToast,
               duration: 4000,
@@ -397,7 +432,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      console.log(`🔍 [${getCurrentDateTime()}] ArogoClin rejecting article:`, articleId.substring(0, 8));
+      console.log(`🔍 [${getCurrentDateTime()}] ${currentUser?.name} rejecting article:`, articleId.substring(0, 8));
 
       const response = await api.patch(`/articles/${articleId}/review`, 
         { action: 'reject', feedback }, 
@@ -409,7 +444,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       );
 
       if (response.data.success) {
-        console.log(`✅ [${getCurrentDateTime()}] Article rejected successfully by ArogoClin`);
+        console.log(`✅ [${getCurrentDateTime()}] Article rejected successfully by ${currentUser?.name}`);
         toast.success(`Article "${article.title}" rejected with feedback`, {
           id: loadingToast,
           duration: 4000,
@@ -427,6 +462,11 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   };
 
   const handlePublishArticle = async (articleId: string): Promise<void> => {
+    if (!canPublish) {
+      toast.error('You do not have permission to publish articles');
+      return;
+    }
+
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
 
@@ -443,7 +483,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           const token = localStorage.getItem('token');
           if (!token) throw new Error('No authentication token');
 
-          console.log(`🚀 [${getCurrentDateTime()}] ArogoClin publishing article:`, articleId.substring(0, 8));
+          console.log(`🚀 [${getCurrentDateTime()}] ${currentUser?.name} publishing article:`, articleId.substring(0, 8));
 
           const response = await api.patch(`/articles/${articleId}/publish`, {}, {
             headers: {
@@ -452,7 +492,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           });
 
           if (response.data.success) {
-            console.log(`📤 [${getCurrentDateTime()}] Article published successfully by ArogoClin`);
+            console.log(`📤 [${getCurrentDateTime()}] Article published successfully by ${currentUser?.name}`);
             toast.success(
               `"${article.title}" published successfully!\nNow visible on LearnWell page 🎉`,
               { id: loadingToast, duration: 4000, icon: '🚀' }
@@ -460,7 +500,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
             fetchArticles();
           }
         } catch (err: any) {
-          console.error(`❌ [${getCurrentDateTime()}] Publish error for ArogoClin:`, err);
+          console.error(`❌ [${getCurrentDateTime()}] Publish error for ${currentUser?.name}:`, err);
           toast.error(
             err.response?.data?.message || err.message || 'Failed to publish article',
             { id: loadingToast, duration: 5000 }
@@ -471,6 +511,11 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   };
 
   const handleUnpublishArticle = async (articleId: string): Promise<void> => {
+    if (!canPublish) {
+      toast.error('You do not have permission to unpublish articles');
+      return;
+    }
+
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
 
@@ -487,7 +532,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           const token = localStorage.getItem('token');
           if (!token) throw new Error('No authentication token');
 
-          console.log(`📤 [${getCurrentDateTime()}] ArogoClin unpublishing article:`, articleId.substring(0, 8));
+          console.log(`📤 [${getCurrentDateTime()}] ${currentUser?.name} unpublishing article:`, articleId.substring(0, 8));
 
           const response = await api.patch(`/articles/${articleId}/unpublish`, {}, {
             headers: {
@@ -496,7 +541,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           });
 
           if (response.data.success) {
-            console.log(`✅ [${getCurrentDateTime()}] Article unpublished successfully by ArogoClin`);
+            console.log(`✅ [${getCurrentDateTime()}] Article unpublished successfully by ${currentUser?.name}`);
             toast.success(`"${article.title}" unpublished successfully!`, {
               id: loadingToast,
               duration: 4000
@@ -504,7 +549,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
             fetchArticles();
           }
         } catch (err: any) {
-          console.error(`❌ [${getCurrentDateTime()}] Unpublish error for ArogoClin:`, err);
+          console.error(`❌ [${getCurrentDateTime()}] Unpublish error for ${currentUser?.name}:`, err);
           toast.error(
             err.response?.data?.message || err.message || 'Failed to unpublish article',
             { id: loadingToast, duration: 5000 }
@@ -517,6 +562,11 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   const handleDeleteArticle = async (articleId: string): Promise<void> => {
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
+
+    if (!canDeleteArticle(article)) {
+      toast.error('You do not have permission to delete this article');
+      return;
+    }
 
     setConfirmModal({
       isOpen: true,
@@ -531,7 +581,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           const token = localStorage.getItem('token');
           if (!token) throw new Error('No authentication token');
 
-          console.log(`🗑️ [${getCurrentDateTime()}] ArogoClin deleting article:`, articleId.substring(0, 8));
+          console.log(`🗑️ [${getCurrentDateTime()}] ${currentUser?.name} deleting article:`, articleId.substring(0, 8));
 
           const response = await api.delete(`/articles/${articleId}`, {
             headers: {
@@ -540,7 +590,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           });
 
           if (response.data.success) {
-            console.log(`✅ [${getCurrentDateTime()}] Article deleted successfully by ArogoClin`);
+            console.log(`✅ [${getCurrentDateTime()}] Article deleted successfully by ${currentUser?.name}`);
             toast.success(`"${article.title}" deleted successfully!`, {
               id: loadingToast,
               duration: 4000,
@@ -549,7 +599,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
             fetchArticles();
           }
         } catch (err: any) {
-          console.error(`❌ [${getCurrentDateTime()}] Delete error for ArogoClin:`, err);
+          console.error(`❌ [${getCurrentDateTime()}] Delete error for ${currentUser?.name}:`, err);
           toast.error(
             err.response?.data?.message || err.message || 'Failed to delete article',
             { id: loadingToast, duration: 5000 }
@@ -560,6 +610,11 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
   };
 
   const handleEditArticle = (article: Article): void => {
+    if (!canEditArticle(article)) {
+      toast.error('You do not have permission to edit this article');
+      return;
+    }
+
     if (article.status === 'DRAFT' || article.status === 'REJECTED') {
       onNavigateToEdit(article.id);
       return;
@@ -602,21 +657,24 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
 
   const getActionButtons = (article: Article) => {
     const buttons = [];
+    const isOwner = currentUser && article.author.id === currentUser.id;
 
-    // Edit button for all articles
-    buttons.push(
-      <button
-        key="edit"
-        onClick={() => handleEditArticle(article)}
-        className="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
-      >
-        <Edit className="w-4 h-4" />
-        Edit
-      </button>
-    );
+    // Edit button - show if user can edit
+    if (canEditArticle(article)) {
+      buttons.push(
+        <button
+          key="edit"
+          onClick={() => handleEditArticle(article)}
+          className="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
+        >
+          <Edit className="w-4 h-4" />
+          Edit
+        </button>
+      );
+    }
 
-    // Submit button for DRAFT and REJECTED articles
-    if (article.status === 'DRAFT' || article.status === 'REJECTED') {
+    // Submit button - only for owners of DRAFT and REJECTED articles
+    if (isOwner && (article.status === 'DRAFT' || article.status === 'REJECTED')) {
       buttons.push(
         <button
           key="submit"
@@ -629,8 +687,8 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       );
     }
 
-    // Review buttons for SUBMITTED articles
-    if (article.status === 'SUBMITTED') {
+    // Review buttons - only for Content Leads on SUBMITTED articles
+    if (canReview && article.status === 'SUBMITTED') {
       buttons.push(
         <button
           key="approve"
@@ -653,8 +711,8 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       );
     }
 
-    // Publish button for APPROVED articles
-    if (article.status === 'APPROVED') {
+    // Publish button - only for Content Leads on APPROVED articles
+    if (canPublish && article.status === 'APPROVED') {
       buttons.push(
         <button
           key="publish"
@@ -667,8 +725,8 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       );
     }
 
-    // Unpublish button for PUBLISHED articles
-    if (article.status === 'PUBLISHED') {
+    // Unpublish button - only for Content Leads on PUBLISHED articles
+    if (canPublish && article.status === 'PUBLISHED') {
       buttons.push(
         <button
           key="unpublish"
@@ -681,17 +739,19 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       );
     }
 
-    // Delete button for all articles
-    buttons.push(
-      <button
-        key="delete"
-        onClick={() => handleDeleteArticle(article.id)}
-        className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
-      >
-        <Trash2 className="w-4 h-4" />
-        Delete
-      </button>
-    );
+    // Delete button - show if user can delete
+    if (canDeleteArticle(article)) {
+      buttons.push(
+        <button
+          key="delete"
+          onClick={() => handleDeleteArticle(article.id)}
+          className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-sm flex items-center gap-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete
+        </button>
+      );
+    }
 
     return buttons;
   };
@@ -759,9 +819,19 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
               <p className="text-lg text-gray-600">
                 View and manage all articles - Create, Edit, Review, Publish
               </p>
-              <div className="mt-2 text-sm text-gray-500">
-                <span className="font-semibold text-blue-600">User:</span> ArogoClin | 
-                <span className="font-semibold text-blue-600 ml-2">Date:</span> {getCurrentDateTime()} UTC
+              <div className="mt-2 text-sm text-gray-500 flex items-center gap-2">
+                <span className="font-semibold text-blue-600">User:</span> {currentUser?.name || 'Unknown'} 
+                {currentUser && (
+                  <>
+                    <span className="mx-1">|</span>
+                    <Shield className="w-4 h-4" />
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
+                      {getRoleDisplayName(currentUser.role)}
+                    </span>
+                  </>
+                )}
+                <span className="mx-1">|</span>
+                <span className="font-semibold text-blue-600">Date:</span> {getCurrentDateTime()} UTC
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -792,16 +862,18 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Info Banner */}
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 mb-8 shadow-lg">
-                      <div className="flex items-center">
-            <Info className="w-8 h-8 text-blue-600 mr-3" />
-            <div className="text-blue-800">
-              <h4 className="font-bold mb-1">Article Management Guide</h4>
-              <p>You can edit any article. Editing published/approved articles will reset them to DRAFT status and require re-approval. REJECTED articles will become DRAFT when edited.</p>
+        {/* Role-based Info Banner */}
+        {currentUser && currentUser.role === 'CONTENT_WRITER' && (
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 mb-8 shadow-lg">
+            <div className="flex items-center">
+              <Info className="w-8 h-8 text-blue-600 mr-3 flex-shrink-0" />
+              <div className="text-blue-800">
+                <h4 className="font-bold mb-1">Content Writer View</h4>
+                <p className="text-sm">You're viewing your own articles. You can create, edit, and submit your articles for review. Once approved by a Content Lead, they can be published.</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Filters and Stats */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
@@ -848,7 +920,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
             <h3 className="mt-4 text-xl font-semibold text-gray-700">Loading Articles...</h3>
-            <p className="mt-2 text-gray-500">Fetching article data for ArogoClin</p>
+            <p className="mt-2 text-gray-500">Fetching article data for {currentUser?.name}</p>
           </div>
         )}
 
@@ -892,105 +964,121 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
               </div>
             ) : (
               <div className="space-y-6">
-                {articles.map((article, index) => (
-                  <div key={article.id} className="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200">
-                    <div className="p-8">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 pr-6">
-                          {/* Article Header */}
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full flex items-center gap-1">
-                              <Hash className="w-3 h-3" />
-                              {index + 1 + (currentPage - 1) * 10}
-                            </span>
-                            <h3 className="text-2xl font-bold text-gray-900 flex-1">{article.title}</h3>
-                            <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(article.status)}`}>
-                              {article.status}
-                            </span>
-                          </div>
-
-                          {/* Article Metadata */}
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4" />
-                              <span className="font-medium">By {article.author.name}</span>
-                            </div>
-                            <span>•</span>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4" />
-                              <span>Created {formatDate(article.createdAt)}</span>
-                            </div>
-                            {article.category && (
-                              <>
-                                <span>•</span>
-                                <div className="flex items-center gap-2">
-                                  <Tag className="w-4 h-4" />
-                                  <span className="text-blue-600 font-medium">{article.category}</span>
-                                </div>
-                              </>
-                            )}
-                            {article.readTime && (
-                              <>
-                                <span>•</span>
-                                <span>{article.readTime} min read</span>
-                              </>
-                            )}
-                            {article.publishedAt && (
-                              <>
-                                <span>•</span>
-                                <span className="text-green-600 font-medium">Published {formatDate(article.publishedAt)}</span>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Article Excerpt */}
-                          <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
-                            {article.excerpt || article.content.substring(0, 200)}...
-                          </p>
-
-                          {/* Tags */}
-                          {article.tags && article.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              <span className="text-sm font-medium text-gray-700">Tags:</span>
-                              {article.tags.slice(0, 5).map((tag, idx) => (
-                                <span key={idx} className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-medium border">
-                                  #{tag}
-                                </span>
-                              ))}
-                              {article.tags.length > 5 && (
-                                <span className="text-xs bg-gray-100 text-gray-500 px-3 py-1 rounded-full">
-                                  +{article.tags.length - 5} more
+                {articles.map((article, index) => {
+                  const isOwner = currentUser && article.author.id === currentUser.id;
+                  const actionButtons = getActionButtons(article);
+                  
+                  return (
+                    <div key={article.id} className="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200">
+                      <div className="p-8">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 pr-6">
+                            {/* Article Header */}
+                            <div className="flex items-center gap-3 mb-4 flex-wrap">
+                              <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                                <Hash className="w-3 h-3" />
+                                {index + 1 + (currentPage - 1) * 10}
+                              </span>
+                              <h3 className="text-2xl font-bold text-gray-900 flex-1">{article.title}</h3>
+                              <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(article.status)}`}>
+                                {article.status}
+                              </span>
+                              {isOwner && (
+                                <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
+                                  Your Article
                                 </span>
                               )}
                             </div>
-                          )}
 
-                          {/* Status-specific Information */}
-                          {article.status === 'REJECTED' && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                              <p className="text-red-800 text-sm">
-                                <strong>Note:</strong> This article was rejected and needs revision. Edit it to address feedback, and it will become a DRAFT ready for resubmission.
-                              </p>
+                            {/* Article Metadata */}
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                <span className="font-medium">By {article.author.name}</span>
+                              </div>
+                              <span>•</span>
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                <span>Created {formatDate(article.createdAt)}</span>
+                              </div>
+                              {article.category && (
+                                <>
+                                  <span>•</span>
+                                  <div className="flex items-center gap-2">
+                                    <Tag className="w-4 h-4" />
+                                    <span className="text-blue-600 font-medium">{article.category}</span>
+                                  </div>
+                                </>
+                              )}
+                              {article.readTime && (
+                                <>
+                                  <span>•</span>
+                                  <span>{article.readTime} min read</span>
+                                </>
+                              )}
+                              {article.publishedAt && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-green-600 font-medium">Published {formatDate(article.publishedAt)}</span>
+                                </>
+                              )}
                             </div>
-                          )}
-                          
-                          {article.status === 'DRAFT' && (
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
-                              <p className="text-gray-700 text-sm">
-                                <strong>Status:</strong> This article is in draft status and can be submitted for review.
-                              </p>
-                            </div>
-                          )}
-                        </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex flex-col gap-3 min-w-[200px]">
-                          {getActionButtons(article)}
+                            {/* Article Excerpt */}
+                            <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
+                              {article.excerpt || article.content.substring(0, 200)}...
+                            </p>
+
+                            {/* Tags */}
+                            {article.tags && article.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-4">
+                                <span className="text-sm font-medium text-gray-700">Tags:</span>
+                                {article.tags.slice(0, 5).map((tag, idx) => (
+                                  <span key={idx} className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-medium border">
+                                    #{tag}
+                                  </span>
+                                ))}
+                                {article.tags.length > 5 && (
+                                  <span className="text-xs bg-gray-100 text-gray-500 px-3 py-1 rounded-full">
+                                    +{article.tags.length - 5} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Status-specific Information */}
+                            {article.status === 'REJECTED' && (
+                              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                                <p className="text-red-800 text-sm">
+                                  <strong>Note:</strong> This article was rejected and needs revision. Edit it to address feedback, and it will become a DRAFT ready for resubmission.
+                                </p>
+                              </div>
+                            )}
+                            
+                            {article.status === 'DRAFT' && isOwner && (
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                                <p className="text-gray-700 text-sm">
+                                  <strong>Status:</strong> This article is in draft status and can be submitted for review.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-col gap-3 min-w-[200px]">
+                            {actionButtons.length > 0 ? (
+                              actionButtons
+                            ) : (
+                              <div className="text-sm text-gray-500 italic text-center p-4">
+                                No actions available
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

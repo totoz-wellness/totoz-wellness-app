@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../config/api';
+import { getCurrentUser, getRolePermissions, getRoleDisplayName } from '../../utils/roleUtils';
 
 interface Article {
   id: string;
@@ -39,14 +40,25 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
   const [totalPages, setTotalPages] = useState(1);
   const [reviewingArticleId, setReviewingArticleId] = useState<string | null>(null);
 
+  // Get current user and permissions
+  const currentUser = getCurrentUser();
+  const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
+  const canReview = permissions?.canReviewArticles || false;
+
   // Current date/time context
   const getCurrentDateTime = (): string => {
-    return '2025-10-24 14:38:01';
+    return '2025-10-31 14:59:10';
   };
 
   useEffect(() => {
+    // Redirect if user doesn't have review permissions
+    if (!canReview) {
+      alert('Access Denied: You do not have permission to access the Review Queue. This area is restricted to Content Leads and Super Admins.');
+      onNavigateBack();
+      return;
+    }
     fetchArticles();
-  }, [currentPage]);
+  }, [currentPage, canReview]);
 
   const fetchArticles = async (): Promise<void> => {
     try {
@@ -58,7 +70,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
         throw new Error('No authentication token found');
       }
 
-      console.log(`🔍 [${getCurrentDateTime()}] ArogoClin fetching review queue...`);
+      console.log(`🔍 [${getCurrentDateTime()}] ${currentUser?.name} fetching review queue...`);
 
       // FIXED: Only fetch SUBMITTED articles (not approved ones)
       const params = new URLSearchParams({
@@ -85,7 +97,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
           article.status === 'SUBMITTED'
         );
         
-        console.log(`✅ [${getCurrentDateTime()}] Found ${submittedArticles.length} articles pending review for ArogoClin`);
+        console.log(`✅ [${getCurrentDateTime()}] Found ${submittedArticles.length} articles pending review for ${currentUser?.name}`);
         
         setArticles(submittedArticles);
         setTotalPages(response.data.data.pagination.total);
@@ -93,7 +105,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
         throw new Error(response.data.message || 'Failed to fetch articles');
       }
     } catch (err: any) {
-      console.error(`❌ [${getCurrentDateTime()}] Failed to fetch review queue for ArogoClin:`, err);
+      console.error(`❌ [${getCurrentDateTime()}] Failed to fetch review queue for ${currentUser?.name}:`, err);
       setError(err.response?.data?.message || err.message || 'Failed to load articles');
     } finally {
       setLoading(false);
@@ -101,6 +113,11 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
   };
 
   const handleReviewArticle = async (articleId: string, action: 'approve' | 'reject'): Promise<void> => {
+    if (!canReview) {
+      alert('You do not have permission to review articles');
+      return;
+    }
+
     // Prevent multiple simultaneous reviews
     if (reviewingArticleId) {
       alert('Please wait, another review is in progress...');
@@ -118,7 +135,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      console.log(`🔍 [${getCurrentDateTime()}] ArogoClin ${action}ing article:`, articleId);
+      console.log(`🔍 [${getCurrentDateTime()}] ${currentUser?.name} ${action}ing article:`, articleId);
 
       const response = await api.patch(`/articles/${articleId}/review`, 
         { action, feedback: feedback?.trim() || undefined }, 
@@ -178,6 +195,31 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
     }
   };
 
+  // Access denied fallback (should redirect, but just in case)
+  if (!canReview) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-6">
+            You don't have permission to access the Review Queue. This area is restricted to Content Leads and Super Admins only.
+          </p>
+          <button
+            onClick={onNavigateBack}
+            className="bg-teal text-white px-6 py-2 rounded-full font-semibold hover:bg-teal/90 transition"
+          >
+            Go Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -192,7 +234,12 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
                 Review articles submitted for approval and decide their publication status
               </p>
               <div className="mt-2 text-sm text-gray-500">
-                <span className="font-semibold text-purple-600">Reviewer:</span> ArogoClin | 
+                <span className="font-semibold text-purple-600">Reviewer:</span> {currentUser?.name || 'Unknown'} 
+                <span className="mx-1">|</span>
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-semibold rounded">
+                  {currentUser ? getRoleDisplayName(currentUser.role) : 'Unknown'}
+                </span>
+                <span className="mx-1">|</span>
                 <span className="font-semibold text-purple-600 ml-2">Date:</span> {getCurrentDateTime()} UTC | 
                 <span className="font-semibold text-purple-600 ml-2">Pending:</span> {articles.length}
               </div>
@@ -264,8 +311,8 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Reviewer</p>
-                <p className="text-3xl font-bold text-blue-600 mt-2">ArogoClin</p>
-                <p className="text-sm text-gray-500 mt-1">Content Lead</p>
+                <p className="text-3xl font-bold text-blue-600 mt-2">{currentUser?.name || 'Unknown'}</p>
+                <p className="text-sm text-gray-500 mt-1">{currentUser ? getRoleDisplayName(currentUser.role) : 'Unknown Role'}</p>
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,12 +323,27 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
           </div>
         </div>
 
+        {/* Info Banner for Content Leads */}
+        <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-6 mb-8">
+          <div className="flex items-start">
+            <svg className="w-6 h-6 text-purple-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <h4 className="text-purple-900 font-bold mb-1">📋 Review Queue Instructions</h4>
+              <p className="text-purple-800 text-sm">
+                This queue shows all articles submitted for review. As a {currentUser ? getRoleDisplayName(currentUser.role) : 'reviewer'}, you can approve articles (making them ready for publishing) or reject them with feedback for the author to revise.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Loading State */}
         {loading && articles.length === 0 && (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent"></div>
             <h3 className="mt-4 text-xl font-semibold text-gray-700">Loading Review Queue...</h3>
-            <p className="mt-2 text-gray-500">Fetching articles pending review for ArogoClin</p>
+            <p className="mt-2 text-gray-500">Fetching articles pending review for {currentUser?.name}</p>
           </div>
         )}
 
@@ -312,7 +374,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ onNavigateBack, onLogout }) =
                 <div className="text-6xl mb-6">🎉</div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">All Caught Up!</h3>
                 <p className="text-lg text-gray-500 mb-6">
-                  No articles are currently waiting for review. Great job, ArogoClin!
+                  No articles are currently waiting for review. Great job, {currentUser?.name}!
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../config/api';
+import { getCurrentUser, getRolePermissions, hasRole, getRoleDisplayName } from '../../utils/roleUtils';
 
 interface Article {
   id: string;
@@ -48,6 +49,11 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Get current user and permissions
+  const currentUser = getCurrentUser();
+  const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
+  const canReview = permissions?.canReviewArticles || false;
 
   useEffect(() => {
     fetchStats();
@@ -109,6 +115,16 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
               <p className="text-lg text-gray-600">
                 Manage all your wellness articles from one centralized location
               </p>
+              {currentUser && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-sm text-gray-600">
+                    Logged in as: <strong>{currentUser.name}</strong>
+                  </span>
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
+                    {getRoleDisplayName(currentUser.role)}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button
@@ -217,7 +233,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
             </div>
 
             {/* Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            <div className={`grid grid-cols-1 ${canReview ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8 mb-10`}>
               {/* Create Article Card */}
               <div className="group relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#3AAFA9] to-[#2D8B87] rounded-xl blur opacity-25 group-hover:opacity-75 transition duration-200"></div>
@@ -270,31 +286,33 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                 </div>
               </div>
 
-              {/* Review Queue Card */}
-              <div className="group relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-purple-700 rounded-xl blur opacity-25 group-hover:opacity-75 transition duration-200"></div>
-                <div className="relative bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-xl p-8 transform hover:scale-105 transition-all duration-200">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold text-white">Review Queue</h3>
-                    <div className="bg-white bg-opacity-20 p-3 rounded-full">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+              {/* Review Queue Card - Only for Content Lead and above */}
+              {canReview && (
+                <div className="group relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-purple-700 rounded-xl blur opacity-25 group-hover:opacity-75 transition duration-200"></div>
+                  <div className="relative bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-xl p-8 transform hover:scale-105 transition-all duration-200">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-2xl font-bold text-white">Review Queue</h3>
+                      <div className="bg-white bg-opacity-20 p-3 rounded-full">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
                     </div>
+                    <p className="text-white text-opacity-90 mb-6 text-lg">
+                      {stats.submittedArticles > 0 
+                        ? `${stats.submittedArticles} article${stats.submittedArticles !== 1 ? 's' : ''} waiting for your review.`
+                        : 'No articles currently pending review.'}
+                    </p>
+                    <button
+                      onClick={onNavigateToReview}
+                      className="w-full bg-white text-purple-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
+                    >
+                      🔍 Review Articles
+                    </button>
                   </div>
-                  <p className="text-white text-opacity-90 mb-6 text-lg">
-                    {stats.submittedArticles > 0 
-                      ? `${stats.submittedArticles} article${stats.submittedArticles !== 1 ? 's' : ''} waiting for your review.`
-                      : 'No articles currently pending review.'}
-                  </p>
-                  <button
-                    onClick={onNavigateToReview}
-                    className="w-full bg-white text-purple-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
-                  >
-                    🔍 Review Articles
-                  </button>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Detailed Status Breakdown */}
@@ -330,8 +348,8 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                 </div>
               </div>
               
-              {/* Action Alert */}
-              {stats.approvedArticles > 0 && (
+              {/* Action Alert for Content Leads */}
+              {canReview && stats.approvedArticles > 0 && (
                 <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">

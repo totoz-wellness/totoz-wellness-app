@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../config/api';
+import { getCurrentUser, getRolePermissions, hasRole, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
 
 interface DashboardStats {
   totalArticles: number;
@@ -56,6 +57,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Get current user and permissions
+  const currentUser = getCurrentUser();
+  const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
+  const isContentWriter = currentUser && currentUser.role === 'CONTENT_WRITER';
+  const isContentLeadOrAbove = currentUser && hasRole(currentUser.role, 'CONTENT_LEAD');
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -76,6 +83,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
       };
 
+      // Fetch articles - CONTENT_WRITER sees only their own, others see all
       const articlesResponse = await api.get('/articles?publishedOnly=false&limit=1000', authHeaders);
 
       if (!articlesResponse.data.success) {
@@ -104,13 +112,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       setRecentArticles(sortedArticles);
 
-      try {
-        const directoryResponse = await api.get('/directory/stats', authHeaders);
-        if (directoryResponse.data.success) {
-          setDirectoryStats(directoryResponse.data.data);
+      // Fetch directory stats only for CONTENT_LEAD and above
+      if (isContentLeadOrAbove) {
+        try {
+          const directoryResponse = await api.get('/directory/stats', authHeaders);
+          if (directoryResponse.data.success) {
+            setDirectoryStats(directoryResponse.data.data);
+          }
+        } catch (dirError) {
+          console.error('Failed to fetch directory stats:', dirError);
         }
-      } catch (dirError) {
-        console.error('Failed to fetch directory stats:', dirError);
       }
 
     } catch (err: any) {
@@ -190,6 +201,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <p className="text-lg text-dark-text/70">
                 Totoz Wellness Content Management
               </p>
+              {/* User Role Badge */}
+              {currentUser && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-${getRoleColor(currentUser.role)}-100 text-${getRoleColor(currentUser.role)}-800 border border-${getRoleColor(currentUser.role)}-200`}>
+                    {getRoleDisplayName(currentUser.role)}
+                  </span>
+                  <span className="text-sm text-dark-text/60">
+                    {currentUser.name}
+                  </span>
+                </div>
+              )}
             </div>
             <button
               onClick={onLogout}
@@ -205,8 +227,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Role-based info message for Content Writers */}
+        {isContentWriter && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
+            <div className="flex items-start">
+              <svg className="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <h4 className="text-blue-900 font-bold mb-1">👋 Welcome, Content Writer!</h4>
+                <p className="text-blue-800 text-sm">
+                  You're viewing your personal articles dashboard. You can create, edit, and submit articles for review. 
+                  Once approved by a Content Lead, your articles will be published to the site.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Management Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className={`grid grid-cols-1 ${isContentLeadOrAbove ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
           {/* LearnWell Articles Card */}
           <div className="bg-white rounded-xl shadow-lg border-2 border-teal/20 hover:border-teal hover:shadow-xl transition-all duration-300 overflow-hidden">
             <div className="bg-gradient-to-br from-teal to-[#347EAD] p-6">
@@ -217,16 +257,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-white">LearnWell Articles</h3>
+                  <h3 className="text-2xl font-bold text-white">
+                    {isContentWriter ? 'My Articles' : 'LearnWell Articles'}
+                  </h3>
                 </div>
-                {stats.submittedArticles > 0 && (
+                {stats.submittedArticles > 0 && isContentLeadOrAbove && (
                   <span className="bg-[#F09232] text-white px-3 py-1 rounded-full text-sm font-bold">
                     {stats.submittedArticles} Pending
                   </span>
                 )}
               </div>
               <div className="text-4xl font-bold text-white mb-2">{stats.totalArticles}</div>
-              <div className="text-white/90 text-sm">Total Articles</div>
+              <div className="text-white/90 text-sm">
+                {isContentWriter ? 'Your Total Articles' : 'Total Articles'}
+              </div>
             </div>
             
             <div className="p-6">
@@ -236,8 +280,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="text-xs text-dark-text/70 mt-1">Published</div>
                 </div>
                 <div className="text-center p-3 bg-[#347EAD]/5 rounded-lg">
-                  <div className="font-bold text-2xl text-[#347EAD]">{stats.approvedArticles}</div>
-                  <div className="text-xs text-dark-text/70 mt-1">Approved</div>
+                  <div className="font-bold text-2xl text-[#347EAD]">
+                    {isContentWriter ? stats.submittedArticles : stats.approvedArticles}
+                  </div>
+                  <div className="text-xs text-dark-text/70 mt-1">
+                    {isContentWriter ? 'Submitted' : 'Approved'}
+                  </div>
                 </div>
                 <div className="text-center p-3 bg-gray-100 rounded-lg">
                   <div className="font-bold text-2xl text-gray-700">{stats.draftArticles}</div>
@@ -257,61 +305,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          {/* ConnectCare Directory Card */}
-          <div className="bg-white rounded-xl shadow-lg border-2 border-[#347EAD]/20 hover:border-[#347EAD] hover:shadow-xl transition-all duration-300 overflow-hidden">
-            <div className="bg-gradient-to-br from-[#347EAD] to-teal p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg mr-3">
-                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+          {/* ConnectCare Directory Card - Only for Content Lead and above */}
+          {isContentLeadOrAbove && (
+            <div className="bg-white rounded-xl shadow-lg border-2 border-[#347EAD]/20 hover:border-[#347EAD] hover:shadow-xl transition-all duration-300 overflow-hidden">
+              <div className="bg-gradient-to-br from-[#347EAD] to-teal p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg mr-3">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">ConnectCare Directory</h3>
                   </div>
-                  <h3 className="text-2xl font-bold text-white">ConnectCare Directory</h3>
+                  {directoryStats.featured > 0 && (
+                    <span className="bg-[#F09232] text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      {directoryStats.featured}
+                    </span>
+                  )}
                 </div>
-                {directoryStats.featured > 0 && (
-                  <span className="bg-[#F09232] text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    {directoryStats.featured}
-                  </span>
-                )}
-              </div>
-              <div className="text-4xl font-bold text-white mb-2">{directoryStats.total}</div>
-              <div className="text-white/90 text-sm">Total Entries</div>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="text-center p-3 bg-teal/5 rounded-lg">
-                  <div className="font-bold text-2xl text-teal flex items-center justify-center gap-1">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {directoryStats.verified}
-                  </div>
-                  <div className="text-xs text-dark-text/70 mt-1">Verified</div>
-                </div>
-                <div className="text-center p-3 bg-[#347EAD]/5 rounded-lg">
-                  <div className="font-bold text-2xl text-[#347EAD]">
-                    {Object.keys(directoryStats.byType).length}
-                  </div>
-                  <div className="text-xs text-dark-text/70 mt-1">Categories</div>
-                </div>
+                <div className="text-4xl font-bold text-white mb-2">{directoryStats.total}</div>
+                <div className="text-white/90 text-sm">Total Entries</div>
               </div>
               
-              <button
-                onClick={onNavigateToConnectCare}
-                className="w-full bg-[#347EAD] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#347EAD]/90 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <span>Manage Directory</span>
-              </button>
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="text-center p-3 bg-teal/5 rounded-lg">
+                    <div className="font-bold text-2xl text-teal flex items-center justify-center gap-1">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {directoryStats.verified}
+                    </div>
+                    <div className="text-xs text-dark-text/70 mt-1">Verified</div>
+                  </div>
+                  <div className="text-center p-3 bg-[#347EAD]/5 rounded-lg">
+                    <div className="font-bold text-2xl text-[#347EAD]">
+                      {Object.keys(directoryStats.byType).length}
+                    </div>
+                    <div className="text-xs text-dark-text/70 mt-1">Categories</div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={onNavigateToConnectCare}
+                  className="w-full bg-[#347EAD] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#347EAD]/90 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <span>Manage Directory</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Recent Articles */}
@@ -322,7 +372,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <h2 className="text-2xl font-bold text-dark-text">Recent Articles</h2>
+                <h2 className="text-2xl font-bold text-dark-text">
+                  {isContentWriter ? 'My Recent Articles' : 'Recent Articles'}
+                </h2>
                 <p className="text-dark-text/60 text-sm mt-1">Latest content activity</p>
               </div>
             </div>

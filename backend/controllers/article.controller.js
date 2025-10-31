@@ -4,16 +4,17 @@ const prisma = new PrismaClient();
 
 // Current date/time for consistent logging
 const getCurrentDateTime = () => {
-  return '2025-10-24 14:58:00';
+  const now = new Date();
+  return now.toISOString().replace('T', ' ').substring(0, 19);
 };
 
-// Create a new article (Content Writers & above) - ENHANCED WITH DEBUG
+// Create a new article (Content Writers & above)
 export const createArticle = async (req, res) => {
   try {
     const { title, content, excerpt, coverImage, videoUrl, category, tags } = req.body;
     const authorId = req.user.userId;
 
-    console.log(`📝 [${getCurrentDateTime()}] createArticle called by ArogoClin with data:`, {
+    console.log(`📝 [${getCurrentDateTime()}] createArticle called by ${req.user.name} (${req.user.role}) with data:`, {
       title: title?.substring(0, 50) + '...',
       hasContent: !!content,
       contentLength: content?.length,
@@ -22,7 +23,6 @@ export const createArticle = async (req, res) => {
       tags,
       tagsType: typeof tags,
       tagsLength: Array.isArray(tags) ? tags.length : 'not array',
-      tagsArray: Array.isArray(tags) ? tags : 'not array',
       coverImage: !!coverImage,
       videoUrl: !!videoUrl,
       authorId
@@ -42,16 +42,15 @@ export const createArticle = async (req, res) => {
       if (Array.isArray(tags)) {
         processedTags = tags.filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0);
       } else if (typeof tags === 'string') {
-        // If somehow tags comes as a string, try to parse it
         try {
           processedTags = JSON.parse(tags);
         } catch {
-          processedTags = [tags]; // If parsing fails, treat as single tag
+          processedTags = [tags];
         }
       }
     }
 
-    console.log(`🏷️ [${getCurrentDateTime()}] ArogoClin processed tags:`, {
+    console.log(`🏷️ [${getCurrentDateTime()}] ${req.user.name} processed tags:`, {
       originalTags: tags,
       processedTags,
       processedType: typeof processedTags,
@@ -69,7 +68,7 @@ export const createArticle = async (req, res) => {
     const wordCount = content.split(/\s+/).length;
     const readTime = Math.ceil(wordCount / 200);
 
-    console.log(`📊 [${getCurrentDateTime()}] Article metadata for ArogoClin:`, {
+    console.log(`📊 [${getCurrentDateTime()}] Article metadata for ${req.user.name}:`, {
       slug,
       wordCount,
       readTime,
@@ -84,11 +83,11 @@ export const createArticle = async (req, res) => {
         coverImage: coverImage || null,
         videoUrl: videoUrl || null,
         category: category || null,
-        tags: processedTags, // Use processed tags
+        tags: processedTags,
         readTime,
         slug,
         authorId,
-        status: 'DRAFT' // Start as draft
+        status: 'DRAFT'
       },
       include: {
         author: {
@@ -101,12 +100,11 @@ export const createArticle = async (req, res) => {
       }
     });
 
-    console.log(`✅ [${getCurrentDateTime()}] Article created successfully by ArogoClin:`, {
+    console.log(`✅ [${getCurrentDateTime()}] Article created successfully by ${req.user.name}:`, {
       id: article.id.substring(0, 8),
       title: article.title,
       status: article.status,
       tags: article.tags,
-      tagsInDB: typeof article.tags,
       tagsCount: article.tags?.length || 0,
       category: article.category
     });
@@ -118,7 +116,7 @@ export const createArticle = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Create article error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Create article error for ${req.user?.name}:`, error);
     
     if (error.code === 'P2002') {
       return res.status(409).json({
@@ -134,13 +132,13 @@ export const createArticle = async (req, res) => {
   }
 };
 
-// Submit article for review - FIXED to handle REJECTED articles
+// Submit article for review
 export const submitForReview = async (req, res) => {
   try {
     const { id } = req.params;
     const authorId = req.user.userId;
 
-    console.log(`📝 [${getCurrentDateTime()}] submitForReview called by ArogoClin:`, { 
+    console.log(`📝 [${getCurrentDateTime()}] submitForReview called by ${req.user.name}:`, { 
       id: id.substring(0, 8), 
       authorId 
     });
@@ -148,27 +146,26 @@ export const submitForReview = async (req, res) => {
     const article = await prisma.article.findFirst({
       where: {
         id,
-        authorId // Ensure the user owns the article
+        authorId
       }
     });
 
     if (!article) {
-      console.log(`❌ [${getCurrentDateTime()}] Article not found for ArogoClin:`, { id: id.substring(0, 8), authorId });
+      console.log(`❌ [${getCurrentDateTime()}] Article not found for ${req.user.name}:`, { id: id.substring(0, 8), authorId });
       return res.status(404).json({
         success: false,
         message: 'Article not found'
       });
     }
 
-    console.log(`📄 [${getCurrentDateTime()}] Found article for submission by ArogoClin:`, {
+    console.log(`📄 [${getCurrentDateTime()}] Found article for submission by ${req.user.name}:`, {
       id: article.id.substring(0, 8),
       title: article.title.substring(0, 30) + '...',
       currentStatus: article.status
     });
 
-    // FIXED: Allow submission for both DRAFT and REJECTED articles
     if (article.status !== 'DRAFT' && article.status !== 'REJECTED') {
-      console.log(`❌ [${getCurrentDateTime()}] Invalid status for submission by ArogoClin:`, {
+      console.log(`❌ [${getCurrentDateTime()}] Invalid status for submission by ${req.user.name}:`, {
         id: id.substring(0, 8),
         currentStatus: article.status,
         allowedStatuses: ['DRAFT', 'REJECTED']
@@ -184,7 +181,6 @@ export const submitForReview = async (req, res) => {
       data: {
         status: 'SUBMITTED',
         updatedAt: new Date()
-        // REMOVED: reviewerId - not a valid field
       },
       include: {
         author: {
@@ -197,7 +193,7 @@ export const submitForReview = async (req, res) => {
       }
     });
 
-    console.log(`✅ [${getCurrentDateTime()}] Article submitted for review by ArogoClin:`, {
+    console.log(`✅ [${getCurrentDateTime()}] Article submitted for review by ${req.user.name}:`, {
       id: updatedArticle.id.substring(0, 8),
       oldStatus: article.status,
       newStatus: updatedArticle.status,
@@ -211,7 +207,7 @@ export const submitForReview = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Submit for review error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Submit for review error for ${req.user?.name}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -219,7 +215,7 @@ export const submitForReview = async (req, res) => {
   }
 };
 
-// Get all articles with filtering (Public & Admin) - ENHANCED
+// Get all articles with filtering (Public & Admin) - FIXED FOR CONTENT WRITERS
 export const getArticles = async (req, res) => {
   try {
     const { 
@@ -231,7 +227,7 @@ export const getArticles = async (req, res) => {
       publishedOnly = 'true' 
     } = req.query;
 
-    console.log(`🔍 [${getCurrentDateTime()}] getArticles called by ArogoClin with:`, {
+    console.log(`🔍 [${getCurrentDateTime()}] getArticles called by ${req.user?.name || 'Public'} (${req.user?.role || 'Public'}) with:`, {
       status,
       category,
       authorId,
@@ -255,18 +251,27 @@ export const getArticles = async (req, res) => {
       console.log(`📚 [${getCurrentDateTime()}] Public query: filtering for PUBLISHED articles only`);
     } else if (req.user) {
       // Admin/authenticated user query
-      if (status) {
-        where.status = status;
-        console.log(`🔐 [${getCurrentDateTime()}] Admin query by ArogoClin: filtering for status:`, status);
+      
+      // FIXED: Role-based filtering
+      if (req.user.role === 'CONTENT_WRITER') {
+        // Content Writers can ONLY see their own articles
+        where.authorId = req.user.userId;
+        console.log(`👤 [${getCurrentDateTime()}] CONTENT_WRITER ${req.user.name}: Filtering for OWN articles only (${req.user.userId})`);
+      } else if (req.user.role === 'CONTENT_LEAD' || req.user.role === 'SUPER_ADMIN') {
+        // Content Leads and Super Admins can see all articles
+        console.log(`🔐 [${getCurrentDateTime()}] ${req.user.role} ${req.user.name}: Access to ALL articles`);
+        
+        // Apply specific author filter if provided (for admins viewing specific author's work)
+        if (authorId) {
+          where.authorId = authorId;
+          console.log(`👤 [${getCurrentDateTime()}] Admin filtering for specific author:`, authorId);
+        }
       }
       
-      // FIXED: If no specific authorId is provided, filter by current user's articles
-      if (!authorId) {
-        where.authorId = req.user.userId;
-        console.log(`👤 [${getCurrentDateTime()}] Filtering articles for ArogoClin (${req.user.userId})`);
-      } else if (authorId) {
-        where.authorId = authorId;
-        console.log(`👤 [${getCurrentDateTime()}] Filtering articles for specific author:`, authorId);
+      // Apply status filter if provided
+      if (status) {
+        where.status = status;
+        console.log(`📊 [${getCurrentDateTime()}] Status filter applied:`, status);
       }
     }
     
@@ -274,7 +279,7 @@ export const getArticles = async (req, res) => {
       where.category = category;
     }
 
-    console.log(`🔍 [${getCurrentDateTime()}] Final where clause for ArogoClin:`, where);
+    console.log(`🔍 [${getCurrentDateTime()}] Final where clause for ${req.user?.name || 'Public'}:`, where);
 
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
@@ -295,7 +300,7 @@ export const getArticles = async (req, res) => {
           }
         },
         orderBy: {
-          updatedAt: 'desc' // Changed to show recently updated articles first
+          updatedAt: 'desc'
         },
         skip,
         take: parseInt(limit)
@@ -303,10 +308,16 @@ export const getArticles = async (req, res) => {
       prisma.article.count({ where })
     ]);
 
-    console.log(`📦 [${getCurrentDateTime()}] Query result for ArogoClin:`, {
+    console.log(`📦 [${getCurrentDateTime()}] Query result for ${req.user?.name || 'Public'}:`, {
       totalFound: total,
       articlesReturned: articles.length,
-      statuses: articles.map(a => ({ id: a.id.substring(0, 8), status: a.status }))
+      userRole: req.user?.role,
+      statuses: articles.map(a => ({ 
+        id: a.id.substring(0, 8), 
+        status: a.status,
+        author: a.author.name,
+        isOwnArticle: req.user && a.authorId === req.user.userId
+      }))
     });
 
     return res.json({
@@ -322,7 +333,7 @@ export const getArticles = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Get articles error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Get articles error for ${req.user?.name || 'Public'}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -330,13 +341,13 @@ export const getArticles = async (req, res) => {
   }
 };
 
-// Get single article - ENHANCED
+// Get single article
 export const getArticle = async (req, res) => {
   try {
     const { id } = req.params;
     const isAdminRoute = req.path.includes('/admin');
 
-    console.log(`📖 [${getCurrentDateTime()}] getArticle called by ArogoClin:`, {
+    console.log(`📖 [${getCurrentDateTime()}] getArticle called by ${req.user?.name || 'Public'}:`, {
       id: id.substring(0, 8),
       isAdminRoute,
       hasUser: !!req.user,
@@ -364,14 +375,14 @@ export const getArticle = async (req, res) => {
     });
 
     if (!article) {
-      console.log(`❌ [${getCurrentDateTime()}] Article not found in database for ArogoClin:`, id.substring(0, 8));
+      console.log(`❌ [${getCurrentDateTime()}] Article not found in database:`, id.substring(0, 8));
       return res.status(404).json({
         success: false,
         message: 'Article not found'
       });
     }
 
-    console.log(`📄 [${getCurrentDateTime()}] Found article for ArogoClin:`, {
+    console.log(`📄 [${getCurrentDateTime()}] Found article for ${req.user?.name || 'Public'}:`, {
       id: article.id.substring(0, 8),
       title: article.title.substring(0, 30) + '...',
       status: article.status,
@@ -381,12 +392,25 @@ export const getArticle = async (req, res) => {
 
     // For admin routes or authenticated users, check ownership or admin rights
     if (isAdminRoute || req.user) {
-      // Check if user is the author or has admin privileges
       const isAuthor = req.user?.userId === article.authorId;
-      const isAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'CONTENT_LEAD';
+      const isContentLead = req.user?.role === 'CONTENT_LEAD';
+      const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
       
-      if (!isAuthor && !isAdmin) {
-        console.log(`❌ [${getCurrentDateTime()}] Access denied for ArogoClin - not author or admin:`, {
+      // Content Writers can only see their own articles
+      if (req.user?.role === 'CONTENT_WRITER' && !isAuthor) {
+        console.log(`❌ [${getCurrentDateTime()}] Access denied for CONTENT_WRITER ${req.user.name} - not author:`, {
+          userId: req.user.userId,
+          authorId: article.authorId
+        });
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to access this article'
+        });
+      }
+      
+      // Content Leads and Super Admins can see any article
+      if (!isAuthor && !isContentLead && !isSuperAdmin) {
+        console.log(`❌ [${getCurrentDateTime()}] Access denied - not author or admin:`, {
           userId: req.user?.userId,
           authorId: article.authorId,
           userRole: req.user?.role
@@ -397,8 +421,7 @@ export const getArticle = async (req, res) => {
         });
       }
 
-      // Admin/author can see any status
-      console.log(`✅ [${getCurrentDateTime()}] Admin/Author access granted to ArogoClin`);
+      console.log(`✅ [${getCurrentDateTime()}] Admin/Author access granted to ${req.user.name}`);
       return res.json({
         success: true,
         data: { article }
@@ -421,7 +444,7 @@ export const getArticle = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Get article error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Get article error:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -429,14 +452,14 @@ export const getArticle = async (req, res) => {
   }
 };
 
-// Content Lead: Review and approve/reject articles - ENHANCED
+// Content Lead: Review and approve/reject articles
 export const reviewArticle = async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, feedback } = req.body; // action: 'approve', 'reject'
+    const { action, feedback } = req.body;
     const reviewerId = req.user.userId;
 
-    console.log(`🔍 [${getCurrentDateTime()}] reviewArticle called by ArogoClin:`, { 
+    console.log(`🔍 [${getCurrentDateTime()}] reviewArticle called by ${req.user.name} (${req.user.role}):`, { 
       id: id.substring(0, 8), 
       action, 
       reviewerId,
@@ -453,12 +476,12 @@ export const reviewArticle = async (req, res) => {
     const article = await prisma.article.findFirst({
       where: {
         id,
-        status: 'SUBMITTED' // Only review submitted articles
+        status: 'SUBMITTED'
       }
     });
 
     if (!article) {
-      console.log(`❌ [${getCurrentDateTime()}] Article not found or not ready for review by ArogoClin:`, {
+      console.log(`❌ [${getCurrentDateTime()}] Article not found or not ready for review by ${req.user.name}:`, {
         id: id.substring(0, 8),
         expectedStatus: 'SUBMITTED'
       });
@@ -468,33 +491,29 @@ export const reviewArticle = async (req, res) => {
       });
     }
 
-    // FIXED: Build update data without reviewerId field
     let updateData = {
       updatedAt: new Date()
     };
 
     if (action === 'approve') {
       updateData.status = 'APPROVED';
-      // Connect the reviewer relation if the field exists in your schema
       if (reviewerId) {
         updateData.reviewer = {
           connect: { id: reviewerId }
         };
       }
-      console.log(`✅ [${getCurrentDateTime()}] ArogoClin approving article (status will be APPROVED, not PUBLISHED)`);
+      console.log(`✅ [${getCurrentDateTime()}] ${req.user.name} approving article`);
     } else {
       updateData.status = 'REJECTED';
-      // Store feedback for rejected articles if the field exists
       if (feedback) {
         updateData.reviewFeedback = feedback.trim();
       }
-      // Connect the reviewer relation if the field exists in your schema
       if (reviewerId) {
         updateData.reviewer = {
           connect: { id: reviewerId }
         };
       }
-      console.log(`❌ [${getCurrentDateTime()}] ArogoClin rejecting article with feedback:`, !!feedback);
+      console.log(`❌ [${getCurrentDateTime()}] ${req.user.name} rejecting article with feedback:`, !!feedback);
     }
 
     const updatedArticle = await prisma.article.update({
@@ -517,22 +536,21 @@ export const reviewArticle = async (req, res) => {
       }
     });
 
-    console.log(`📝 [${getCurrentDateTime()}] Article review completed by ArogoClin:`, {
+    console.log(`📝 [${getCurrentDateTime()}] Article review completed by ${req.user.name}:`, {
       id: updatedArticle.id.substring(0, 8),
       oldStatus: article.status,
       newStatus: updatedArticle.status,
-      publishedAt: updatedArticle.publishedAt,
       reviewerId: updatedArticle.reviewer?.id
     });
 
     return res.json({
       success: true,
-      message: `Article ${action === 'approve' ? 'approved' : 'rejected'} successfully by ArogoClin`,
+      message: `Article ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
       data: { article: updatedArticle }
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Review article error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Review article error for ${req.user?.name}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -540,13 +558,13 @@ export const reviewArticle = async (req, res) => {
   }
 };
 
-// Content Lead: Publish approved article - ENHANCED
+// Content Lead: Publish approved article
 export const publishArticle = async (req, res) => {
   try {
     const { id } = req.params;
     const reviewerId = req.user.userId;
 
-    console.log(`🚀 [${getCurrentDateTime()}] publishArticle called by ArogoClin:`, { 
+    console.log(`🚀 [${getCurrentDateTime()}] publishArticle called by ${req.user.name} (${req.user.role}):`, { 
       id: id.substring(0, 8), 
       reviewerId 
     });
@@ -554,12 +572,12 @@ export const publishArticle = async (req, res) => {
     const article = await prisma.article.findFirst({
       where: {
         id,
-        status: 'APPROVED' // Only publish approved articles
+        status: 'APPROVED'
       }
     });
 
     if (!article) {
-      console.log(`❌ [${getCurrentDateTime()}] Article not found or not approved for ArogoClin:`, { 
+      console.log(`❌ [${getCurrentDateTime()}] Article not found or not approved for ${req.user.name}:`, { 
         id: id.substring(0, 8), 
         currentStatus: article?.status 
       });
@@ -569,13 +587,11 @@ export const publishArticle = async (req, res) => {
       });
     }
 
-    // FIXED: Build update data without reviewerId field
     const updateData = {
       status: 'PUBLISHED',
       publishedAt: new Date()
     };
 
-    // Connect the reviewer relation if needed
     if (reviewerId) {
       updateData.reviewer = {
         connect: { id: reviewerId }
@@ -602,7 +618,7 @@ export const publishArticle = async (req, res) => {
       }
     });
 
-    console.log(`🎉 [${getCurrentDateTime()}] Article published successfully by ArogoClin:`, {
+    console.log(`🎉 [${getCurrentDateTime()}] Article published successfully by ${req.user.name}:`, {
       id: updatedArticle.id.substring(0, 8),
       title: updatedArticle.title.substring(0, 30) + '...',
       status: updatedArticle.status,
@@ -611,12 +627,12 @@ export const publishArticle = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Article published successfully by ArogoClin',
+      message: 'Article published successfully',
       data: { article: updatedArticle }
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Publish article error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Publish article error for ${req.user?.name}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -624,33 +640,24 @@ export const publishArticle = async (req, res) => {
   }
 };
 
-// Update article (Author only) - FIXED to remove reviewerId and reviewFeedback references
+// Update article (Author only, or Content Lead/Super Admin)
 export const updateArticle = async (req, res) => {
   try {
     const { id } = req.params;
-    const authorId = req.user.userId;
+    const userId = req.user.userId;
     const { title, content, excerpt, coverImage, videoUrl, category, tags } = req.body;
 
-    console.log(`📝 [${getCurrentDateTime()}] updateArticle called by ArogoClin:`, { 
+    console.log(`📝 [${getCurrentDateTime()}] updateArticle called by ${req.user.name} (${req.user.role}):`, { 
       id: id.substring(0, 8), 
-      authorId, 
+      userId, 
       userRole: req.user.role,
       hasTitle: !!title,
-      titleLength: title?.length || 0,
-      hasContent: !!content,
-      contentLength: content?.length || 0,
-      hasExcerpt: !!excerpt,
-      hasCategory: !!category,
-      hasCoverImage: !!coverImage,
-      hasVideoUrl: !!videoUrl,
-      hasTagsArray: Array.isArray(tags),
-      tagsLength: Array.isArray(tags) ? tags.length : 'not array',
-      tagsType: typeof tags
+      hasContent: !!content
     });
 
     // Enhanced validation
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
-      console.log(`❌ [${getCurrentDateTime()}] Invalid title for ArogoClin:`, { title, titleType: typeof title });
+      console.log(`❌ [${getCurrentDateTime()}] Invalid title for ${req.user.name}:`, { title, titleType: typeof title });
       return res.status(400).json({
         success: false,
         message: 'Title is required and must be a non-empty string'
@@ -658,33 +665,62 @@ export const updateArticle = async (req, res) => {
     }
 
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      console.log(`❌ [${getCurrentDateTime()}] Invalid content for ArogoClin:`, { hasContent: !!content, contentType: typeof content });
+      console.log(`❌ [${getCurrentDateTime()}] Invalid content for ${req.user.name}:`, { hasContent: !!content, contentType: typeof content });
       return res.status(400).json({
         success: false,
         message: 'Content is required and must be a non-empty string'
       });
     }
 
-    const article = await prisma.article.findFirst({
-      where: {
-        id,
-        authorId // Ensure the user owns the article
-      }
+    const article = await prisma.article.findUnique({
+      where: { id }
     });
 
     if (!article) {
-      console.log(`❌ [${getCurrentDateTime()}] Article not found for ArogoClin:`, { id: id.substring(0, 8), authorId });
+      console.log(`❌ [${getCurrentDateTime()}] Article not found for ${req.user.name}:`, { id: id.substring(0, 8), userId });
       return res.status(404).json({
         success: false,
-        message: 'Article not found or you do not have permission to edit this article'
+        message: 'Article not found'
       });
     }
 
-    console.log(`📄 [${getCurrentDateTime()}] Found article for ArogoClin:`, {
+    // Check permissions
+    const isAuthor = article.authorId === userId;
+    const isContentLead = req.user.role === 'CONTENT_LEAD';
+    const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
+
+    // Content Writers can only edit their own articles
+    if (req.user.role === 'CONTENT_WRITER' && !isAuthor) {
+      console.log(`❌ [${getCurrentDateTime()}] CONTENT_WRITER ${req.user.name} cannot edit other's article:`, {
+        userId,
+        authorId: article.authorId
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'You can only edit your own articles'
+      });
+    }
+
+    // Content Leads and Super Admins can edit any article
+    if (!isAuthor && !isContentLead && !isSuperAdmin) {
+      console.log(`❌ [${getCurrentDateTime()}] ${req.user.name} not authorized to edit article:`, {
+        userId,
+        authorId: article.authorId,
+        userRole: req.user.role
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to edit this article'
+      });
+    }
+
+    console.log(`📄 [${getCurrentDateTime()}] Found article for ${req.user.name}:`, {
       id: article.id.substring(0, 8),
       title: article.title.substring(0, 30) + '...',
       currentStatus: article.status,
-      authorId: article.authorId
+      authorId: article.authorId,
+      isAuthor,
+      canEdit: isAuthor || isContentLead || isSuperAdmin
     });
 
     // Process and validate tags
@@ -710,26 +746,23 @@ export const updateArticle = async (req, res) => {
       processedTags = article.tags || [];
     }
 
-    console.log(`🏷️ [${getCurrentDateTime()}] Processed tags for ArogoClin:`, {
+    console.log(`🏷️ [${getCurrentDateTime()}] Processed tags for ${req.user.name}:`, {
       originalTags: tags,
-      originalType: typeof tags,
       processedTags,
       processedLength: processedTags.length
     });
 
-    // Build update data with enhanced validation - REMOVED reviewerId and reviewFeedback
+    // Build update data
     const updateData = {
       updatedAt: new Date()
     };
 
-    // Only update fields that are provided and valid
     if (title !== undefined) {
       updateData.title = title.trim();
     }
     
     if (content !== undefined) {
       updateData.content = content;
-      // Recalculate read time if content changed
       const wordCount = content.split(/\s+/).length;
       updateData.readTime = Math.ceil(wordCount / 200);
     }
@@ -758,36 +791,21 @@ export const updateArticle = async (req, res) => {
     if (article.status === 'PUBLISHED' || article.status === 'APPROVED') {
       updateData.status = 'DRAFT';
       updateData.publishedAt = null;
-      // FIXED: Disconnect reviewer relation instead of setting reviewerId
-      updateData.reviewer = {
-        disconnect: true
-      };
-      console.log(`🔄 [${getCurrentDateTime()}] ArogoClin resetting status to DRAFT for ${article.status} article`);
+      updateData.reviewer = { disconnect: true };
+      console.log(`🔄 [${getCurrentDateTime()}] ${req.user.name} resetting status to DRAFT for ${article.status} article`);
     } else if (article.status === 'SUBMITTED') {
       updateData.status = 'DRAFT';
-      // FIXED: Disconnect reviewer relation if it exists
       if (article.reviewer) {
-        updateData.reviewer = {
-          disconnect: true
-        };
+        updateData.reviewer = { disconnect: true };
       }
-      console.log(`🔄 [${getCurrentDateTime()}] ArogoClin resetting status to DRAFT for submitted article`);
+      console.log(`🔄 [${getCurrentDateTime()}] ${req.user.name} resetting status to DRAFT for submitted article`);
     } else if (article.status === 'REJECTED') {
       updateData.status = 'DRAFT';
-      // FIXED: Disconnect reviewer relation if it exists
       if (article.reviewer) {
-        updateData.reviewer = {
-          disconnect: true
-        };
+        updateData.reviewer = { disconnect: true };
       }
-      console.log(`🔄 [${getCurrentDateTime()}] ArogoClin changing REJECTED article to DRAFT status and clearing reviewer`);
+      console.log(`🔄 [${getCurrentDateTime()}] ${req.user.name} changing REJECTED article to DRAFT status`);
     }
-
-    console.log(`💾 [${getCurrentDateTime()}] Update data for ArogoClin:`, {
-      ...updateData,
-      content: updateData.content ? `${updateData.content.substring(0, 50)}...` : undefined,
-      tags: updateData.tags
-    });
 
     const updatedArticle = await prisma.article.update({
       where: { id },
@@ -809,7 +827,7 @@ export const updateArticle = async (req, res) => {
       }
     });
 
-    console.log(`✅ [${getCurrentDateTime()}] Article updated successfully by ArogoClin:`, {
+    console.log(`✅ [${getCurrentDateTime()}] Article updated successfully by ${req.user.name}:`, {
       id: updatedArticle.id.substring(0, 8),
       oldStatus: article.status,
       newStatus: updatedArticle.status,
@@ -819,21 +837,18 @@ export const updateArticle = async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Article updated successfully by ArogoClin. Status changed from ${article.status} to ${updatedArticle.status}.`,
+      message: `Article updated successfully. Status changed from ${article.status} to ${updatedArticle.status}.`,
       data: { article: updatedArticle }
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Update article error for ArogoClin:`, {
+    console.error(`❌ [${getCurrentDateTime()}] Update article error for ${req.user?.name}:`, {
       error: error.message,
-      stack: error.stack,
       code: error.code,
-      meta: error.meta,
       articleId: req.params.id?.substring(0, 8),
       userId: req.user?.userId
     });
 
-    // Enhanced error response
     let errorMessage = 'Internal server error while updating article';
     let statusCode = 500;
 
@@ -843,33 +858,22 @@ export const updateArticle = async (req, res) => {
     } else if (error.code === 'P2025') {
       errorMessage = 'Article not found';
       statusCode = 404;
-    } else if (error.message.includes('validation')) {
-      errorMessage = 'Invalid data provided: ' + error.message;
-      statusCode = 400;
-    } else if (error.message.includes('Unknown argument')) {
-      errorMessage = 'Database schema mismatch - please check your Prisma schema';
-      statusCode = 500;
     }
 
     return res.status(statusCode).json({
       success: false,
-      message: errorMessage,
-      debug: process.env.NODE_ENV === 'development' ? {
-        originalError: error.message,
-        code: error.code,
-        timestamp: getCurrentDateTime()
-      } : undefined
+      message: errorMessage
     });
   }
 };
 
-// Content Lead: Unpublish published article - ENHANCED
+// Content Lead: Unpublish published article
 export const unpublishArticle = async (req, res) => {
   try {
     const { id } = req.params;
     const reviewerId = req.user.userId;
 
-    console.log(`📤 [${getCurrentDateTime()}] unpublishArticle called by ArogoClin:`, { 
+    console.log(`📤 [${getCurrentDateTime()}] unpublishArticle called by ${req.user.name} (${req.user.role}):`, { 
       id: id.substring(0, 8), 
       reviewerId 
     });
@@ -877,12 +881,12 @@ export const unpublishArticle = async (req, res) => {
     const article = await prisma.article.findFirst({
       where: {
         id,
-        status: 'PUBLISHED' // Only unpublish published articles
+        status: 'PUBLISHED'
       }
     });
 
     if (!article) {
-      console.log(`❌ [${getCurrentDateTime()}] Article not found or not published for ArogoClin:`, { 
+      console.log(`❌ [${getCurrentDateTime()}] Article not found or not published for ${req.user.name}:`, { 
         id: id.substring(0, 8), 
         currentStatus: article?.status 
       });
@@ -892,13 +896,10 @@ export const unpublishArticle = async (req, res) => {
       });
     }
 
-    // FIXED: Build update data without reviewerId field
     const updateData = {
       status: 'APPROVED'
-      // Keep publishedAt for reference but article won't show as published
     };
 
-    // Connect the reviewer relation if needed
     if (reviewerId) {
       updateData.reviewer = {
         connect: { id: reviewerId }
@@ -925,22 +926,21 @@ export const unpublishArticle = async (req, res) => {
       }
     });
 
-    console.log(`📤 [${getCurrentDateTime()}] Article unpublished successfully by ArogoClin:`, {
+    console.log(`📤 [${getCurrentDateTime()}] Article unpublished successfully by ${req.user.name}:`, {
       id: updatedArticle.id.substring(0, 8),
       title: updatedArticle.title.substring(0, 30) + '...',
       oldStatus: article.status,
-      newStatus: updatedArticle.status,
-      publishedAt: updatedArticle.publishedAt
+      newStatus: updatedArticle.status
     });
 
     return res.json({
       success: true,
-      message: 'Article unpublished successfully by ArogoClin',
+      message: 'Article unpublished successfully',
       data: { article: updatedArticle }
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Unpublish article error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Unpublish article error for ${req.user?.name}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -948,13 +948,13 @@ export const unpublishArticle = async (req, res) => {
   }
 };
 
-// Delete article (Author or Admin) - ENHANCED
+// Delete article (Author or Admin)
 export const deleteArticle = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.userId;
 
-    console.log(`🗑️ [${getCurrentDateTime()}] deleteArticle called by ArogoClin:`, { 
+    console.log(`🗑️ [${getCurrentDateTime()}] deleteArticle called by ${req.user.name} (${req.user.role}):`, { 
       id: id.substring(0, 8), 
       userId 
     });
@@ -964,29 +964,58 @@ export const deleteArticle = async (req, res) => {
     });
 
     if (!article) {
-      console.log(`❌ [${getCurrentDateTime()}] Article not found for deletion by ArogoClin:`, { id: id.substring(0, 8) });
+      console.log(`❌ [${getCurrentDateTime()}] Article not found for deletion by ${req.user.name}:`, { id: id.substring(0, 8) });
       return res.status(404).json({
         success: false,
         message: 'Article not found'
       });
     }
 
-    console.log(`📄 [${getCurrentDateTime()}] Found article for deletion by ArogoClin:`, {
+    console.log(`📄 [${getCurrentDateTime()}] Found article for deletion by ${req.user.name}:`, {
       id: article.id.substring(0, 8),
       title: article.title.substring(0, 30) + '...',
       status: article.status,
       authorId: article.authorId
     });
 
-    // Check if user is author or has admin privileges
+    // Check permissions
     const isAuthor = article.authorId === userId;
-    const isAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'CONTENT_LEAD';
+    const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
     
-    if (!isAuthor && !isAdmin) {
-      console.log(`❌ [${getCurrentDateTime()}] Not authorized to delete article for ArogoClin:`, {
+    // Content Writers can only delete their own DRAFT articles
+    if (req.user.role === 'CONTENT_WRITER') {
+      if (!isAuthor) {
+        console.log(`❌ [${getCurrentDateTime()}] CONTENT_WRITER ${req.user.name} cannot delete other's article`);
+        return res.status(403).json({
+          success: false,
+          message: 'You can only delete your own articles'
+        });
+      }
+      if (article.status !== 'DRAFT') {
+        console.log(`❌ [${getCurrentDateTime()}] CONTENT_WRITER ${req.user.name} cannot delete non-DRAFT article`);
+        return res.status(403).json({
+          success: false,
+          message: 'You can only delete draft articles'
+        });
+      }
+    }
+    
+    // Content Leads cannot delete articles
+    if (req.user.role === 'CONTENT_LEAD') {
+      console.log(`❌ [${getCurrentDateTime()}] CONTENT_LEAD ${req.user.name} cannot delete articles`);
+      return res.status(403).json({
+        success: false,
+        message: 'Only Super Admins can delete published articles'
+      });
+    }
+    
+    // Only Super Admins can delete any article
+    if (!isSuperAdmin && !(isAuthor && article.status === 'DRAFT')) {
+      console.log(`❌ [${getCurrentDateTime()}] Not authorized to delete article for ${req.user.name}:`, {
         userId,
         authorId: article.authorId,
-        userRole: req.user?.role
+        userRole: req.user.role,
+        articleStatus: article.status
       });
       return res.status(403).json({
         success: false,
@@ -998,18 +1027,18 @@ export const deleteArticle = async (req, res) => {
       where: { id }
     });
 
-    console.log(`✅ [${getCurrentDateTime()}] Article deleted successfully by ArogoClin:`, {
+    console.log(`✅ [${getCurrentDateTime()}] Article deleted successfully by ${req.user.name}:`, {
       id: id.substring(0, 8),
       title: article.title.substring(0, 30) + '...'
     });
 
     return res.json({
       success: true,
-      message: 'Article deleted successfully by ArogoClin'
+      message: 'Article deleted successfully'
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Delete article error for ArogoClin:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Delete article error for ${req.user?.name}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'

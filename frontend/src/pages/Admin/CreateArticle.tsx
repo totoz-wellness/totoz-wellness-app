@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
+import { Edit, LogOut, ChevronLeft, AlertCircle, Tag, Info, Shield } from 'lucide-react';
 import api from '../../config/api';
+import { getCurrentUser, getRolePermissions, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
 
 interface CreateArticleProps {
   onNavigateBack: () => void;
@@ -63,6 +65,14 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
   const [createdArticle, setCreatedArticle] = useState<any>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
+  // Get current user and permissions
+  const currentUser = getCurrentUser();
+  const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
+
+  const getCurrentDateTime = (): string => {
+    return '2025-10-31 15:03:56';
+  };
+
   const isFormValid = formData.title.trim() && formData.content.trim();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +86,13 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
+      console.log(`✍️ [${getCurrentDateTime()}] ${currentUser?.name} creating new article:`, {
+        title: formData.title.substring(0, 50) + '...',
+        contentLength: formData.content.length,
+        category: formData.category,
+        tagsCount: formData.tags.length
+      });
+
       const response = await api.post('/articles', formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -85,11 +102,17 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
 
       if (response.data.success) {
         setCreatedArticle(response.data.data.article);
+        console.log(`✅ [${getCurrentDateTime()}] Article created successfully by ${currentUser?.name}:`, {
+          id: response.data.data.article.id.substring(0, 8),
+          title: response.data.data.article.title,
+          status: response.data.data.article.status
+        });
         setShowSuccessModal(true);
         setFormData(INITIAL_FORM_DATA);
         setTagInput('');
       }
     } catch (err: any) {
+      console.error(`❌ [${getCurrentDateTime()}] Failed to create article for ${currentUser?.name}:`, err);
       setError(err.response?.data?.message || err.message || 'Failed to create article');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
@@ -108,6 +131,7 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
 
     setFormData(prev => ({ ...prev, tags: [...prev.tags, trimmedTag] }));
     setTagInput('');
+    console.log(`🏷️ [${getCurrentDateTime()}] ${currentUser?.name} added tag:`, trimmedTag);
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -115,6 +139,7 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+    console.log(`🗑️ [${getCurrentDateTime()}] ${currentUser?.name} removed tag:`, tagToRemove);
   };
 
   const insertFormatting = (before: string, after: string = '') => {
@@ -148,30 +173,41 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center">
             <div className="mb-4 md:mb-0">
-              <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-                ✍️ Create New Article
+              <h1 className="text-4xl font-extrabold text-gray-900 mb-2 flex items-center gap-3">
+                <Edit className="w-10 h-10 text-teal-600" />
+                Create New Article
               </h1>
               <p className="text-lg text-gray-600">
                 Write a new wellness article with rich formatting and interactive features
               </p>
+              <div className="mt-2 text-sm text-gray-500 flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-teal-600">Author:</span> {currentUser?.name || 'Unknown'}
+                {currentUser && (
+                  <>
+                    <span className="mx-1">|</span>
+                    <Shield className="w-4 h-4" />
+                    <span className={`px-2 py-0.5 bg-${getRoleColor(currentUser.role)}-100 text-${getRoleColor(currentUser.role)}-800 text-xs font-semibold rounded`}>
+                      {getRoleDisplayName(currentUser.role)}
+                    </span>
+                  </>
+                )}
+                <span className="mx-1">|</span>
+                <span className="font-semibold text-teal-600">Date:</span> {getCurrentDateTime()} UTC
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={onNavigateBack}
                 className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ChevronLeft className="w-4 h-4 mr-2" />
                 Back to Articles
               </button>
               <button 
                 onClick={onLogout} 
                 className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-md"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+                <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </button>
             </div>
@@ -180,14 +216,27 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Role Info Banner */}
+        <div className="bg-teal-50 border-2 border-teal-300 rounded-xl p-6 mb-8">
+          <div className="flex items-start">
+            <Info className="w-6 h-6 text-teal-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="text-teal-900 font-bold mb-1">✍️ Create Article</h4>
+              <p className="text-teal-800 text-sm">
+                You're creating a new article as <strong>{currentUser?.name}</strong> ({currentUser ? getRoleDisplayName(currentUser.role) : 'Unknown'}). 
+                Your article will be saved as a <strong>DRAFT</strong> and can be edited or submitted for review later.
+                {currentUser?.role === 'CONTENT_WRITER' && ' Once submitted, a Content Lead will review it before it can be published.'}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8 shadow-lg">
             <div className="flex items-start">
-              <svg className="w-8 h-8 text-red-600 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
+              <AlertCircle className="w-8 h-8 text-red-600 mr-3 flex-shrink-0 mt-1" />
+              <div className="flex-1">
                 <h3 className="text-lg font-bold text-red-800 mb-2">Error Creating Article</h3>
                 <p className="text-red-700">{error}</p>
                 <button
@@ -305,7 +354,19 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
                 className="w-full px-4 py-4 border border-gray-300 border-t-0 rounded-b-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 font-mono text-sm leading-6 resize-vertical"
                 required
                 disabled={loading}
-                placeholder="Write your article content here. You can use markdown formatting:\n\n# Large Heading\n## Medium Heading\n### Small Heading\n\n**Bold text**\n*Italic text*\n\n- Bullet point 1\n- Bullet point 2\n\nRegular paragraph text..."
+                placeholder="Write your article content here. You can use markdown formatting:
+
+# Large Heading
+## Medium Heading
+### Small Heading
+
+**Bold text**
+*Italic text*
+
+- Bullet point 1
+- Bullet point 2
+
+Regular paragraph text..."
               />
               
               <div className="mt-2 text-xs text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
@@ -329,7 +390,8 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
 
             {/* Tags */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <Tag className="w-4 h-4" />
                 Tags ({formData.tags.length})
               </label>
               <div className="space-y-4">
@@ -419,7 +481,8 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">Ready to Create Your Article?</h3>
                   <p className="text-gray-600 max-w-md mx-auto">
-                    Your article will be saved as a DRAFT. You can edit it later or submit it for review when ready.
+                    Your article will be saved as a <strong>DRAFT</strong>. You can edit it later or submit it for review when ready.
+                    {currentUser?.role === 'CONTENT_WRITER' && ' After submission, it will be reviewed by a Content Lead before publishing.'}
                   </p>
                 </div>
 
@@ -467,21 +530,23 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md mx-4 animate-in fade-in zoom-in duration-200">
             <div className="text-center">
               <div className="text-6xl mb-4">🎉</div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
                 Article Created Successfully!
               </h3>
-              <div className="space-y-2 text-sm text-gray-600 mb-6">
+              <div className="space-y-2 text-sm text-gray-600 mb-6 bg-gray-50 p-4 rounded-lg">
                 <p><strong>Title:</strong> {createdArticle?.title}</p>
-                <p><strong>Status:</strong> {createdArticle?.status}</p>
+                <p><strong>Status:</strong> <span className="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-semibold">{createdArticle?.status}</span></p>
                 <p><strong>Tags:</strong> {createdArticle?.tags?.length || 0}</p>
+                <p><strong>Author:</strong> {currentUser?.name}</p>
+                <p><strong>Created:</strong> {getCurrentDateTime()}</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
                 <p className="text-blue-800 text-sm">
-                  <strong>Next Steps:</strong> Your article is saved as a DRAFT. You can now edit it further or submit it for review.
+                  <strong>Next Steps:</strong> Your article is saved as a DRAFT. You can now edit it further or submit it for review from the Manage Articles page.
                 </p>
               </div>
               <div className="flex gap-3">

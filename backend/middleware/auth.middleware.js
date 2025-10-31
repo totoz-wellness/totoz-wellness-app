@@ -3,44 +3,75 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Middleware to verify JWT token
+const getCurrentDateTime = () => {
+  const now = new Date();
+  return now.toISOString().replace('T', ' ').substring(0, 19);
+};
+
 export const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
+
+    console.log(`🔐 [${getCurrentDateTime()}] authenticateToken - ${req.method} ${req.url}:`, {
+      hasAuthHeader: !!authHeader,
+      hasToken: !!token,
+      authHeaderPreview: authHeader ? authHeader.substring(0, 30) + '...' : 'none'
+    });
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access token required'
-      });
+      console.log(`⚠️ [${getCurrentDateTime()}] No token - continuing as public`);
+      return next();
     }
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Check if user still exists in database
+    console.log(`🔓 [${getCurrentDateTime()}] Token decoded:`, {
+      userId: decoded.userId,
+      email: decoded.email
+    });
+
+    // CRITICAL: Fetch FULL user including role
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true }
+      select: { 
+        id: true, 
+        name: true,
+        email: true,
+        role: true
+      }
     });
 
     if (!user) {
+      console.log(`❌ [${getCurrentDateTime()}] User not found in DB: ${decoded.userId}`);
       return res.status(401).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    // Add user to request object
+    console.log(`✅ [${getCurrentDateTime()}] User authenticated:`, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
+
+    // Set FULL user data
     req.user = {
-      userId: decoded.userId,
-      email: decoded.email
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
     };
 
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error(`❌ [${getCurrentDateTime()}] Auth error:`, {
+      error: error.message,
+      name: error.name
+    });
     
     if (error.name === 'JsonWebTokenError') {
       return res.status(403).json({
@@ -56,24 +87,47 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    return res.status(500).json({
-      success: false,
-      message: 'Authentication failed'
-    });
+    // Continue without auth for public access
+    return next();
   }
 };
 
-// Middleware to check if user is admin (for future use)
-export const requireAdmin = async (req, res, next) => {
-  try {
-    // For now, we'll just pass through
-    // We will implement admin roles in the future
-    next();
-  } catch (error) {
-    console.error('Admin check error:', error);
-    return res.status(500).json({
+export const requireAuth = (req, res, next) => {
+  if (!req.user) {
+    console.log(`❌ [${getCurrentDateTime()}] Auth required but no user`);
+    return res.status(401).json({
       success: false,
-      message: 'Authorization check failed'
+      message: 'Authentication required'
     });
   }
+  
+  console.log(`✅ [${getCurrentDateTime()}] Auth check passed: ${req.user.name} (${req.user.role})`);
+  next();
+};
+
+export const requireRole = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      console.log(`❌ [${getCurrentDateTime()}] Role check - no user`);
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      console.log(`❌ [${getCurrentDateTime()}] Role check failed:`, {
+        user: req.user.name,
+        userRole: req.user.role,
+        requiredRoles: allowedRoles
+      });
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Required: ${allowedRoles.join(' or ')}`
+      });
+    }
+
+    console.log(`✅ [${getCurrentDateTime()}] Role check passed: ${req.user.name} (${req.user.role})`);
+    next();
+  };
 };
