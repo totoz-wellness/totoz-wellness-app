@@ -7,8 +7,8 @@ import {
   updateUserRole,
   getAllUsers
 } from '../controllers/auth.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
-import { requireRole } from '../middleware/role.middleware.js';
+// ✅ Import ALL middleware from auth.middleware.js (not role.middleware.js)
+import { authenticateToken, requireAuth, requireRole } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -38,19 +38,20 @@ router.post('/admin-setup', adminSetup);
 // @desc    Get current user profile
 // @route   GET /auth/profile
 // @access  Private
-router.get('/profile', authenticateToken, getProfile);
+router.get('/profile', authenticateToken, requireAuth, getProfile);
 
 // ======================================
 // SUPER ADMIN ONLY ROUTES
 // ======================================
 
 // @desc    Update user role
-// @route   PATCH /auth/users/:userId/role
+// @route   PATCH /auth/users/role
 // @access  Private (Super Admin only)
 router.patch(
   '/users/role',
   authenticateToken,
-  requireRole(['SUPER_ADMIN']),
+  requireAuth,
+  requireRole('SUPER_ADMIN'),  // ✅ Changed from array to spread syntax
   updateUserRole
 );
 
@@ -61,7 +62,8 @@ router.patch(
 router.get(
   '/users',
   authenticateToken,
-  requireRole(['SUPER_ADMIN']),
+  requireAuth,
+  requireRole('SUPER_ADMIN'),  // ✅ Changed from array to spread syntax
   getAllUsers
 );
 

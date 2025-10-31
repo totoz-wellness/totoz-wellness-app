@@ -7,8 +7,8 @@ import {
   deleteDirectory,
   getDirectoryStats
 } from '../controllers/directory.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
-import { requireRole } from '../middleware/role.middleware.js';
+// ✅ Import ALL middleware from auth.middleware.js
+import { authenticateToken, requireAuth, requireRole } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -18,19 +18,21 @@ const router = express.Router();
 
 // @desc    Get directory statistics
 // @route   GET /directory/stats
-// @access  Private (Admin only)
+// @access  Private (Content Lead and Super Admin only)
 router.get('/stats', 
-  authenticateToken, 
-  requireRole(['SUPER_ADMIN', 'CONTENT_LEAD']), 
+  authenticateToken,
+  requireAuth,
+  requireRole('CONTENT_LEAD', 'SUPER_ADMIN'),  // ✅ Changed from array to spread
   getDirectoryStats
 );
 
 // @desc    Create a new directory entry
 // @route   POST /directory
-// @access  Private (Admin only)
+// @access  Private (Content Lead and Super Admin only)
 router.post('/', 
-  authenticateToken, 
-  requireRole(['SUPER_ADMIN', 'CONTENT_LEAD']), 
+  authenticateToken,
+  requireAuth,
+  requireRole('CONTENT_LEAD', 'SUPER_ADMIN'),  // ✅ Changed from array to spread
   createDirectory
 );
 
@@ -56,19 +58,21 @@ router.get('/:id', getDirectory);
 
 // @desc    Update a directory entry
 // @route   PUT /directory/:id
-// @access  Private (Admin only)
+// @access  Private (Content Lead and Super Admin only)
 router.put('/:id', 
-  authenticateToken, 
-  requireRole(['SUPER_ADMIN', 'CONTENT_LEAD']), 
+  authenticateToken,
+  requireAuth,
+  requireRole('CONTENT_LEAD', 'SUPER_ADMIN'),  // ✅ Changed from array to spread
   updateDirectory
 );
 
 // @desc    Delete a directory entry
 // @route   DELETE /directory/:id
-// @access  Private (Admin only)
+// @access  Private (Content Lead and Super Admin only)
 router.delete('/:id', 
-  authenticateToken, 
-  requireRole(['SUPER_ADMIN', 'CONTENT_LEAD']), 
+  authenticateToken,
+  requireAuth,
+  requireRole('CONTENT_LEAD', 'SUPER_ADMIN'),  // ✅ Changed from array to spread
   deleteDirectory
 );
 
