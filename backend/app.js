@@ -2,6 +2,7 @@ import express from 'express';
 import authRoutes from './routes/auth.routes.js';
 import articleRoutes from './routes/articles.routes.js';
 import directoryRoutes from './routes/directory.routes.js';
+import talkEasyRoutes from './routes/talkeasy.routes.js';
 
 // ============================================
 // Initialize Express App
@@ -56,6 +57,7 @@ app.get('/', (req, res) => {
       auth: '/auth',
       articles: '/articles',
       directory: '/directory',
+      talkeasy: '/talkeasy',
       docs: '/api-docs'
     }
   });
@@ -208,24 +210,53 @@ app.get('/api-docs', (req, res) => {
           access: 'Content Lead+',
           description: 'Delete directory entry'
         }
-      }
-    },
-    roles: {
-      USER: {
-        level: 0,
-        description: 'Regular user - public access only'
       },
-      CONTENT_WRITER: {
-        level: 1,
-        description: 'Can create and manage own articles, submit for review'
+      talkeasy: {
+        chat: {
+          method: 'POST',
+          path: '/chat',
+          access: 'Private (All authenticated users)',
+          description: 'Send a message to TalkEasy chatbot',
+          body: '{ message: string, sessionId?: string }'
+        },
+        history: {
+          method: 'GET',
+          path: '/history',
+          access: 'Private (Own history only)',
+          description: 'Get user\'s conversation history',
+          query: 'sessionId?, limit?, page?'
+        },
+        deleteHistory: {
+          method: 'DELETE',
+          path: '/history',
+          access: 'Private (Own history only)',
+          description: 'Delete user\'s conversation history',
+          query: 'sessionId? (optional - deletes all if not provided)'
+        },
+        stats: {
+          method: 'GET',
+          path: '/stats',
+          access: 'Private (Super Admin only)',
+          description: 'Get TalkEasy statistics'
+        }
       },
-      CONTENT_LEAD: {
-        level: 2,
-        description: 'Can review, approve, publish articles and manage directory'
-      },
-      SUPER_ADMIN: {
-        level: 3,
-        description: 'Full access - can delete articles and manage users'
+      roles: {
+        USER: {
+          level: 0,
+          description: 'Regular user - public access only'
+        },
+        CONTENT_WRITER: {
+          level: 1,
+          description: 'Can create and manage own articles, submit for review'
+        },
+        CONTENT_LEAD: {
+          level: 2,
+          description: 'Can review, approve, publish articles and manage directory'
+        },
+        SUPER_ADMIN: {
+          level: 3,
+          description: 'Full access - can delete articles and manage users'
+        }
       }
     }
   });
@@ -235,6 +266,7 @@ app.get('/api-docs', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/articles', articleRoutes);
 app.use('/directory', directoryRoutes);
+app.use('/talkeasy', talkEasyRoutes);
 
 // ============================================
 // Error Handling
@@ -289,7 +321,8 @@ app.listen(PORT, () => {
   console.log('   ├─ API Docs:        \x1b[36mhttp://localhost:' + PORT + '/api-docs\x1b[0m');
   console.log('   ├─ Auth Routes:     \x1b[36mhttp://localhost:' + PORT + '/auth\x1b[0m');
   console.log('   ├─ Articles:        \x1b[36mhttp://localhost:' + PORT + '/articles\x1b[0m');
-  console.log('   └─ Directory:       \x1b[36mhttp://localhost:' + PORT + '/directory\x1b[0m\n');
+  console.log('   ├─ Directory:      \x1b[36mhttp://localhost:' + PORT + '/directory\x1b[0m\n');
+  console.log('   └─ TalkEasy:       \x1b[36mhttp://localhost:' + PORT + '/talkeasy\x1b[0m\n');
   
   console.log('🔐 Role-Based Access Control:');
   console.log('   ├─ \x1b[90mUSER\x1b[0m              (Level 0) - Public access');

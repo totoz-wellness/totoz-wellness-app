@@ -21,6 +21,7 @@ model User {
   articles Article[] // Articles written by this user
   reviewedArticles Article[] @relation("ArticleReviewer") // Articles reviewed by this user
   createdDirectories Directory[] // Directories created by this user
+  talkEasyMessages TalkEasyMessage[] // Messages sent by this user in TalkEasy
 
   @@map("users")
 }
@@ -89,6 +90,21 @@ model Directory {
   updatedAt   DateTime       @updatedAt
   
   @@map("directories")
+}
+
+model TalkEasyMessage {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message     String   // User's message
+  response    String   // AI's response
+  sentiment   String?  // Detected sentiment: POSITIVE, NEGATIVE, NEUTRAL, CRISIS
+  timestamp   DateTime @default(now())
+  sessionId   String?  // To group conversation sessions
+  
+  @@map("talkeasy_messages")
+  @@index([userId, timestamp])
+  @@index([sessionId])
 }
 
 
