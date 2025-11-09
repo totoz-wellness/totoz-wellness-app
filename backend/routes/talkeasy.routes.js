@@ -40,4 +40,9 @@ router.delete('/history', authenticateToken, requireAuth, deleteConversationHist
 // @access  Private (Super Admin only)
 router.get('/stats', authenticateToken, requireAuth, requireRole('SUPER_ADMIN'), getTalkEasyStats);
 
+// @desc    Get user's personal statistics
+// @route   GET /talkeasy/my-stats
+// @access  Private
+router.get('/my-stats', authenticateToken, requireAuth, getUserStats);
+
 export default router;

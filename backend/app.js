@@ -322,7 +322,7 @@ app.listen(PORT, () => {
   console.log('   ├─ Auth Routes:     \x1b[36mhttp://localhost:' + PORT + '/auth\x1b[0m');
   console.log('   ├─ Articles:        \x1b[36mhttp://localhost:' + PORT + '/articles\x1b[0m');
   console.log('   ├─ Directory:      \x1b[36mhttp://localhost:' + PORT + '/directory\x1b[0m\n');
-  console.log('   └─ TalkEasy:       \x1b[36mhttp://localhost:' + PORT + '/talkeasy\x1b[0m\n');
+  console.log('   └─ TalkEasy:       \x1b[36mhttp://localhost:' + PORT + '/talkeasy/chat\x1b[0m\n');
   
   console.log('🔐 Role-Based Access Control:');
   console.log('   ├─ \x1b[90mUSER\x1b[0m              (Level 0) - Public access');
