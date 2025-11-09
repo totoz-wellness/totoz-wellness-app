@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 const prisma = new PrismaClient();
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Initialize Gemini AI with the new SDK
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY
+});
 
 // Rate limiting map (in-memory, use Redis for production)
 const rateLimitMap = new Map();
@@ -196,18 +198,25 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // Generate AI response using Gemini
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-
+    // Generate AI response using Gemini (NEW SDK)
     const prompt = `${KENYAN_MENTAL_HEALTH_CONTEXT}
 
 User message: "${sanitizedMessage}"
 
 Respond with empathy and cultural sensitivity:`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const aiResponse = response.text();
+    console.log('🚀 Sending request to Gemini API...');
+    
+    // 🌐 API CALL TO GOOGLE'S SERVERS (NEW METHOD)
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp', // or 'gemini-pro', 'gemini-2.5-flash'
+      contents: prompt
+    });
+
+    console.log('✅ Received response from Gemini API');
+
+    // Extract AI response text
+    const aiResponse = response.text;
 
     // Store conversation (without storing PII)
     const savedMessage = await prisma.talkEasyMessage.create({
@@ -234,10 +243,17 @@ Respond with empathy and cultural sensitivity:`;
     console.error('TalkEasy chat error:', error);
 
     // Handle Gemini API errors
-    if (error.message?.includes('API key')) {
+    if (error.message?.includes('API key') || error.message?.includes('apiKey')) {
       return res.status(500).json({
         success: false,
         message: 'AI service configuration error. Please contact support.'
+      });
+    }
+
+    if (error.message?.includes('quota') || error.status === 429) {
+      return res.status(429).json({
+        success: false,
+        message: 'AI service is temporarily unavailable. Please try again in a few minutes.'
       });
     }
 
