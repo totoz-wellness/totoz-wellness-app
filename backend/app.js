@@ -1,8 +1,18 @@
+// app.js
 import express from 'express';
 import authRoutes from './routes/auth.routes.js';
 import articleRoutes from './routes/articles.routes.js';
 import directoryRoutes from './routes/directory.routes.js';
 import talkEasyRoutes from './routes/talkeasy.routes.js';
+import { startCleanupScheduler } from './utils/database-cleanup.js';
+
+
+// ============================================
+// 🆕 Fix BigInt Serialization for PostgreSQL
+// ============================================
+BigInt.prototype.toJSON = function() {
+  return Number(this);
+};
 
 // ============================================
 // Initialize Express App
@@ -214,30 +224,69 @@ app.get('/api-docs', (req, res) => {
       talkeasy: {
         chat: {
           method: 'POST',
-          path: '/chat',
+          path: '/talkeasy/chat',
           access: 'Private (All authenticated users)',
           description: 'Send a message to TalkEasy chatbot',
           body: '{ message: string, sessionId?: string }'
         },
         history: {
           method: 'GET',
-          path: '/history',
+          path: '/talkeasy/history',
           access: 'Private (Own history only)',
           description: 'Get user\'s conversation history',
           query: 'sessionId?, limit?, page?'
         },
         deleteHistory: {
           method: 'DELETE',
-          path: '/history',
+          path: '/talkeasy/history',
           access: 'Private (Own history only)',
           description: 'Delete user\'s conversation history',
           query: 'sessionId? (optional - deletes all if not provided)'
         },
-        stats: {
+        myStats: {
           method: 'GET',
-          path: '/stats',
+          path: '/talkeasy/my-stats',
+          access: 'Private (Own stats only)',
+          description: 'Get personal TalkEasy statistics'
+        },
+        adminStats: {
+          method: 'GET',
+          path: '/talkeasy/admin/stats',
           access: 'Private (Super Admin only)',
-          description: 'Get TalkEasy statistics'
+          description: 'Get overall TalkEasy statistics'
+        },
+        insights: {
+          method: 'GET',
+          path: '/talkeasy/admin/insights',
+          access: 'Private (Super Admin only)',
+          description: 'Get insights and trends',
+          query: 'period? (default: 30 days)'
+        },
+        trainingStats: {
+          method: 'GET',
+          path: '/talkeasy/admin/training-stats',
+          access: 'Private (Super Admin only)',
+          description: 'Get training dataset statistics'
+        },
+        exportTrainingData: {
+          method: 'GET',
+          path: '/talkeasy/admin/export-training-data',
+          access: 'Private (Super Admin only)',
+          description: 'Export training dataset',
+          query: 'minQuality?, format? (json|jsonl)'
+        },
+        manualCleanup: {
+          method: 'POST',
+          path: '/talkeasy/admin/cleanup',
+          access: 'Private (Super Admin only)',
+          description: 'Manually trigger database cleanup'
+        },
+        aggregateAnalytics: {
+          method: 'POST',
+          path: '/talkeasy/admin/aggregate-analytics',
+          access: 'Private (Super Admin only)',
+          description: 'Manually aggregate analytics',
+          body: '{ date?: string }'
         }
       },
       roles: {
@@ -321,14 +370,33 @@ app.listen(PORT, () => {
   console.log('   ├─ API Docs:        \x1b[36mhttp://localhost:' + PORT + '/api-docs\x1b[0m');
   console.log('   ├─ Auth Routes:     \x1b[36mhttp://localhost:' + PORT + '/auth\x1b[0m');
   console.log('   ├─ Articles:        \x1b[36mhttp://localhost:' + PORT + '/articles\x1b[0m');
-  console.log('   ├─ Directory:      \x1b[36mhttp://localhost:' + PORT + '/directory\x1b[0m\n');
-  console.log('   └─ TalkEasy:       \x1b[36mhttp://localhost:' + PORT + '/talkeasy/chat\x1b[0m\n');
+  console.log('   ├─ Directory:       \x1b[36mhttp://localhost:' + PORT + '/directory\x1b[0m');
+  console.log('   └─ TalkEasy:        \x1b[36mhttp://localhost:' + PORT + '/talkeasy/chat\x1b[0m\n');
   
   console.log('🔐 Role-Based Access Control:');
   console.log('   ├─ \x1b[90mUSER\x1b[0m              (Level 0) - Public access');
   console.log('   ├─ \x1b[32mCONTENT_WRITER\x1b[0m    (Level 1) - Manage own articles');
   console.log('   ├─ \x1b[34mCONTENT_LEAD\x1b[0m      (Level 2) - Review & publish');
   console.log('   └─ \x1b[35mSUPER_ADMIN\x1b[0m       (Level 3) - Full access\n');
+  
+  console.log('🤖 TalkEasy AI Features:');
+  console.log('   ├─ Smart resource recommendations (articles & directories)');
+  console.log('   ├─ Conversation memory & context awareness');
+  console.log('   ├─ Crisis detection with immediate support');
+  console.log('   ├─ Analytics & insights collection');
+  console.log('   └─ Training data preparation for future AI\n');
+  
+  // 🆕 START DATABASE CLEANUP & ANALYTICS SCHEDULER
+  console.log('🗄️  Database Management:');
+  try {
+    startCleanupScheduler();
+    console.log('   ✅ Cleanup scheduler started');
+    console.log('   ✅ Analytics aggregation enabled');
+    console.log('   📅 Retention: 90 days (regular), 365 days (crisis)\n');
+  } catch (error) {
+    console.error('   ❌ Failed to start cleanup scheduler:', error.message);
+    console.log('   ⚠️  Database cleanup will not run automatically\n');
+  }
   
   console.log('✨ Ready to accept requests!\n');
   console.log('════════════════════════════════════════════════════════════════\n');
@@ -340,14 +408,33 @@ app.listen(PORT, () => {
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 SIGTERM signal received: closing HTTP server gracefully');
-  app.close(() => {
+  console.log('⏳ Waiting for pending requests to complete...');
+  
+  // Give ongoing requests 10 seconds to finish
+  setTimeout(() => {
     console.log('✅ HTTP server closed');
     process.exit(0);
-  });
+  }, 10000);
 });
 
 process.on('SIGINT', () => {
   console.log('\n\n🛑 SIGINT signal received: shutting down gracefully');
+  console.log('🧹 Cleaning up resources...');
   console.log('👋 Goodbye!\n');
   process.exit(0);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('\n❌ UNCAUGHT EXCEPTION:', error);
+  console.error('Stack:', error.stack);
+  console.log('🛑 Server will shut down...\n');
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\n❌ UNHANDLED REJECTION at:', promise);
+  console.error('Reason:', reason);
+  console.log('⚠️  Consider fixing this promise rejection\n');
 });
