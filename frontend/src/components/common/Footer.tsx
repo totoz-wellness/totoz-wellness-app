@@ -3,6 +3,9 @@ import { FacebookIcon } from '../icons/FacebookIcon';
 import { InstagramIcon } from '../icons/InstagramIcon';
 import { LinkedInIcon } from '../icons/LinkedInIcon';
 import { XLogo } from '../icons/XLogo';
+import {TiktokIcon} from '../icons/TiktokIcon';
+import { YoutubeIcon } from '../icons/YoutubeIcon';
+import { WhatsappChannelIcon } from '../icons/WhatsappChannelIcon';
 
 interface FooterProps {
   onGetStartedClick?: () => void;
@@ -31,10 +34,13 @@ const Footer: React.FC<FooterProps> = ({ onGetStartedClick, onNavigateToPage }) 
             <h3 className="text-xl font-bold font-heading text-white mb-2">Totoz Wellness</h3>
             <p className="text-light-text/70">Nurturing the mental health of the next generation, together.</p>
             <div className="flex space-x-4 mt-6">
-              <a href="#" className="text-light-text/70 hover:text-white"><XLogo /></a>
-              <a href="#" className="text-light-text/70 hover:text-white"><FacebookIcon /></a>
-              <a href="#" className="text-light-text/70 hover:text-white"><InstagramIcon /></a>
+              <a href="https://x.com/totozwellness" target="blank" className="text-light-text/70 hover:text-white"><XLogo /></a>
+              <a href="https://web.facebook.com/profile.php?id=61582845514552" target="blank" className="text-light-text/70 hover:text-white"><FacebookIcon /></a>
+              <a href="https://www.instagram.com/totozwellness" target="blank" className="text-light-text/70 hover:text-white"><InstagramIcon /></a>
               <a href="#" className="text-light-text/70 hover:text-white"><LinkedInIcon /></a>
+              <a href="https://www.tiktok.com/@totoz.wellness" target="blank" className="text-light-text/70 hover:text-white"><TiktokIcon /></a>
+              <a href="https://www.youtube.com/@totozwellness" target="blank" className="text-light-text/70 hover:text-white"><YoutubeIcon /></a>
+              <a href="https://whatsapp.com/channel/0029Vb796fyId7nG2ecaJQ2F" target="blank" className="text-light-text/70 hover:text-white"><WhatsappChannelIcon /></a>
             </div>
           </div>
           <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
