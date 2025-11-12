@@ -32,12 +32,18 @@ interface AdminDashboardProps {
   onLogout: () => void;
   onNavigateToArticles: () => void;
   onNavigateToConnectCare: () => void;
+  onNavigateToTalkEasyStats?: () => void;
+  onNavigateToTalkEasyInsights?: () => void;
+  onNavigateToTalkEasyExport?: () => void;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
   onLogout, 
   onNavigateToArticles,
-  onNavigateToConnectCare 
+  onNavigateToConnectCare,
+  onNavigateToTalkEasyStats,
+  onNavigateToTalkEasyInsights,
+  onNavigateToTalkEasyExport
 }) => {
   const [stats, setStats] = useState<DashboardStats>({
     totalArticles: 0,
@@ -62,6 +68,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
   const isContentWriter = currentUser && currentUser.role === 'CONTENT_WRITER';
   const isContentLeadOrAbove = currentUser && hasRole(currentUser.role, 'CONTENT_LEAD');
+  const isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
 
   useEffect(() => {
     fetchDashboardData();
@@ -246,7 +253,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* Management Cards */}
-        <div className={`grid grid-cols-1 ${isContentLeadOrAbove ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
+        <div className={`grid grid-cols-1 ${isSuperAdmin ? 'lg:grid-cols-3' : isContentLeadOrAbove ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
           {/* LearnWell Articles Card */}
           <div className="bg-white rounded-xl shadow-lg border-2 border-teal/20 hover:border-teal hover:shadow-xl transition-all duration-300 overflow-hidden">
             <div className="bg-gradient-to-br from-teal to-[#347EAD] p-6">
@@ -258,7 +265,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </svg>
                   </div>
                   <h3 className="text-2xl font-bold text-white">
-                    {isContentWriter ? 'My Articles' : 'LearnWell Articles'}
+                    {isContentWriter ? 'My Articles' : 'LearnWell'}
                   </h3>
                 </div>
                 {stats.submittedArticles > 0 && isContentLeadOrAbove && (
@@ -316,7 +323,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
                     </div>
-                    <h3 className="text-2xl font-bold text-white">ConnectCare Directory</h3>
+                    <h3 className="text-2xl font-bold text-white">ConnectCare</h3>
                   </div>
                   {directoryStats.featured > 0 && (
                     <span className="bg-[#F09232] text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
@@ -359,6 +366,61 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </svg>
                   <span>Manage Directory</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TalkEasy AI Card - Only for Super Admin */}
+          {isSuperAdmin && (
+            <div className="bg-white rounded-xl shadow-lg border-2 border-purple-500/20 hover:border-purple-500 hover:shadow-xl transition-all duration-300 overflow-hidden">
+              <div className="bg-gradient-to-br from-purple-600 to-purple-700 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg mr-3">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">TalkEasy AI</h3>
+                  </div>
+                </div>
+                <div className="text-white/90 text-sm">Mental Health Chatbot Analytics</div>
+              </div>
+              
+              <div className="p-6">
+                <p className="text-dark-text/70 mb-6 text-sm">
+                  View statistics, insights, and export training data from TalkEasy AI conversations.
+                </p>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={onNavigateToTalkEasyStats}
+                    className="bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md flex flex-col items-center justify-center gap-1 text-xs"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0h2a2 2 0 012 2v6a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6z" />
+                    </svg>
+                    Stats
+                  </button>
+                  <button
+                    onClick={onNavigateToTalkEasyInsights}
+                    className="bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md flex flex-col items-center justify-center gap-1 text-xs"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Insights
+                  </button>
+                  <button
+                    onClick={onNavigateToTalkEasyExport}
+                    className="bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md flex flex-col items-center justify-center gap-1 text-xs"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export
+                  </button>
+                </div>
               </div>
             </div>
           )}

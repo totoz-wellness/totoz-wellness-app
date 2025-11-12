@@ -1,8 +1,10 @@
+// App.tsx
 import React, { useState, useEffect } from 'react';
 import Home from './pages/Home';
 import Features from './pages/Features';
 import WhyUs from './pages/WhyUs';
 import Community from './pages/Community';
+import TalkEasy from './pages/TalkEasy';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import ArticleManagement from './pages/Admin/ArticleManagement';
 import CreateArticle from './pages/Admin/CreateArticle';
@@ -10,6 +12,9 @@ import ManageArticles from './pages/Admin/ManageArticles';
 import EditArticle from './pages/Admin/EditArticle';
 import ReviewQueue from './pages/Admin/ReviewQueue';
 import ConnectCareAdmin from './pages/Admin/ConnectCareAdmin';
+import TalkEasyStats from './pages/Admin/TalkEasyStats';
+import TalkEasyInsights from './pages/Admin/TalkEasyInsights';
+import TalkEasyExport from './pages/Admin/TalkEasyExport'; // 🆕 ADD THIS
 import LearnWell from './pages/LearnWell';
 import ArticleReader from './pages/ArticleReader';
 import LoginPage from './pages/Admin/LoginPage';
@@ -27,7 +32,8 @@ const App: React.FC = () => {
 
   // Get current date/time for logging
   const getCurrentDateTime = (): string => {
-    return '2025-10-31 15:13:04';
+    const now = new Date();
+    return now.toISOString().replace('T', ' ').substring(0, 19);
   };
 
   /**
@@ -65,12 +71,16 @@ const App: React.FC = () => {
       'community': '/community',
       'learnwell': '/learnwell',
       'connectcare': '/connectcare',
+      'talkeasy': '/talkeasy',
       'admin-dashboard': '/admin',
       'admin-articles': '/admin/articles',
       'admin-create-article': '/admin/articles/create',
       'admin-manage-articles': '/admin/articles/manage',
       'admin-review-queue': '/admin/articles/review',
       'admin-connectcare': '/admin/connectcare',
+      'admin-talkeasy-stats': '/admin/talkeasy/stats',
+      'admin-talkeasy-insights': '/admin/talkeasy/insights',
+      'admin-talkeasy-export': '/admin/talkeasy/export', // 🆕 ADD THIS
       'login': '/login',
     };
 
@@ -97,6 +107,7 @@ const App: React.FC = () => {
     if (cleanPath === 'community') return { page: 'community' };
     if (cleanPath === 'learnwell') return { page: 'learnwell' };
     if (cleanPath === 'connectcare') return { page: 'connectcare' };
+    if (cleanPath === 'talkeasy') return { page: 'talkeasy' };
     if (cleanPath === 'login') return { page: 'login' };
     
     // Admin pages
@@ -106,6 +117,9 @@ const App: React.FC = () => {
     if (cleanPath === 'admin/articles/manage') return { page: 'admin-manage-articles' };
     if (cleanPath === 'admin/articles/review') return { page: 'admin-review-queue' };
     if (cleanPath === 'admin/connectcare') return { page: 'admin-connectcare' };
+    if (cleanPath === 'admin/talkeasy/stats') return { page: 'admin-talkeasy-stats' };
+    if (cleanPath === 'admin/talkeasy/insights') return { page: 'admin-talkeasy-insights' };
+    if (cleanPath === 'admin/talkeasy/export') return { page: 'admin-talkeasy-export' }; // 🆕 ADD THIS
     
     // Dynamic routes with IDs
     if (cleanPath.startsWith('admin/articles/edit/')) {
@@ -176,6 +190,9 @@ const App: React.FC = () => {
   const handleNavigateToManageArticles = (): void => navigateTo('admin-manage-articles');
   const handleNavigateToReviewQueue = (): void => navigateTo('admin-review-queue');
   const handleNavigateToConnectCare = (): void => navigateTo('admin-connectcare');
+  const handleNavigateToTalkEasyStats = (): void => navigateTo('admin-talkeasy-stats');
+  const handleNavigateToTalkEasyInsights = (): void => navigateTo('admin-talkeasy-insights');
+  const handleNavigateToTalkEasyExport = (): void => navigateTo('admin-talkeasy-export'); // 🆕 ADD THIS
   const handleNavigateToEditArticle = (articleId: string): void => {
     navigateTo('admin-edit-article', true, articleId);
   };
@@ -245,7 +262,10 @@ const App: React.FC = () => {
     'admin-manage-articles',
     'admin-edit-article',
     'admin-review-queue',
-    'admin-connectcare'
+    'admin-connectcare',
+    'admin-talkeasy-stats',
+    'admin-talkeasy-insights',
+    'admin-talkeasy-export' // 🆕 ADD THIS
   ];
 
   // Redirect to login if trying to access admin pages without auth
@@ -330,6 +350,9 @@ const App: React.FC = () => {
           </div>
         );
 
+      case 'talkeasy':
+        return <TalkEasy />;
+
       case 'read-article':
         if (!currentArticleId) {
           console.error(`❌ [${getCurrentDateTime()}] Article ID missing for read-article page`);
@@ -361,6 +384,9 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             onNavigateToArticles={handleNavigateToArticles}
             onNavigateToConnectCare={handleNavigateToConnectCare}
+            onNavigateToTalkEasyStats={handleNavigateToTalkEasyStats}
+            onNavigateToTalkEasyInsights={handleNavigateToTalkEasyInsights}
+            onNavigateToTalkEasyExport={handleNavigateToTalkEasyExport} // 🆕 ADD THIS
           />
         );
 
@@ -430,6 +456,31 @@ const App: React.FC = () => {
         return (
           <ConnectCareAdmin 
             onBack={handleNavigateToDashboard}
+          />
+        );
+
+      case 'admin-talkeasy-stats':
+        return (
+          <TalkEasyStats
+            onBack={handleNavigateToDashboard}
+            onLogout={handleLogout}
+          />
+        );
+
+      case 'admin-talkeasy-insights':
+        return (
+          <TalkEasyInsights
+            onBack={handleNavigateToDashboard}
+            onLogout={handleLogout}
+          />
+        );
+
+      // 🆕 ADD THIS CASE
+      case 'admin-talkeasy-export':
+        return (
+          <TalkEasyExport
+            onBack={handleNavigateToDashboard}
+            onLogout={handleLogout}
           />
         );
 
