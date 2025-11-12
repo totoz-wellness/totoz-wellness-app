@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// ENHANCED TALKEASY SCHEMA WITH ANALYTICS
+// ============================================
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -18,9 +22,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  articles Article[] // Articles written by this user
-  reviewedArticles Article[] @relation("ArticleReviewer") // Articles reviewed by this user
-  createdDirectories Directory[] // Directories created by this user
+  articles Article[]
+  reviewedArticles Article[] @relation("ArticleReviewer")
+  createdDirectories Directory[]
+  talkEasyMessages TalkEasyMessage[]
+  talkEasyFeedback TalkEasyFeedback[] // 🆕
 
   @@map("users")
 }
@@ -28,61 +34,55 @@ model User {
 model Article {
   id          String      @id @default(cuid())
   title       String
-  content     String      // Main article content
-  excerpt     String?     // Short description
-  coverImage  String?     // URL for cover image
-  videoUrl    String?     // Optional video URL
+  content     String
+  excerpt     String?
+  coverImage  String?
+  videoUrl    String?
   status      ArticleStatus @default(DRAFT)
-  category    String?     // e.g., "mental-health", "parenting-tips", "child-development"
-  tags        String[]    // Array of tags
-  readTime    Int?        // Estimated reading time in minutes
-  slug        String?     @unique // URL-friendly version of title
+  category    String?
+  tags        String[]
+  readTime    Int?
+  slug        String?     @unique
   
-  // Relationships
   authorId    String
   author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   
-  reviewerId  String?     // Content lead who reviewed
+  reviewerId  String?
   reviewer    User?       @relation("ArticleReviewer", fields: [reviewerId], references: [id])
   
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  publishedAt DateTime?   // When it was approved and published
+  publishedAt DateTime?
 
   @@map("articles")
 }
 
 model Directory {
   id          String         @id @default(cuid())
-  name        String         // Name of organization/professional
-  type        DirectoryType  // Type of service provider
-  description String         // Detailed description of services
-  excerpt     String?        // Short summary for listings
+  name        String
+  type        DirectoryType
+  description String
+  excerpt     String?
   
-  // Contact Information
   phone       String?
   email       String?
   website     String?
   
-  // Location
   address     String?
   city        String?
-  county      String?        // For Kenya: e.g., "Nairobi", "Mombasa"
-  region      String?        // Can be used for broader regions
-  coordinates String?        // Lat,Long for mapping (optional)
+  county      String?
+  region      String?
+  coordinates String?
   
-  // Additional Info
-  operatingHours String?     // e.g., "Mon-Fri 9AM-5PM"
-  languages      String[]    // Languages spoken/supported
-  specializations String[]   // Areas of expertise
-  isVerified     Boolean     @default(false) // Verified by admin
-  isFeatured     Boolean     @default(false) // Featured listing
+  operatingHours String?
+  languages      String[]
+  specializations String[]
+  isVerified     Boolean     @default(false)
+  isFeatured     Boolean     @default(false)
   
-  // SEO & Discovery
   slug        String         @unique
-  tags        String[]       // For filtering/search
+  tags        String[]
   
-  // Metadata
   createdById String
   createdBy   User           @relation(fields: [createdById], references: [id])
   createdAt   DateTime       @default(now())
@@ -91,32 +91,158 @@ model Directory {
   @@map("directories")
 }
 
+// 🆕 ENHANCED TALKEASY MESSAGE WITH ANALYTICS
+model TalkEasyMessage {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message     String   @db.Text
+  response    String   @db.Text
+  sentiment   String?
+  timestamp   DateTime @default(now())
+  sessionId   String?
+  
+  // 🆕 ANALYTICS FIELDS
+  messageLength      Int?
+  responseLength     Int?
+  detectedTopics     String[]  @default([])
+  detectedKeywords   String[]  @default([])
+  emotionalIntensity String?   // LOW, MEDIUM, HIGH, CRISIS
+  conversationTurn   Int?      // Message number in conversation
+  processingTimeMs   Int?
+  
+  // 🆕 CATEGORIZATION
+  primaryCategory    String?   // ANXIETY, DEPRESSION, STRESS, RELATIONSHIP, etc.
+  secondaryCategory  String?
+  
+  // 🆕 RECOMMENDATIONS (Only when provided)
+  recommendedArticles    String[]  @default([]) // Article IDs
+  recommendedDirectories String[]  @default([]) // Directory IDs
+  resourcesRequested     Boolean   @default(false) // Did user ask for resources?
+  
+  // 🆕 METADATA
+  modelVersion       String?
+  promptVersion      String    @default("1.0")
+  
+  @@index([userId])
+  @@index([sessionId])
+  @@index([timestamp])
+  @@index([sentiment])
+  @@index([primaryCategory])
+  @@index([emotionalIntensity])
+  @@index([userId, sessionId])
+  @@index([timestamp, primaryCategory])
+  
+  @@map("talkeasy_messages")
+}
+
+// 🆕 ANALYTICS AGGREGATION
+model TalkEasyAnalytics {
+  id              String   @id @default(cuid())
+  date            DateTime @unique
+  
+  totalMessages   Int      @default(0)
+  uniqueUsers     Int      @default(0)
+  crisisCount     Int      @default(0)
+  
+  positiveCount   Int      @default(0)
+  negativeCount   Int      @default(0)
+  neutralCount    Int      @default(0)
+  
+  // Category and topic trends (JSON for flexibility)
+  categoryBreakdown Json
+  topicTrends       Json
+  
+  // Resource effectiveness
+  articlesRecommended   Int      @default(0)
+  directoriesRecommended Int     @default(0)
+  
+  // Performance
+  avgProcessingTime Float?
+  avgMessageLength  Float?
+  avgResponseLength Float?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([date])
+  @@map("talkeasy_analytics")
+}
+
+// 🆕 TRAINING DATASET (ANONYMIZED)
+model TalkEasyTrainingData {
+  id                String   @id @default(cuid())
+  
+  anonymizedMessage  String   @db.Text
+  anonymizedResponse String   @db.Text
+  
+  sentiment         String
+  primaryCategory   String
+  emotionalIntensity String
+  topics            String[]  @default([])
+  keywords          String[]  @default([])
+  
+  qualityScore      Float?
+  humanReviewed     Boolean  @default(false)
+  includeInTraining Boolean  @default(true)
+  
+  originalTimestamp DateTime
+  conversationTurn  Int?
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([primaryCategory])
+  @@index([sentiment])
+  @@index([includeInTraining])
+  @@index([qualityScore])
+  @@map("talkeasy_training_data")
+}
+
+// 🆕 USER FEEDBACK
+model TalkEasyFeedback {
+  id          String   @id @default(cuid())
+  userId      String
+  messageId   String
+  
+  rating      Int      // 1-5
+  helpful     Boolean?
+  feedback    String?  @db.Text
+  
+  timestamp   DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([messageId])
+  @@index([rating])
+  @@map("talkeasy_feedback")
+}
 
 enum UserRole {
-  USER        // Regular user
-  CONTENT_WRITER  // Can create articles
-  CONTENT_LEAD    // Can review and publish articles
-  SUPER_ADMIN     // Full access
+  USER
+  CONTENT_WRITER
+  CONTENT_LEAD
+  SUPER_ADMIN
 }
 
 enum ArticleStatus {
   DRAFT
-  SUBMITTED   // Sent for review
-  APPROVED    // Approved by content lead
-  PUBLISHED   // Live on the site
-  REJECTED    // Needs revisions
-  ARCHIVED    // No longer visible
+  SUBMITTED
+  APPROVED
+  PUBLISHED
+  REJECTED
+  ARCHIVED
 }
 
 enum DirectoryType {
-  NGO              // Non-governmental organizations
-  COUNSELOR        // Individual therapists/counselors
-  HELPLINE         // Crisis helplines
-  SUPPORT_GROUP    // Community support groups
-  HOSPITAL         // Mental health hospitals/facilities
-  CLINIC           // Mental health clinics
-  THERAPIST        // Licensed therapists
-  PSYCHIATRIST     // Medical professionals
-  COMMUNITY_CENTER // Community resource centers
-  ONLINE_SERVICE   // Telehealth/online services
+  NGO
+  COUNSELOR
+  HELPLINE
+  SUPPORT_GROUP
+  HOSPITAL
+  CLINIC
+  THERAPIST
+  PSYCHIATRIST
+  COMMUNITY_CENTER
+  ONLINE_SERVICE
 }
