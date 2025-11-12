@@ -17,8 +17,10 @@ const features = [
     icon: <ChatIcon />,
     title: 'TalkEasy',
     description: 'Instant caregiver-child chat support to navigate difficult conversations and build stronger connections.',
-    status: 'Coming Soon',
+    status: 'Available Now',
     color: 'bg-blue-50 border-blue-200',
+    isAvailable: true,
+    action: 'talkeasy'
   },
   {
     icon: <HeartIcon />,
