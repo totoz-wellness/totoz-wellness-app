@@ -50,6 +50,9 @@ model Article {
   reviewerId  String?
   reviewer    User?       @relation("ArticleReviewer", fields: [reviewerId], references: [id])
   
+  // 🆕 REVIEW FEEDBACK FIELD
+  reviewFeedback String?  @db.Text
+  
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   publishedAt DateTime?
