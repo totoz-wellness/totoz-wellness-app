@@ -1,6 +1,6 @@
 // src/utils/roleUtils.ts
 
-export type UserRole = 'USER' | 'CONTENT_WRITER' | 'CONTENT_LEAD' | 'SUPER_ADMIN';
+export type UserRole = 'USER' | 'CONTENT_WRITER' | 'CONTENT_LEAD' | 'MODERATOR' | 'SUPER_ADMIN';
 
 export interface User {
   id: string;
@@ -15,6 +15,7 @@ const roleHierarchy: Record<UserRole, number> = {
   USER: 0,
   CONTENT_WRITER: 1,
   CONTENT_LEAD: 2,
+  MODERATOR: 2,        // 🆕 Same level as CONTENT_LEAD
   SUPER_ADMIN: 3
 };
 
@@ -69,6 +70,7 @@ export const getRoleDisplayName = (role: UserRole): string => {
     USER: 'User',
     CONTENT_WRITER: 'Content Writer',
     CONTENT_LEAD: 'Content Lead',
+    MODERATOR: 'Community Moderator', // 🆕
     SUPER_ADMIN: 'Super Admin'
   };
   return displayNames[role] || role;
@@ -84,6 +86,7 @@ export const getRoleColor = (role: UserRole): string => {
     USER: 'gray',
     CONTENT_WRITER: 'green',
     CONTENT_LEAD: 'blue',
+    MODERATOR: 'orange',  // 🆕 Orange for moderators
     SUPER_ADMIN: 'purple'
   };
   return colors[role] || 'gray';
@@ -108,14 +111,25 @@ export const getRolePermissions = (role: UserRole) => {
     canUnpublishArticles: hasRole(role, 'CONTENT_LEAD'),
     canEditAllArticles: hasRole(role, 'CONTENT_LEAD'),
     
+    // ParentCircle Moderation (🆕)
+    canModerateParentCircle: hasAnyRole(role, ['MODERATOR', 'SUPER_ADMIN']),
+    canApproveQuestions: hasAnyRole(role, ['MODERATOR', 'SUPER_ADMIN']),
+    canApproveStories: hasAnyRole(role, ['MODERATOR', 'SUPER_ADMIN']),
+    canRejectContent: hasAnyRole(role, ['MODERATOR', 'SUPER_ADMIN']),
+    canArchiveContent: hasAnyRole(role, ['MODERATOR', 'SUPER_ADMIN']),
+    canViewModerationLogs: hasAnyRole(role, ['MODERATOR', 'SUPER_ADMIN']),
+    canBulkApprove: hasRole(role, 'SUPER_ADMIN'), // Only super admin for bulk actions
+    
     // Admin Functions
     canDeleteAllArticles: hasRole(role, 'SUPER_ADMIN'),
     canManageUsers: hasRole(role, 'SUPER_ADMIN'),
     
     // Access Control
-    canAccessAdminPanel: hasRole(role, 'CONTENT_WRITER'),
+    canAccessAdminPanel: hasRole(role, 'CONTENT_WRITER') || hasRole(role, 'MODERATOR'),
     canAccessReviewQueue: hasRole(role, 'CONTENT_LEAD'),
     canAccessConnectCare: hasRole(role, 'CONTENT_LEAD'),
+    canAccessTalkEasyAnalytics: hasRole(role, 'SUPER_ADMIN'),
+    canAccessParentCircleModeration: hasAnyRole(role, ['MODERATOR', 'SUPER_ADMIN']), // 🆕
   };
 };
 
@@ -157,7 +171,7 @@ export const canPerformAction = (
  */
 export const getRoleBadgeClasses = (role: UserRole): string => {
   const color = getRoleColor(role);
-  return `px-2 py-0.5 bg-${color}-100 text-${color}-800 text-xs font-semibold rounded`;
+  return `px-3 py-1 bg-${color}-100 text-${color}-800 text-xs font-semibold rounded-full border border-${color}-200`;
 };
 
 /**
@@ -175,4 +189,21 @@ export const logUserAction = (
     `📝 [${timestamp}] ${user?.name || 'Unknown'} (${user?.role || 'Unknown'}): ${action}`,
     details ? details : ''
   );
+};
+
+// 🆕 Helper to check if user is moderator
+export const isModerator = (role: UserRole): boolean => {
+  return role === 'MODERATOR' || role === 'SUPER_ADMIN';
+};
+
+// 🆕 Get role description for tooltips
+export const getRoleDescription = (role: UserRole): string => {
+  const descriptions: Record<UserRole, string> = {
+    USER: 'Standard user with public access',
+    CONTENT_WRITER: 'Can create and manage own articles',
+    CONTENT_LEAD: 'Can review, approve, and publish articles',
+    MODERATOR: 'Can moderate ParentCircle community content',
+    SUPER_ADMIN: 'Full system access and control'
+  };
+  return descriptions[role] || '';
 };

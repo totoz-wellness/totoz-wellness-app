@@ -1,3 +1,14 @@
+/**
+ * ============================================
+ * FEATURES PAGE
+ * ============================================
+ * @version     2.0.0
+ * @author      ArogoClin
+ * @updated     2025-11-23 06:24:39 UTC
+ * @description Showcase of all Totoz Wellness features
+ * ============================================
+ */
+
 import React from 'react';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
@@ -16,7 +27,7 @@ const features = [
   {
     icon: <ChatIcon />,
     title: 'TalkEasy',
-    description: 'Instant caregiver-child chat support to navigate difficult conversations and build stronger connections.',
+    description: 'Instant AI-powered chat support to navigate difficult conversations and build stronger connections with your child.',
     status: 'Available Now',
     color: 'bg-blue-50 border-blue-200',
     isAvailable: true,
@@ -25,11 +36,29 @@ const features = [
   {
     icon: <HeartIcon />,
     title: 'ConnectCare',
-    description: 'Access to a curated network of professional counselors and valuable mental health resources.',
+    description: 'Access to a curated network of professional counselors, therapists, and valuable mental health resources.',
     status: 'Available Now',
     color: 'bg-pink-50 border-pink-200',
     isAvailable: true,
     action: 'connectcare'
+  },
+  {
+    icon: <BookOpenIcon />,
+    title: 'LearnWell',
+    description: 'A rich library of expert-led articles, guides, and practical parenting tips for mental wellness.',
+    status: 'Available Now',
+    color: 'bg-teal-50 border-teal-200',
+    isAvailable: true,
+    action: 'learnwell'
+  },
+  {
+    icon: <UsersIcon />,
+    title: 'ParentCircle',
+    description: 'Join a supportive peer community to share experiences, ask questions, and get advice from other parents. 🆕',
+    status: 'Available Now', // 🆕 CHANGED FROM "Coming Soon"
+    color: 'bg-green-50 border-green-200',
+    isAvailable: true, // 🆕 NOW AVAILABLE
+    action: 'parentcircle' // 🆕 WORKING ROUTE
   },
   {
     icon: <ChartBarIcon />,
@@ -37,54 +66,41 @@ const features = [
     description: 'A simple and effective tracker for monitoring behavior, wellness patterns, and progress over time.',
     status: 'Coming Soon',
     color: 'bg-purple-50 border-purple-200',
-  },
-  {
-    icon: <UsersIcon />,
-    title: 'ParentCircle',
-    description: 'Join a supportive peer community to share experiences, advice, and encouragement with other caregivers.',
-    status: 'Available Now',
-    color: 'bg-green-50 border-green-200',
-    isAvailable: true,
-    action: 'parentcircle'
-  },
-  {
-    icon: <BookOpenIcon />,
-    title: 'LearnWell',
-    description: 'A rich library of expert-led guides, videos, and practical parenting tips for mental wellness.',
-    status: 'Available Now',
-    color: 'bg-teal-50 border-teal-200',
-    isAvailable: true,
-    action: 'learnwell'
+    isAvailable: false,
   },
   {
     icon: <div className="text-3xl">🧸</div>,
     title: 'Kids Corner',
-    description: 'Engaging activities and resources designed for children to learn about emotions in a fun way.',
+    description: 'Engaging activities and resources designed for children to learn about emotions in a fun, interactive way.',
     status: 'Coming Soon',
     color: 'bg-yellow-50 border-yellow-200',
+    isAvailable: false,
   }
 ];
 
 const FeatureCard: React.FC<{ 
-  feature: any; 
+  feature: typeof features[0]; 
   onNavigateToPage: (page: string) => void;
 }> = ({ feature, onNavigateToPage }) => {
   const handleClick = () => {
     if (feature.isAvailable && feature.action) {
-      console.log(`🎯 [2025-10-24 13:56:17] Feature clicked: ${feature.title} -> ${feature.action}`);
+      console.log(`🎯 [${new Date().toISOString().replace('T', ' ').substring(0, 19)}] Feature clicked: ${feature.title} -> ${feature.action}`);
       onNavigateToPage(feature.action);
     }
   };
 
   return (
     <div 
-      className={`${feature.color} border-2 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group h-full flex flex-col ${feature.isAvailable ? 'cursor-pointer' : ''}`}
+      className={`${feature.color} border-2 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group h-full flex flex-col ${
+        feature.isAvailable ? 'cursor-pointer' : 'opacity-75'
+      }`}
       onClick={handleClick}
     >
       <div className="bg-white text-teal rounded-full w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-md">
         {feature.icon}
       </div>
-      <div className="flex items-center gap-3 mb-3">
+      
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
         <h3 className="text-2xl font-bold font-heading text-dark-text">{feature.title}</h3>
         <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
           feature.isAvailable 
@@ -94,11 +110,27 @@ const FeatureCard: React.FC<{
           {feature.status}
         </span>
       </div>
-      <p className="text-dark-text/70 flex-grow">{feature.description}</p>
+      
+      <p className="text-dark-text/70 flex-grow mb-4">{feature.description}</p>
+      
       {feature.isAvailable && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <span className="text-teal font-semibold text-sm group-hover:text-teal/80 transition-colors">
-            Explore Now →
+        <div className="mt-auto pt-4 border-t border-gray-200">
+          <span className="text-teal font-semibold text-sm group-hover:text-teal/80 transition-colors flex items-center gap-2">
+            Explore Now 
+            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
+      )}
+
+      {!feature.isAvailable && (
+        <div className="mt-auto pt-4 border-t border-gray-200">
+          <span className="text-gray-500 font-semibold text-sm flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Stay Tuned
           </span>
         </div>
       )}
@@ -107,6 +139,10 @@ const FeatureCard: React.FC<{
 };
 
 const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage }) => {
+  // Count available features
+  const availableCount = features.filter(f => f.isAvailable).length;
+  const totalCount = features.length;
+
   return (
     <div className="bg-light-bg overflow-x-hidden min-h-screen">
       <Navbar 
@@ -118,24 +154,33 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
         {/* Hero Section */}
         <section className="py-20 bg-gradient-to-br from-[#347EAD]/10 via-light-bg to-[#F09232]/10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div className="inline-block mb-4">
+              <span className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold">
+                ✨ {availableCount} of {totalCount} Features Live Now
+              </span>
+            </div>
+            
             <h1 className="text-4xl md:text-5xl font-extrabold font-heading text-dark-text mb-6">
               Comprehensive Features for Family Wellness
             </h1>
+            
             <p className="text-lg md:text-xl text-dark-text/70 mb-8 max-w-3xl mx-auto">
-              Everything you need to support your child's mental wellness journey, all in one place. 
+              Everything you need to support your child's mental wellness journey, all in one place.
+              From AI-powered conversations to community support.
             </p>
+            
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <button 
-                onClick={() => onNavigateToPage('learnwell')}
+                onClick={() => onNavigateToPage('parentcircle')}
                 className="bg-teal text-white font-bold py-3 px-8 rounded-full hover:bg-teal/90 transition-all transform hover:scale-105 shadow-lg"
               >
-                Try LearnWell Now
+                🆕 Try ParentCircle
               </button>
               <button 
-                onClick={onGetStartedClick}
+                onClick={() => onNavigateToPage('learnwell')}
                 className="bg-white text-teal border-2 border-teal font-bold py-3 px-8 rounded-full hover:bg-teal/10 transition-all transform hover:scale-105"
               >
-                Get Started
+                Explore LearnWell
               </button>
             </div>
           </div>
@@ -144,14 +189,74 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
         {/* Features Grid */}
         <section className="py-20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-extrabold font-heading text-dark-text mb-4">
+                Our Complete Feature Suite
+              </h2>
+              <p className="text-lg text-dark-text/70 max-w-2xl mx-auto">
+                Click on any available feature to explore it now
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
+              {features.map((feature) => (
                 <FeatureCard
                   key={feature.title}
                   feature={feature}
                   onNavigateToPage={onNavigateToPage}
                 />
               ))}
+            </div>
+
+            {/* Feature Legend */}
+            <div className="mt-12 text-center">
+              <div className="inline-flex items-center gap-6 bg-white px-8 py-4 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                  <span className="text-sm text-gray-600">Available Now ({availableCount})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-gray-400"></span>
+                  <span className="text-sm text-gray-600">Coming Soon ({totalCount - availableCount})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Highlights */}
+        <section className="py-20 bg-gradient-to-br from-teal/5 to-blue-500/5">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-extrabold font-heading text-dark-text mb-4">
+                Why Choose Totoz Wellness?
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+                <div className="text-4xl mb-4">🤖</div>
+                <h3 className="text-xl font-bold text-dark-text mb-3">AI-Powered Support</h3>
+                <p className="text-dark-text/70">
+                  Get instant, intelligent guidance with TalkEasy's conversational AI
+                </p>
+              </div>
+
+              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+                <div className="text-4xl mb-4">👨‍👩‍👧‍👦</div>
+                <h3 className="text-xl font-bold text-dark-text mb-3">Community Driven</h3>
+                <p className="text-dark-text/70">
+                  Connect with other parents in ParentCircle for peer support
+                </p>
+              </div>
+
+              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+                <div className="text-4xl mb-4">📚</div>
+                <h3 className="text-xl font-bold text-dark-text mb-3">Expert Resources</h3>
+                <p className="text-dark-text/70">
+                  Access professional articles and counselor network via LearnWell & ConnectCare
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -163,30 +268,36 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
               Ready to Experience Our Features?
             </h2>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Start with LearnWell today and explore our growing library of wellness resources.
+              Start exploring today with our growing suite of family wellness tools.
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <button 
-                onClick={() => onNavigateToPage('learnwell')}
+                onClick={() => onNavigateToPage('parentcircle')}
                 className="bg-white text-teal font-bold py-4 px-8 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
               >
-                Explore LearnWell
+                Join ParentCircle 🆕
+              </button>
+              <button 
+                onClick={() => onNavigateToPage('talkeasy')}
+                className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105"
+              >
+                Try TalkEasy AI
               </button>
               <button 
                 onClick={onGetStartedClick}
-                className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105"
+                className="bg-[#F09232] text-white font-bold py-4 px-8 rounded-full hover:bg-[#F09232]/90 transition-all transform hover:scale-105"
               >
-                Join Our Community
+                Get Started Free
               </button>
             </div>
           </div>
         </section>
       </main>
+
       <Footer
         onGetStartedClick={onGetStartedClick}
         onNavigateToPage={onNavigateToPage}
       />
-      
     </div>
   );
 };

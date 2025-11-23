@@ -8,7 +8,8 @@ const prisma = new PrismaClient();
 const ADMIN_SETUP_CODES = {
   SUPER_ADMIN: process.env.SUPER_ADMIN_CODE || 'TOTOZ2025',
   CONTENT_LEAD: process.env.CONTENT_LEAD_CODE || 'LEAD2025',
-  CONTENT_WRITER: process.env.CONTENT_WRITER_CODE || 'WRITER2025'
+  CONTENT_WRITER: process.env.CONTENT_WRITER_CODE || 'WRITER2025',
+  MODERATOR: process.env.MODERATOR_CODE || 'MOD2025'
 };
 
 // Helper function to determine role from admin code
@@ -16,6 +17,7 @@ const getRoleFromAdminCode = (adminCode) => {
   if (adminCode === ADMIN_SETUP_CODES.SUPER_ADMIN) return 'SUPER_ADMIN';
   if (adminCode === ADMIN_SETUP_CODES.CONTENT_LEAD) return 'CONTENT_LEAD';
   if (adminCode === ADMIN_SETUP_CODES.CONTENT_WRITER) return 'CONTENT_WRITER';
+  if (adminCode === ADMIN_SETUP_CODES.MODERATOR) return 'MODERATOR';
   return null;
 };
 
@@ -330,7 +332,7 @@ export const updateUserRole = async (req, res) => {
     }
 
     // Validate role
-    const validRoles = ['USER', 'CONTENT_WRITER', 'CONTENT_LEAD', 'SUPER_ADMIN'];
+    const validRoles = ['USER', 'CONTENT_WRITER', 'CONTENT_LEAD', 'SUPER_ADMIN', 'MODERATOR'];
     if (!validRoles.includes(newRole)) {
       return res.status(400).json({
         success: false,

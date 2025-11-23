@@ -1,6 +1,16 @@
+/**
+ * ============================================
+ * ADMIN DASHBOARD WITH PARENTCIRCLE
+ * ============================================
+ * @version     3.0.0
+ * @author      ArogoClin
+ * @updated     2025-11-23 09:08:20 UTC
+ * ============================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import api from '../../config/api';
-import { getCurrentUser, getRolePermissions, hasRole, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
+import { getCurrentUser, getRolePermissions, hasRole, hasAnyRole, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
 
 interface DashboardStats {
   totalArticles: number;
@@ -16,6 +26,12 @@ interface DirectoryStats {
   verified: number;
   featured: number;
   byType: Record<string, number>;
+}
+
+interface ParentCircleStats {
+  pendingQuestions: number;
+  pendingStories: number;
+  totalPending: number;
 }
 
 interface RecentArticle {
@@ -35,6 +51,7 @@ interface AdminDashboardProps {
   onNavigateToTalkEasyStats?: () => void;
   onNavigateToTalkEasyInsights?: () => void;
   onNavigateToTalkEasyExport?: () => void;
+  onNavigateToParentCircleModeration?: () => void; // 🆕
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
@@ -43,7 +60,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigateToConnectCare,
   onNavigateToTalkEasyStats,
   onNavigateToTalkEasyInsights,
-  onNavigateToTalkEasyExport
+  onNavigateToTalkEasyExport,
+  onNavigateToParentCircleModeration // 🆕
 }) => {
   const [stats, setStats] = useState<DashboardStats>({
     totalArticles: 0,
@@ -59,6 +77,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     featured: 0,
     byType: {}
   });
+  const [parentCircleStats, setParentCircleStats] = useState<ParentCircleStats>({
+    pendingQuestions: 0,
+    pendingStories: 0,
+    totalPending: 0
+  });
   const [recentArticles, setRecentArticles] = useState<RecentArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +92,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const isContentWriter = currentUser && currentUser.role === 'CONTENT_WRITER';
   const isContentLeadOrAbove = currentUser && hasRole(currentUser.role, 'CONTENT_LEAD');
   const isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
+  const isModerator = currentUser && hasAnyRole(currentUser.role, ['MODERATOR', 'SUPER_ADMIN']);
 
   useEffect(() => {
     fetchDashboardData();
@@ -90,7 +114,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
       };
 
-      // Fetch articles - CONTENT_WRITER sees only their own, others see all
+      // Fetch articles
       const articlesResponse = await api.get('/articles?publishedOnly=false&limit=1000', authHeaders);
 
       if (!articlesResponse.data.success) {
@@ -119,7 +143,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       setRecentArticles(sortedArticles);
 
-      // Fetch directory stats only for CONTENT_LEAD and above
+      // Fetch directory stats for CONTENT_LEAD and above
       if (isContentLeadOrAbove) {
         try {
           const directoryResponse = await api.get('/directory/stats', authHeaders);
@@ -128,6 +152,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }
         } catch (dirError) {
           console.error('Failed to fetch directory stats:', dirError);
+        }
+      }
+
+      // 🆕 Fetch ParentCircle moderation stats for MODERATOR and SUPER_ADMIN
+      if (isModerator) {
+        try {
+          const pcResponse = await api.get('/parentcircle/moderation/stats?period=30', authHeaders);
+          if (pcResponse.data.success) {
+            setParentCircleStats({
+              pendingQuestions: pcResponse.data.data.pending.questions,
+              pendingStories: pcResponse.data.data.pending.stories,
+              totalPending: pcResponse.data.data.pending.total
+            });
+          }
+        } catch (pcError) {
+          console.error('Failed to fetch ParentCircle stats:', pcError);
         }
       }
 
@@ -195,6 +235,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   }
 
+  // Calculate grid layout based on user permissions
+  const gridCols = isSuperAdmin ? 'lg:grid-cols-4' : 
+                   (isContentLeadOrAbove || isModerator) ? 'md:grid-cols-2 lg:grid-cols-3' : 
+                   'md:grid-cols-1';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#347EAD]/10 via-white to-teal/10">
       {/* Header */}
@@ -208,7 +253,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <p className="text-lg text-dark-text/70">
                 Totoz Wellness Content Management
               </p>
-              {/* User Role Badge */}
               {currentUser && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-${getRoleColor(currentUser.role)}-100 text-${getRoleColor(currentUser.role)}-800 border border-${getRoleColor(currentUser.role)}-200`}>
@@ -234,7 +278,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Role-based info message for Content Writers */}
+        {/* Role-based info for Content Writers */}
         {isContentWriter && (
           <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
             <div className="flex items-start">
@@ -244,8 +288,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div>
                 <h4 className="text-blue-900 font-bold mb-1">👋 Welcome, Content Writer!</h4>
                 <p className="text-blue-800 text-sm">
-                  You're viewing your personal articles dashboard. You can create, edit, and submit articles for review. 
-                  Once approved by a Content Lead, your articles will be published to the site.
+                  You're viewing your personal articles dashboard. You can create, edit, and submit articles for review.
                 </p>
               </div>
             </div>
@@ -253,7 +296,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* Management Cards */}
-        <div className={`grid grid-cols-1 ${isSuperAdmin ? 'lg:grid-cols-3' : isContentLeadOrAbove ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
+        <div className={`grid grid-cols-1 ${gridCols} gap-6 mb-8`}>
+          
           {/* LearnWell Articles Card */}
           <div className="bg-white rounded-xl shadow-lg border-2 border-teal/20 hover:border-teal hover:shadow-xl transition-all duration-300 overflow-hidden">
             <div className="bg-gradient-to-br from-teal to-[#347EAD] p-6">
@@ -312,7 +356,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          {/* ConnectCare Directory Card - Only for Content Lead and above */}
+          {/* ConnectCare Directory Card */}
           {isContentLeadOrAbove && (
             <div className="bg-white rounded-xl shadow-lg border-2 border-[#347EAD]/20 hover:border-[#347EAD] hover:shadow-xl transition-all duration-300 overflow-hidden">
               <div className="bg-gradient-to-br from-[#347EAD] to-teal p-6">
@@ -370,7 +414,59 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
-          {/* TalkEasy AI Card - Only for Super Admin */}
+          {/* 🆕 ParentCircle Moderation Card */}
+          {isModerator && (
+            <div className="bg-white rounded-xl shadow-lg border-2 border-orange-500/20 hover:border-orange-500 hover:shadow-xl transition-all duration-300 overflow-hidden">
+              <div className="bg-gradient-to-br from-orange-500 to-red-500 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg mr-3">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">ParentCircle</h3>
+                  </div>
+                  {parentCircleStats.totalPending > 0 && (
+                    <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                      {parentCircleStats.totalPending} Pending
+                    </span>
+                  )}
+                </div>
+                <div className="text-4xl font-bold text-white mb-2">{parentCircleStats.totalPending}</div>
+                <div className="text-white/90 text-sm">Items Awaiting Review</div>
+              </div>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="font-bold text-2xl text-blue-600 flex items-center justify-center gap-1">
+                      🙋 {parentCircleStats.pendingQuestions}
+                    </div>
+                    <div className="text-xs text-dark-text/70 mt-1">Questions</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="font-bold text-2xl text-green-600 flex items-center justify-center gap-1">
+                      📖 {parentCircleStats.pendingStories}
+                    </div>
+                    <div className="text-xs text-dark-text/70 mt-1">Stories</div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={onNavigateToParentCircleModeration}
+                  className="w-full bg-orange-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-orange-600 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Moderate Content</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TalkEasy AI Card */}
           {isSuperAdmin && (
             <div className="bg-white rounded-xl shadow-lg border-2 border-purple-500/20 hover:border-purple-500 hover:shadow-xl transition-all duration-300 overflow-hidden">
               <div className="bg-gradient-to-br from-purple-600 to-purple-700 p-6">

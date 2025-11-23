@@ -1,10 +1,34 @@
-// App.tsx
+/**
+ * ============================================
+ * TOTOZ WELLNESS - MAIN APP COMPONENT
+ * ============================================
+ * @version     4.0.0
+ * @author      ArogoClin
+ * @updated     2025-11-23 10:04:22 UTC
+ * @description Complete app with auth system, modals, and error handling
+ * ============================================
+ */
+
 import React, { useState, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
+
+// Public Pages
 import Home from './pages/Home';
 import Features from './pages/Features';
 import WhyUs from './pages/WhyUs';
 import Community from './pages/Community';
 import TalkEasy from './pages/TalkEasy';
+import LearnWell from './pages/LearnWell';
+import ArticleReader from './pages/ArticleReader';
+import ConnectCare from './pages/ConnectCare';
+import ParentCircleHub from './pages/ParentCircle/ParentCircleHub';
+
+// Auth Pages
+import LoginPage from './pages/Auth/LoginPage';
+import SignupPage from './pages/Auth/SignupPage';
+import AdminLoginPage from './pages/Admin/LoginPage';
+
+// Admin Pages
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import ArticleManagement from './pages/Admin/ArticleManagement';
 import CreateArticle from './pages/Admin/CreateArticle';
@@ -14,23 +38,26 @@ import ReviewQueue from './pages/Admin/ReviewQueue';
 import ConnectCareAdmin from './pages/Admin/ConnectCareAdmin';
 import TalkEasyStats from './pages/Admin/TalkEasyStats';
 import TalkEasyInsights from './pages/Admin/TalkEasyInsights';
-import TalkEasyExport from './pages/Admin/TalkEasyExport'; // 🆕 ADD THIS
-import LearnWell from './pages/LearnWell';
-import ArticleReader from './pages/ArticleReader';
-import LoginPage from './pages/Admin/LoginPage';
-import AuthModal from './components/auth/AuthModal';
+import TalkEasyExport from './pages/Admin/TalkEasyExport';
+import ParentCircleModerationDashboard from './pages/Admin/ParentCircleModerationDashboard';
+
+// Components
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
-import ConnectCare from './pages/ConnectCare';
+
+// Utils
 import { isAuthenticated, getCurrentUser, logUserAction } from './utils/roleUtils';
+import api from './config/api';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => isAuthenticated());
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
-  // Get current date/time for logging
+  /**
+   * Get current date/time for logging (UTC format)
+   */
   const getCurrentDateTime = (): string => {
     const now = new Date();
     return now.toISOString().replace('T', ' ').substring(0, 19);
@@ -38,7 +65,6 @@ const App: React.FC = () => {
 
   /**
    * Navigate to a different page with optional article ID
-   * Updates both component state and browser history
    */
   const navigateTo = (page: string, updateUrl: boolean = true, articleId?: string): void => {
     const currentUser = getCurrentUser();
@@ -58,6 +84,9 @@ const App: React.FC = () => {
       const url = getUrlForPage(page, articleId);
       window.history.pushState({ page, articleId }, '', url);
     }
+
+    // Scroll to top on navigation
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   /**
@@ -72,6 +101,10 @@ const App: React.FC = () => {
       'learnwell': '/learnwell',
       'connectcare': '/connectcare',
       'talkeasy': '/talkeasy',
+      'parentcircle': '/parentcircle',
+      'login': '/login',
+      'signup': '/signup',
+      'admin-login': '/admin/login',
       'admin-dashboard': '/admin',
       'admin-articles': '/admin/articles',
       'admin-create-article': '/admin/articles/create',
@@ -80,8 +113,8 @@ const App: React.FC = () => {
       'admin-connectcare': '/admin/connectcare',
       'admin-talkeasy-stats': '/admin/talkeasy/stats',
       'admin-talkeasy-insights': '/admin/talkeasy/insights',
-      'admin-talkeasy-export': '/admin/talkeasy/export', // 🆕 ADD THIS
-      'login': '/login',
+      'admin-talkeasy-export': '/admin/talkeasy/export',
+      'admin-parentcircle-moderation': '/admin/parentcircle/moderation',
     };
 
     if (page === 'admin-edit-article' && articleId) {
@@ -108,9 +141,12 @@ const App: React.FC = () => {
     if (cleanPath === 'learnwell') return { page: 'learnwell' };
     if (cleanPath === 'connectcare') return { page: 'connectcare' };
     if (cleanPath === 'talkeasy') return { page: 'talkeasy' };
+    if (cleanPath === 'parentcircle') return { page: 'parentcircle' };
     if (cleanPath === 'login') return { page: 'login' };
+    if (cleanPath === 'signup') return { page: 'signup' };
     
     // Admin pages
+    if (cleanPath === 'admin/login') return { page: 'admin-login' };
     if (cleanPath === 'admin') return { page: 'admin-dashboard' };
     if (cleanPath === 'admin/articles') return { page: 'admin-articles' };
     if (cleanPath === 'admin/articles/create') return { page: 'admin-create-article' };
@@ -119,7 +155,8 @@ const App: React.FC = () => {
     if (cleanPath === 'admin/connectcare') return { page: 'admin-connectcare' };
     if (cleanPath === 'admin/talkeasy/stats') return { page: 'admin-talkeasy-stats' };
     if (cleanPath === 'admin/talkeasy/insights') return { page: 'admin-talkeasy-insights' };
-    if (cleanPath === 'admin/talkeasy/export') return { page: 'admin-talkeasy-export' }; // 🆕 ADD THIS
+    if (cleanPath === 'admin/talkeasy/export') return { page: 'admin-talkeasy-export' };
+    if (cleanPath === 'admin/parentcircle/moderation') return { page: 'admin-parentcircle-moderation' };
     
     // Dynamic routes with IDs
     if (cleanPath.startsWith('admin/articles/edit/')) {
@@ -131,16 +168,48 @@ const App: React.FC = () => {
       return { page: 'read-article', articleId };
     }
     
-    // Default fallback
     return { page: 'home' };
   };
 
   /**
-   * Handle successful login
+   * Handle successful user login (public)
    */
   const handleLoginSuccess = (): void => {
     const currentUser = getCurrentUser();
-    logUserAction('Login successful', { 
+    logUserAction('Public login successful', { 
+      timestamp: getCurrentDateTime(),
+      role: currentUser?.role 
+    });
+    
+    // Check if user has admin role
+    if (currentUser && ['CONTENT_WRITER', 'CONTENT_LEAD', 'MODERATOR', 'SUPER_ADMIN'].includes(currentUser.role)) {
+      setIsAdminAuthenticated(true);
+      sessionStorage.setItem('isAdminAuthenticated', 'true');
+    }
+    
+    // Navigate to home or previous page
+    navigateTo('home');
+  };
+
+  /**
+   * Handle successful signup
+   */
+  const handleSignupSuccess = (): void => {
+    const currentUser = getCurrentUser();
+    logUserAction('Signup successful', { 
+      timestamp: getCurrentDateTime(),
+      user: currentUser?.name 
+    });
+    
+    navigateTo('home');
+  };
+
+  /**
+   * Handle successful admin login
+   */
+  const handleAdminLoginSuccess = (): void => {
+    const currentUser = getCurrentUser();
+    logUserAction('Admin login successful', { 
       timestamp: getCurrentDateTime(),
       role: currentUser?.role 
     });
@@ -160,7 +229,6 @@ const App: React.FC = () => {
       user: currentUser?.name 
     });
     
-    // Clear all auth data
     sessionStorage.removeItem('isAdminAuthenticated');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -174,7 +242,6 @@ const App: React.FC = () => {
   // Navigation Handlers
   // ============================================
 
-  // Public navigation
   const handleNavigateToPage = (page: string): void => {
     navigateTo(page);
   };
@@ -192,7 +259,8 @@ const App: React.FC = () => {
   const handleNavigateToConnectCare = (): void => navigateTo('admin-connectcare');
   const handleNavigateToTalkEasyStats = (): void => navigateTo('admin-talkeasy-stats');
   const handleNavigateToTalkEasyInsights = (): void => navigateTo('admin-talkeasy-insights');
-  const handleNavigateToTalkEasyExport = (): void => navigateTo('admin-talkeasy-export'); // 🆕 ADD THIS
+  const handleNavigateToTalkEasyExport = (): void => navigateTo('admin-talkeasy-export');
+  const handleNavigateToParentCircleModeration = (): void => navigateTo('admin-parentcircle-moderation');
   const handleNavigateToEditArticle = (articleId: string): void => {
     navigateTo('admin-edit-article', true, articleId);
   };
@@ -202,10 +270,9 @@ const App: React.FC = () => {
   // ============================================
 
   /**
-   * Initialize app on mount and handle browser navigation
+   * Initialize app and set up navigation callback for api.ts
    */
   useEffect(() => {
-    // Set initial page from URL
     const { page, articleId } = getPageFromPath(window.location.pathname);
     const currentUser = getCurrentUser();
     
@@ -219,6 +286,14 @@ const App: React.FC = () => {
     
     setCurrentPage(page);
     if (articleId) setCurrentArticleId(articleId);
+    setAuthCheckComplete(true);
+
+    // Set navigation callback for api.ts to handle 401 redirects
+    if ((api as any).setNavigationCallback) {
+      (api as any).setNavigationCallback((page: string) => {
+        navigateTo(page);
+      });
+    }
 
     // Handle browser back/forward buttons
     const handlePopState = (event: PopStateEvent): void => {
@@ -238,9 +313,11 @@ const App: React.FC = () => {
   }, []);
 
   /**
-   * Log current state changes for debugging
+   * Log state changes for debugging
    */
   useEffect(() => {
+    if (!authCheckComplete) return;
+    
     const currentUser = getCurrentUser();
     console.log(`📍 [${getCurrentDateTime()}] Current state:`, {
       page: currentPage,
@@ -249,7 +326,23 @@ const App: React.FC = () => {
       user: currentUser?.name || 'Not logged in',
       role: currentUser?.role || 'N/A'
     });
-  }, [currentPage, currentArticleId, isAdminAuthenticated]);
+  }, [currentPage, currentArticleId, isAdminAuthenticated, authCheckComplete]);
+
+  /**
+   * Check auth state changes (for cross-tab sync)
+   */
+  useEffect(() => {
+    const checkAuth = () => {
+      const authState = isAuthenticated();
+      if (authState !== isAdminAuthenticated) {
+        setIsAdminAuthenticated(authState);
+      }
+    };
+
+    // Check every second
+    const interval = setInterval(checkAuth, 1000);
+    return () => clearInterval(interval);
+  }, [isAdminAuthenticated]);
 
   // ============================================
   // Auth Check for Admin Pages
@@ -265,29 +358,30 @@ const App: React.FC = () => {
     'admin-connectcare',
     'admin-talkeasy-stats',
     'admin-talkeasy-insights',
-    'admin-talkeasy-export' // 🆕 ADD THIS
+    'admin-talkeasy-export',
+    'admin-parentcircle-moderation'
   ];
 
-  // Redirect to login if trying to access admin pages without auth
   if (adminPages.includes(currentPage) && !isAdminAuthenticated) {
-    console.log(`🔒 [${getCurrentDateTime()}] Unauthorized access attempt to ${currentPage} - Redirecting to login`);
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    console.log(`🔒 [${getCurrentDateTime()}] Unauthorized access attempt to ${currentPage} - Redirecting to admin login`);
+    return (
+      <AdminLoginPage 
+        onLoginSuccess={handleAdminLoginSuccess}
+      />
+    );
   }
 
   // ============================================
   // Page Rendering
   // ============================================
 
-  /**
-   * Render the current page based on state
-   */
   const renderPage = (): React.JSX.Element => {
     switch (currentPage) {
       // ========== Public Pages ==========
       case 'home':
         return (
           <Home 
-            onGetStartedClick={() => setIsAuthModalOpen(true)}
+            onGetStartedClick={() => navigateTo('signup')}
             onNavigateToPage={handleNavigateToPage}
           />
         );
@@ -295,7 +389,7 @@ const App: React.FC = () => {
       case 'features':
         return (
           <Features 
-            onGetStartedClick={() => setIsAuthModalOpen(true)}
+            onGetStartedClick={() => navigateTo('signup')}
             onNavigateToPage={handleNavigateToPage}
           />
         );
@@ -303,7 +397,7 @@ const App: React.FC = () => {
       case 'whyus':
         return (
           <WhyUs 
-            onGetStartedClick={() => setIsAuthModalOpen(true)}
+            onGetStartedClick={() => navigateTo('signup')}
             onNavigateToPage={handleNavigateToPage}
           />
         );
@@ -311,7 +405,7 @@ const App: React.FC = () => {
       case 'community':
         return (
           <Community 
-            onGetStartedClick={() => setIsAuthModalOpen(true)}
+            onGetStartedClick={() => navigateTo('signup')}
             onNavigateToPage={handleNavigateToPage}
           />
         );
@@ -320,14 +414,13 @@ const App: React.FC = () => {
         return (
           <div className="bg-light-bg overflow-x-hidden min-h-screen flex flex-col">
             <Navbar 
-              onGetStartedClick={() => setIsAuthModalOpen(true)}
               onNavigateToPage={handleNavigateToPage}
             />
             <main className="flex-grow">
               <LearnWell onNavigateToArticle={handleNavigateToArticle} />
             </main>
             <Footer
-              onGetStartedClick={() => setIsAuthModalOpen(true)}
+              onGetStartedClick={() => navigateTo('signup')}
               onNavigateToPage={handleNavigateToPage}
             />
           </div>
@@ -337,14 +430,13 @@ const App: React.FC = () => {
         return (
           <div className="bg-light-bg overflow-x-hidden min-h-screen flex flex-col">
             <Navbar 
-              onGetStartedClick={() => setIsAuthModalOpen(true)}
               onNavigateToPage={handleNavigateToPage}
             />
             <main className="flex-grow">
               <ConnectCare onNavigate={handleNavigateToPage} />
             </main>
             <Footer 
-              onGetStartedClick={() => setIsAuthModalOpen(true)}
+              onGetStartedClick={() => navigateTo('signup')}
               onNavigateToPage={handleNavigateToPage}
             />
           </div>
@@ -352,6 +444,22 @@ const App: React.FC = () => {
 
       case 'talkeasy':
         return <TalkEasy />;
+
+      case 'parentcircle':
+        return (
+          <div className="bg-light-bg overflow-x-hidden min-h-screen flex flex-col">
+            <Navbar 
+              onNavigateToPage={handleNavigateToPage}
+            />
+            <main className="flex-grow">
+              <ParentCircleHub />
+            </main>
+            <Footer 
+              onGetStartedClick={() => navigateTo('signup')}
+              onNavigateToPage={handleNavigateToPage}
+            />
+          </div>
+        );
 
       case 'read-article':
         if (!currentArticleId) {
@@ -377,6 +485,32 @@ const App: React.FC = () => {
           />
         );
 
+      // ========== Auth Pages ==========
+      case 'login':
+        return (
+          <LoginPage
+            onLoginSuccess={handleLoginSuccess}
+            onNavigateToSignup={() => navigateTo('signup')}
+            onNavigateToHome={() => navigateTo('home')}
+          />
+        );
+
+      case 'signup':
+        return (
+          <SignupPage
+            onSignupSuccess={handleSignupSuccess}
+            onNavigateToLogin={() => navigateTo('login')}
+            onNavigateToHome={() => navigateTo('home')}
+          />
+        );
+
+      case 'admin-login':
+        return (
+          <AdminLoginPage
+            onLoginSuccess={handleAdminLoginSuccess}
+          />
+        );
+
       // ========== Admin Pages ==========
       case 'admin-dashboard':
         return (
@@ -386,7 +520,8 @@ const App: React.FC = () => {
             onNavigateToConnectCare={handleNavigateToConnectCare}
             onNavigateToTalkEasyStats={handleNavigateToTalkEasyStats}
             onNavigateToTalkEasyInsights={handleNavigateToTalkEasyInsights}
-            onNavigateToTalkEasyExport={handleNavigateToTalkEasyExport} // 🆕 ADD THIS
+            onNavigateToTalkEasyExport={handleNavigateToTalkEasyExport}
+            onNavigateToParentCircleModeration={handleNavigateToParentCircleModeration}
           />
         );
 
@@ -475,7 +610,6 @@ const App: React.FC = () => {
           />
         );
 
-      // 🆕 ADD THIS CASE
       case 'admin-talkeasy-export':
         return (
           <TalkEasyExport
@@ -484,15 +618,18 @@ const App: React.FC = () => {
           />
         );
 
-      case 'login':
-        return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+      case 'admin-parentcircle-moderation':
+        return (
+          <ParentCircleModerationDashboard
+            onBack={handleNavigateToDashboard}
+          />
+        );
 
-      // ========== Default/Fallback ==========
       default:
         console.warn(`⚠️ [${getCurrentDateTime()}] Unknown page: ${currentPage} - Redirecting to home`);
         return (
           <Home 
-            onGetStartedClick={() => setIsAuthModalOpen(true)}
+            onGetStartedClick={() => navigateTo('signup')}
             onNavigateToPage={handleNavigateToPage}
           />
         );
@@ -505,9 +642,43 @@ const App: React.FC = () => {
 
   return (
     <>
-      {renderPage()}
-      {isAuthModalOpen && (
-        <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+      {/* Toast Notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#fff',
+            color: '#363636',
+            padding: '16px',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '600',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff'
+            }
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff'
+            }
+          }
+        }}
+      />
+
+      {/* Page Content */}
+      {authCheckComplete ? renderPage() : (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-teal/10">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-teal border-t-transparent mb-4"></div>
+            <p className="text-gray-600 font-semibold">Loading Totoz Wellness...</p>
+          </div>
+        </div>
       )}
     </>
   );
