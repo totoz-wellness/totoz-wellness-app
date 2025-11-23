@@ -60,7 +60,7 @@ const Footer: React.FC<FooterProps> = ({ onGetStartedClick, onNavigateToPage }) 
                 <li><button onClick={() => handleNavClick('faq')} className="text-light-text/70 hover:text-white">FAQ</button></li>
                 <li><a href="mailto:contact@totoz.com" className="text-light-text/70 hover:text-white">Contact Us</a></li>
                 <li><button onClick={() => handleNavClick('privacy')} className="text-light-text/70 hover:text-white">Privacy Policy</button></li>
-                <li><button onClick={handleGetStartedClick} className="text-light-text/70 hover:text-white">Admin Login</button></li>
+                {/* <li><button onClick={handleGetStartedClick} className="text-light-text/70 hover:text-white">Admin Login</button></li> */}
               </ul>
             </div>
             <div>
