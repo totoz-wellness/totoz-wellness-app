@@ -42,8 +42,10 @@ const features = [
     icon: <UsersIcon />,
     title: 'ParentCircle',
     description: 'Join a supportive peer community to share experiences, advice, and encouragement with other caregivers.',
-    status: 'Coming Soon',
+    status: 'Available Now',
     color: 'bg-green-50 border-green-200',
+    isAvailable: true,
+    action: 'parentcircle'
   },
   {
     icon: <BookOpenIcon />,
