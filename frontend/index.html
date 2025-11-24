@@ -1,13 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Meta Tags -->
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/Totoz_Profile_Pic.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Totoz Wellness</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Favicon with multiple sizes for better visibility -->
+    <link rel="icon" type="image/png" href="/logo3.jpg" sizes="192x192" />
+    <link rel="icon" type="image/png" href="/logo3.jpg" sizes="128x128" />
+    <link rel="icon" type="image/png" href="/logo3.jpg" sizes="64x64" />
+    <link rel="icon" type="image/png" href="/logo3.jpg" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/logo3.jpg" sizes="180x180" />
+    
+    <!-- Font Preconnects -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Google Fonts -->
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Poppins:wght@400;600;700;800&display=swap" 
+      rel="stylesheet" 
+    />
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -28,23 +44,40 @@
         }
       }
     </script>
-    <!-- Import map MUST come first, before any module scripts -->
+    
+    <!-- Import Map (MUST come before any module scripts) -->
     <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "recharts": "https://aistudiocdn.com/recharts@^3.2.1"
-  }
-}
-</script>
-    <!-- Module scripts come AFTER the import map -->
+      {
+        "imports": {
+          "react/": "https://aistudiocdn.com/react@^19.1.1/",
+          "react": "https://aistudiocdn.com/react@^19.1.1",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+          "recharts": "https://aistudiocdn.com/recharts@^3.2.1"
+        }
+      }
+    </script>
+    
+    <!-- External Scripts (after import map) -->
     <script type="module" src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <link rel="stylesheet" href="/index.css">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/index.css" />
+    
+    <!-- Custom Favicon Styling -->
+    <style>
+      /* Force larger favicon display in browser tabs */
+      link[rel="icon"] {
+        width: 64px;
+        height: 64px;
+      }
+    </style>
   </head>
+  
   <body class="bg-light-bg text-dark-text font-sans">
+    <!-- Main React Root -->
     <div id="root"></div>
+    
+    <!-- Application Entry Point -->
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
