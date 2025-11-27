@@ -1,11 +1,11 @@
 // ============================================
 // TOTOZ WELLNESS - DATABASE SCHEMA
 // ============================================
-// @version     1.0.0
+// @version     2. 1.0
 // @author      ArogoClin
-// @updated     2025-11-16 21:13:54 UTC
+// @updated     2025-11-27 07:30:00 UTC
 // @description Complete schema for Totoz Wellness mental health platform
-//              Includes: Articles, Directory, TalkEasy AI, ParentCircle Community
+//              Includes: Articles, Directory, TalkEasy AI, ParentCircle Community, GrowTrack
 // ============================================
 
 generator client {
@@ -48,7 +48,7 @@ model User {
   // ParentCircle Community Relations
   questions       Question[]
   stories         Story[]
-  storyComments   StoryComment[] // 🆕 Story comments
+  storyComments   StoryComment[]
   answers         Answer[]
   questionVotes   QuestionVote[]
   storyVotes      StoryVote[]
@@ -57,6 +57,9 @@ model User {
 
   // Moderation Relations
   moderationActions ModerationLog[]
+
+  // GrowTrack Relations
+  growTrackEntries GrowTrackEntry[]
 
   @@map("users")
 }
@@ -71,28 +74,28 @@ model Article {
   id        String        @id @default(cuid())
   title     String
   content   String        @db.Text
-  excerpt   String?
+  excerpt   String? 
   coverImage String?
   videoUrl  String?
   status    ArticleStatus @default(DRAFT)
-  category  String?
+  category  String? 
   tags      String[]
   readTime  Int?          // Estimated read time in minutes
-  slug      String?       @unique
+  slug      String?        @unique
 
   // Author Relations
   authorId String
   author   User   @relation("AuthoredArticles", fields: [authorId], references: [id], onDelete: Cascade)
 
   // Review Relations
-  reviewerId     String?
+  reviewerId     String? 
   reviewer       User?   @relation("ReviewedArticles", fields: [reviewerId], references: [id])
-  reviewFeedback String? @db.Text
+  reviewFeedback String?  @db.Text
 
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  publishedAt DateTime?
+  publishedAt DateTime? 
 
   @@map("articles")
 }
@@ -104,19 +107,19 @@ model Directory {
   name        String
   type        DirectoryType
   description String        @db.Text
-  excerpt     String?
+  excerpt     String? 
 
   // Contact Information
   phone   String?
-  email   String?
+  email   String? 
   website String?
 
   // Location Information
   address     String?
-  city        String?
+  city        String? 
   county      String?
   region      String?
-  coordinates String? // Lat,Long format for mapping
+  coordinates String?  // Lat,Long format for mapping
 
   // Service Details
   operatingHours  String?
@@ -154,9 +157,9 @@ model TalkEasyMessage {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   message   String   @db.Text
   response  String   @db.Text
-  sentiment String?  // positive, negative, neutral, crisis
+  sentiment String?   // positive, negative, neutral, crisis
   timestamp DateTime @default(now())
-  sessionId String?  // Groups messages into conversations
+  sessionId String?   // Groups messages into conversations
 
   // Message Metadata
   messageLength  Int?
@@ -164,12 +167,12 @@ model TalkEasyMessage {
   detectedTopics String[] @default([])
   detectedKeywords String[] @default([])
   emotionalIntensity String? // low, medium, high
-  conversationTurn Int?
-  processingTimeMs Int? // AI response time
+  conversationTurn Int? 
+  processingTimeMs Int?  // AI response time
 
   // Categorization
   primaryCategory   String?
-  secondaryCategory String?
+  secondaryCategory String? 
 
   // Resource Recommendations
   recommendedArticles    String[] @default([])
@@ -219,7 +222,7 @@ model TalkEasyAnalytics {
   // Performance Metrics
   avgProcessingTime Float? // Average AI response time (ms)
   avgMessageLength  Float? // Average characters
-  avgResponseLength Float?
+  avgResponseLength Float? 
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -246,13 +249,13 @@ model TalkEasyTrainingData {
   keywords           String[] @default([])
 
   // Quality Control
-  qualityScore      Float?  // 0-1 score for training suitability
+  qualityScore      Float?   // 0-1 score for training suitability
   humanReviewed     Boolean @default(false)
   includeInTraining Boolean @default(true)
 
   // Metadata
   originalTimestamp DateTime
-  conversationTurn  Int?
+  conversationTurn  Int? 
 
   createdAt DateTime @default(now())
 
@@ -268,10 +271,10 @@ model TalkEasyTrainingData {
 model TalkEasyFeedback {
   id        String  @id @default(cuid())
   userId    String
-  messageId String  // References TalkEasyMessage.id
+  messageId String  // References TalkEasyMessage. id
   rating    Int     // 1-5 stars
-  helpful   Boolean? // Was the response helpful?
-  feedback  String? @db.Text // Optional text feedback
+  helpful   Boolean?  // Was the response helpful?
+  feedback  String?  @db.Text // Optional text feedback
   timestamp DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -292,7 +295,7 @@ model ParentCircleCategory {
   id          Int         @id @default(autoincrement())
   name        String      @unique
   slug        String      @unique
-  description String?     @db.Text
+  description String?      @db.Text
   type        ContentType // QUESTION, STORY, BOTH
   icon        String?     // Emoji or icon identifier
   color       String?     // Hex color for UI
@@ -315,18 +318,18 @@ model ParentCircleCategory {
 /// Supports anonymous posting and community/expert answers
 model Question {
   id      Int     @id @default(autoincrement())
-  title   String? // Optional title
+  title   String?  // Optional title
   content String  @db.Text
-  slug    String? @unique // SEO-friendly URL
+  slug    String?  @unique // SEO-friendly URL
 
   // Category
   categoryId Int
   category   ParentCircleCategory @relation(fields: [categoryId], references: [id])
 
   // Author (nullable for anonymous)
-  createdBy  String? // null = anonymous
+  createdBy  String?  // null = anonymous
   author     User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-  authorName String? // Display name (anonymous or custom)
+  authorName String?  // Display name (anonymous or custom)
 
   // Status
   status ContentStatus @default(PENDING)
@@ -345,7 +348,7 @@ model Question {
   // Timestamps
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
-  approvedAt DateTime?
+  approvedAt DateTime? 
   rejectedAt DateTime?
 
   // Relations
@@ -401,12 +404,12 @@ model Answer {
 /// Supports anonymous sharing for sensitive topics
 model Story {
   id      Int     @id @default(autoincrement())
-  title   String? // Optional title
+  title   String?  // Optional title
   content String  @db.Text
   slug    String? @unique
 
   // Category (optional)
-  categoryId Int?
+  categoryId Int? 
   category   ParentCircleCategory? @relation(fields: [categoryId], references: [id])
 
   // Author (nullable for anonymous)
@@ -435,7 +438,7 @@ model Story {
 
   // Relations
   votes          StoryVote[]
-  comments       StoryComment[] // 🆕 Story comments
+  comments       StoryComment[]
   reports        Report[]
   moderationLogs ModerationLog[]
 
@@ -450,7 +453,7 @@ model Story {
 }
 
 /// StoryComment - Community comments on stories
-/// 🆕 NEW: Enables discussion and support on personal stories
+/// Enables discussion and support on personal stories
 /// Requires moderation like other user-generated content
 model StoryComment {
   id      Int    @id @default(autoincrement())
@@ -520,13 +523,13 @@ model Report {
 
   // Polymorphic Relations (only one will be set)
   questionId Int?
-  question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question   Question?  @relation(fields: [questionId], references: [id], onDelete: Cascade)
   storyId    Int?
-  story      Story?    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  story      Story?     @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
   // Report Details
   reason  String
-  details String? @db.Text
+  details String?  @db.Text
 
   // Reporter
   reportedBy String
@@ -561,12 +564,12 @@ model ModerationLog {
   // Polymorphic Relations
   questionId Int?
   question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  storyId    Int?
+  storyId    Int? 
   story      Story?    @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
   // Action Details
   action         ModerationAction
-  previousStatus ContentStatus? // Status before action
+  previousStatus ContentStatus?  // Status before action
   newStatus      ContentStatus  // Status after action
 
   // Moderator
@@ -574,7 +577,7 @@ model ModerationLog {
   moderator   User   @relation(fields: [moderatorId], references: [id])
 
   // Notes
-  reason String? @db.Text // Reason for rejection
+  reason String?  @db.Text // Reason for rejection
   notes  String? @db.Text // Internal moderator notes
 
   createdAt DateTime @default(now())
@@ -595,17 +598,17 @@ model ParentCircleAnalytics {
   // Submission Metrics
   questionsSubmitted Int @default(0)
   storiesSubmitted   Int @default(0)
-  commentsSubmitted  Int @default(0) // 🆕 Comment tracking
+  commentsSubmitted  Int @default(0)
 
   // Approval Metrics
   questionsApproved Int @default(0)
   storiesApproved   Int @default(0)
-  commentsApproved  Int @default(0) // 🆕 Comment approval
+  commentsApproved  Int @default(0)
 
   // Rejection Metrics
   questionsRejected Int @default(0)
   storiesRejected   Int @default(0)
-  commentsRejected  Int @default(0) // 🆕 Comment rejection
+  commentsRejected  Int @default(0)
 
   // Engagement Metrics
   answersPosted      Int @default(0)
@@ -628,6 +631,49 @@ model ParentCircleAnalytics {
 
   @@index([date])
   @@map("parentcircle_analytics")
+}
+
+// ============================================
+// GROWTRACK - Mood, Behavior & Trigger Tracking
+// ============================================
+
+/// GrowTrack Entry - Caregivers track moods, behaviors, and triggers
+/// Can track for themselves (SELF) or their children (CHILD)
+model GrowTrackEntry {
+  id        String   @id @default(cuid())
+  
+  // Who created this entry (the caregiver/user)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Who is this entry about? 
+  trackedPersonType TrackedPersonType @default(SELF) // SELF or CHILD
+  trackedPersonName String?  // Child's name (required if CHILD, null if SELF)
+  
+  // Mood tracking
+  mood          String   // "Happy", "Sad", "Anxious", "Calm", etc.
+  moodIntensity Int      // 1-10 scale
+
+  // Behavior tracking
+  behaviors     String[] @default([]) // Array of observed behaviors
+  
+  // Triggers/Stressors
+  triggers      String[] @default([]) // Array of triggers/stressors
+
+  // Caregiver notes
+  notes         String?   @db.Text // Personal observations and notes
+
+  // Timestamps
+  recordedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([recordedAt])
+  @@index([trackedPersonType])
+  @@index([userId, trackedPersonType, trackedPersonName]) // Filter by specific child
+  @@index([userId, recordedAt]) // Query history
+  @@map("growtrack_entries")
 }
 
 // ============================================
@@ -676,7 +722,6 @@ enum ContentStatus {
 }
 
 /// Comment Status - Story comment moderation
-/// 🆕 NEW: Separate status enum for comments
 enum CommentStatus {
   PENDING  // Awaiting moderation
   APPROVED // Approved and visible
@@ -695,14 +740,14 @@ enum ReportableContent {
   QUESTION
   STORY
   ANSWER
-  COMMENT // 🆕 Comments can be reported
+  COMMENT
 }
 
 /// Moderable Content - What requires moderation
 enum ModerableContent {
   QUESTION
   STORY
-  COMMENT // 🆕 Comments require moderation
+  COMMENT
 }
 
 /// Report Status - Report lifecycle
@@ -724,4 +769,10 @@ enum ModerationAction {
   UNPIN     // Unpin question
   FEATURE   // Feature content
   UNFEATURE // Unfeature content
+}
+
+/// Tracked Person Type - Who is being tracked
+enum TrackedPersonType {
+  SELF   // Entry is about the logged-in user themselves
+  CHILD  // Entry is about the user's child
 }
