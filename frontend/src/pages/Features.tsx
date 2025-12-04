@@ -2,14 +2,15 @@
  * ============================================
  * FEATURES PAGE
  * ============================================
- * @version     2.0.0
+ * @version     5.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 06:24:39 UTC
- * @description Showcase of all Totoz Wellness features
+ * @updated     2025-11-27
+ * @description Showcase of all Totoz Wellness features with React Router
  * ============================================
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import { ChatIcon } from '../components/icons/ChatIcon';
@@ -17,11 +18,6 @@ import { HeartIcon } from '../components/icons/HeartIcon';
 import { ChartBarIcon } from '../components/icons/ChartBarIcon';
 import { UsersIcon } from '../components/icons/UsersIcon';
 import { BookOpenIcon } from '../components/icons/BookOpenIcon';
-
-interface FeaturesProps {
-  onGetStartedClick: () => void;
-  onNavigateToPage: (page: string) => void;
-}
 
 const features = [
   {
@@ -31,7 +27,7 @@ const features = [
     status: 'Available Now',
     color: 'bg-blue-50 border-blue-200',
     isAvailable: true,
-    action: 'talkeasy'
+    action: '/talkeasy'
   },
   {
     icon: <HeartIcon />,
@@ -40,7 +36,7 @@ const features = [
     status: 'Available Now',
     color: 'bg-pink-50 border-pink-200',
     isAvailable: true,
-    action: 'connectcare'
+    action: '/connectcare'
   },
   {
     icon: <BookOpenIcon />,
@@ -49,24 +45,25 @@ const features = [
     status: 'Available Now',
     color: 'bg-teal-50 border-teal-200',
     isAvailable: true,
-    action: 'learnwell'
+    action: '/learnwell'
   },
   {
     icon: <UsersIcon />,
     title: 'ParentCircle',
-    description: 'Join a supportive peer community to share experiences, ask questions, and get advice from other parents. 🆕',
-    status: 'Available Now', // 🆕 CHANGED FROM "Coming Soon"
+    description: 'Join a supportive peer community to share experiences, ask questions, and get advice from other parents.  🆕',
+    status: 'Available Now',
     color: 'bg-green-50 border-green-200',
-    isAvailable: true, // 🆕 NOW AVAILABLE
-    action: 'parentcircle' // 🆕 WORKING ROUTE
+    isAvailable: true,
+    action: '/parentcircle'
   },
   {
     icon: <ChartBarIcon />,
     title: 'GrowTrack',
-    description: 'A simple and effective tracker for monitoring behavior, wellness patterns, and progress over time.',
-    status: 'Coming Soon',
+    description: 'Track moods, behaviors, and triggers for yourself and your children with AI-powered insights.  🆕',
+    status: 'Available Now', // ✅ UPDATED
     color: 'bg-purple-50 border-purple-200',
-    isAvailable: false,
+    isAvailable: true, // ✅ NOW AVAILABLE
+    action: '/growtrack' // ✅ WORKING ROUTE
   },
   {
     icon: <div className="text-3xl">🧸</div>,
@@ -78,14 +75,12 @@ const features = [
   }
 ];
 
-const FeatureCard: React.FC<{ 
-  feature: typeof features[0]; 
-  onNavigateToPage: (page: string) => void;
-}> = ({ feature, onNavigateToPage }) => {
+const FeatureCard: React.FC<{ feature: typeof features[0] }> = ({ feature }) => {
+  const navigate = useNavigate();
+
   const handleClick = () => {
     if (feature.isAvailable && feature.action) {
-      console.log(`🎯 [${new Date().toISOString().replace('T', ' ').substring(0, 19)}] Feature clicked: ${feature.title} -> ${feature.action}`);
-      onNavigateToPage(feature.action);
+      navigate(feature.action);
     }
   };
 
@@ -97,7 +92,7 @@ const FeatureCard: React.FC<{
       onClick={handleClick}
     >
       <div className="bg-white text-teal rounded-full w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-md">
-        {feature.icon}
+        {feature. icon}
       </div>
       
       <div className="flex items-center gap-3 mb-3 flex-wrap">
@@ -124,7 +119,7 @@ const FeatureCard: React.FC<{
         </div>
       )}
 
-      {!feature.isAvailable && (
+      {! feature.isAvailable && (
         <div className="mt-auto pt-4 border-t border-gray-200">
           <span className="text-gray-500 font-semibold text-sm flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,17 +133,16 @@ const FeatureCard: React.FC<{
   );
 };
 
-const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage }) => {
+const Features: React.FC = () => {
+  const navigate = useNavigate();
+
   // Count available features
   const availableCount = features.filter(f => f.isAvailable).length;
   const totalCount = features.length;
 
   return (
     <div className="bg-light-bg overflow-x-hidden min-h-screen">
-      <Navbar 
-        onGetStartedClick={onGetStartedClick} 
-        onNavigateToPage={onNavigateToPage} 
-      />
+      <Navbar />
       
       <main className="pt-20">
         {/* Hero Section */}
@@ -166,18 +160,24 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
             
             <p className="text-lg md:text-xl text-dark-text/70 mb-8 max-w-3xl mx-auto">
               Everything you need to support your child's mental wellness journey, all in one place.
-              From AI-powered conversations to community support.
+              From AI-powered conversations to community support. 
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <button 
-                onClick={() => onNavigateToPage('parentcircle')}
+                onClick={() => navigate('/growtrack')}
                 className="bg-teal text-white font-bold py-3 px-8 rounded-full hover:bg-teal/90 transition-all transform hover:scale-105 shadow-lg"
               >
-                🆕 Try ParentCircle
+                🆕 Try GrowTrack
               </button>
               <button 
-                onClick={() => onNavigateToPage('learnwell')}
+                onClick={() => navigate('/parentcircle')}
+                className="bg-purple-500 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-600 transition-all transform hover:scale-105 shadow-lg"
+              >
+                Join ParentCircle
+              </button>
+              <button 
+                onClick={() => navigate('/learnwell')}
                 className="bg-white text-teal border-2 border-teal font-bold py-3 px-8 rounded-full hover:bg-teal/10 transition-all transform hover:scale-105"
               >
                 Explore LearnWell
@@ -203,7 +203,6 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
                 <FeatureCard
                   key={feature.title}
                   feature={feature}
-                  onNavigateToPage={onNavigateToPage}
                 />
               ))}
             </div>
@@ -251,10 +250,10 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
               </div>
 
               <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-                <div className="text-4xl mb-4">📚</div>
-                <h3 className="text-xl font-bold text-dark-text mb-3">Expert Resources</h3>
+                <div className="text-4xl mb-4">📊</div>
+                <h3 className="text-xl font-bold text-dark-text mb-3">Track Progress</h3>
                 <p className="text-dark-text/70">
-                  Access professional articles and counselor network via LearnWell & ConnectCare
+                  Monitor moods and behaviors with GrowTrack's AI insights
                 </p>
               </div>
             </div>
@@ -272,19 +271,19 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <button 
-                onClick={() => onNavigateToPage('parentcircle')}
+                onClick={() => navigate('/growtrack')}
                 className="bg-white text-teal font-bold py-4 px-8 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
               >
-                Join ParentCircle 🆕
+                Try GrowTrack 🆕
               </button>
               <button 
-                onClick={() => onNavigateToPage('talkeasy')}
+                onClick={() => navigate('/talkeasy')}
                 className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105"
               >
                 Try TalkEasy AI
               </button>
               <button 
-                onClick={onGetStartedClick}
+                onClick={() => navigate('/signup')}
                 className="bg-[#F09232] text-white font-bold py-4 px-8 rounded-full hover:bg-[#F09232]/90 transition-all transform hover:scale-105"
               >
                 Get Started Free
@@ -294,10 +293,7 @@ const Features: React.FC<FeaturesProps> = ({ onGetStartedClick, onNavigateToPage
         </section>
       </main>
 
-      <Footer
-        onGetStartedClick={onGetStartedClick}
-        onNavigateToPage={onNavigateToPage}
-      />
+      <Footer />
     </div>
   );
 };

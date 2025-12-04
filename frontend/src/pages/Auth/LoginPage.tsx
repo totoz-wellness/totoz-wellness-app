@@ -2,29 +2,21 @@
  * ============================================
  * LOGIN PAGE
  * ============================================
- * @version     1.0.0
+ * @version     5.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 09:55:24 UTC
- * @description Professional login page with proper error handling
+ * @updated     2025-11-27
+ * @description Professional login page with React Router navigation
  * ============================================
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../config/api';
 import toast from 'react-hot-toast';
 
-interface LoginPageProps {
-  onLoginSuccess: () => void;
-  onNavigateToSignup: () => void;
-  onNavigateToHome: () => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ 
-  onLoginSuccess, 
-  onNavigateToSignup,
-  onNavigateToHome 
-}) => {
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -41,7 +33,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e. preventDefault();
     setError('');
     setLoading(true);
 
@@ -53,11 +45,11 @@ const LoginPage: React.FC<LoginPageProps> = ({
         localStorage.setItem('token', response.data.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.data.user));
         
-        toast.success(`Welcome back, ${response.data.data.user.name}! 👋`);
+        toast.success(`Welcome back, ${response.data. data.user.name}!  👋`);
         
-        // Small delay for better UX
+        // Small delay for better UX, then navigate to home
         setTimeout(() => {
-          onLoginSuccess();
+          navigate('/');
         }, 500);
       }
     } catch (err: any) {
@@ -80,13 +72,13 @@ const LoginPage: React.FC<LoginPageProps> = ({
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <button 
-            onClick={onNavigateToHome}
+            onClick={() => navigate('/')}
             className="inline-block mb-4 text-3xl font-heading font-bold hover:opacity-80 transition-opacity"
           >
             <span className="text-[#347EAD]">Totoz</span>
             <span className="text-[#F09232]">&nbsp;Wellness</span>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back! </h1>
           <p className="text-gray-600">Sign in to continue your wellness journey</p>
         </div>
 
@@ -140,11 +132,11 @@ const LoginPage: React.FC<LoginPageProps> = ({
               disabled={loading}
               className="w-full bg-teal text-white font-bold py-3 px-6 rounded-xl hover:bg-teal/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
             >
-              {loading ? (
+              {loading ?  (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1. 135 5.824 3 7.938l3-2. 647z" />
                   </svg>
                   Signing in...
                 </span>
@@ -166,7 +158,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
 
           {/* Sign Up Link */}
           <button
-            onClick={onNavigateToSignup}
+            onClick={() => navigate('/signup')}
             className="w-full border-2 border-teal text-teal font-bold py-3 px-6 rounded-xl hover:bg-teal/5 transition-all"
           >
             Create an Account
@@ -176,7 +168,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
         {/* Back to Home */}
         <div className="text-center mt-6">
           <button
-            onClick={onNavigateToHome}
+            onClick={() => navigate('/')}
             className="text-gray-600 hover:text-teal font-semibold transition-colors"
           >
             ← Back to Home

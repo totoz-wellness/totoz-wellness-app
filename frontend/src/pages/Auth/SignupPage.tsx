@@ -2,29 +2,21 @@
  * ============================================
  * SIGNUP PAGE
  * ============================================
- * @version     1.0.0
+ * @version     5.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 09:55:24 UTC
- * @description Professional signup page with validation
+ * @updated     2025-11-27
+ * @description Professional signup page with React Router navigation
  * ============================================
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../config/api';
 import toast from 'react-hot-toast';
 
-interface SignupPageProps {
-  onSignupSuccess: () => void;
-  onNavigateToLogin: () => void;
-  onNavigateToHome: () => void;
-}
-
-const SignupPage: React.FC<SignupPageProps> = ({ 
-  onSignupSuccess, 
-  onNavigateToLogin,
-  onNavigateToHome 
-}) => {
+const SignupPage: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     age: '',
@@ -45,11 +37,11 @@ const SignupPage: React.FC<SignupPageProps> = ({
   };
 
   const validateForm = () => {
-    if (!formData.name.trim()) {
+    if (! formData.name. trim()) {
       setError('Please enter your name');
       return false;
     }
-    if (!formData.age || parseInt(formData.age) < 1 || parseInt(formData.age) > 120) {
+    if (! formData.age || parseInt(formData.age) < 1 || parseInt(formData.age) > 120) {
       setError('Please enter a valid age (1-120)');
       return false;
     }
@@ -57,11 +49,11 @@ const SignupPage: React.FC<SignupPageProps> = ({
       setError('Please enter a valid email address');
       return false;
     }
-    if (formData.password.length < 6) {
+    if (formData.password. length < 6) {
       setError('Password must be at least 6 characters long');
       return false;
     }
-    if (formData.password !== formData.confirmPassword) {
+    if (formData. password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return false;
     }
@@ -97,8 +89,9 @@ const SignupPage: React.FC<SignupPageProps> = ({
         
         toast.success(`🎉 Welcome to Totoz Wellness, ${response.data.data.user.name}!`);
         
+        // Navigate to home after successful signup
         setTimeout(() => {
-          onSignupSuccess();
+          navigate('/');
         }, 500);
       }
     } catch (err: any) {
@@ -121,7 +114,7 @@ const SignupPage: React.FC<SignupPageProps> = ({
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <button 
-            onClick={onNavigateToHome}
+            onClick={() => navigate('/')}
             className="inline-block mb-4 text-3xl font-heading font-bold hover:opacity-80 transition-opacity"
           >
             <span className="text-[#347EAD]">Totoz</span>
@@ -283,7 +276,7 @@ const SignupPage: React.FC<SignupPageProps> = ({
 
           {/* Login Link */}
           <button
-            onClick={onNavigateToLogin}
+            onClick={() => navigate('/login')}
             className="w-full border-2 border-teal text-teal font-bold py-3 px-6 rounded-xl hover:bg-teal/5 transition-all"
           >
             Sign In Instead
@@ -293,7 +286,7 @@ const SignupPage: React.FC<SignupPageProps> = ({
         {/* Back to Home */}
         <div className="text-center mt-6">
           <button
-            onClick={onNavigateToHome}
+            onClick={() => navigate('/')}
             className="text-gray-600 hover:text-teal font-semibold transition-colors"
           >
             ← Back to Home

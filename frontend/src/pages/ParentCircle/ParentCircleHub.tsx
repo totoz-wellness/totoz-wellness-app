@@ -2,14 +2,15 @@
  * ============================================
  * PARENTCIRCLE HUB - WITH TWITTER-STYLE MODALS
  * ============================================
- * @version     3.0.0
+ * @version     5.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 09:40:02 UTC
- * @description Complete feed with modal detail views
+ * @updated     2025-11-27
+ * @description Complete feed with modal detail views and React Router
  * ============================================
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
@@ -24,6 +25,9 @@ import { useQuestions, useStories, useCategories } from '../../hooks/useParentCi
 import * as API from '../../services/parentcircle.service';
 
 const ParentCircleHub: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // State
   const [activeTab, setActiveTab] = useState<'question' | 'story'>('question');
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -37,6 +41,23 @@ const ParentCircleHub: React.FC = () => {
     id: number | null 
   }>({ type: null, id: null });
 
+  // Parse URL to detect modal state on mount
+  useEffect(() => {
+    const path = location.pathname;
+    const questionMatch = path.match(/\/question\/(\d+)/);
+    const storyMatch = path.match(/\/story\/(\d+)/);
+
+    if (questionMatch) {
+      const id = parseInt(questionMatch[1]);
+      setDetailModal({ type: 'question', id });
+      setActiveTab('question');
+    } else if (storyMatch) {
+      const id = parseInt(storyMatch[1]);
+      setDetailModal({ type: 'story', id });
+      setActiveTab('story');
+    }
+  }, [location.pathname]);
+
   // Fetch data with hooks
   const { categories, loading: categoriesLoading } = useCategories();
   
@@ -47,7 +68,7 @@ const ParentCircleHub: React.FC = () => {
     loadMore: loadMoreQuestions,
     refresh: refreshQuestions
   } = useQuestions({
-    categoryId: selectedCategory ?? undefined,
+    categoryId: selectedCategory ??  undefined,
     sortBy,
     search: searchQuery || undefined
   });
@@ -78,44 +99,41 @@ const ParentCircleHub: React.FC = () => {
   const handleLikeStory = useCallback(async (id: number) => {
     try {
       await API.likeStory(id);
-      toast.success('❤️ Story liked!');
+      toast.success('❤️ Story liked! ');
       refreshStories();
     } catch (error: any) {
       toast.error(error.message || 'Failed to like story');
     }
   }, [refreshStories]);
 
-  // 🆕 Open Detail Modal (instead of navigation)
+  // 🆕 Open Detail Modal with React Router
   const handleItemClick = (id: number) => {
     console.log(`[${new Date().toISOString()}] Opening ${activeTab} detail modal: ${id}`);
     setDetailModal({ type: activeTab, id });
-    
-    // Update URL without full navigation
-    const url = `/${activeTab}/${id}`;
-    window.history.pushState({ modal: activeTab, id }, '', url);
+    navigate(`/${activeTab}/${id}`, { replace: false });
   };
 
-  // 🆕 Close Detail Modal
+  // 🆕 Close Detail Modal with React Router
   const handleCloseModal = () => {
-    console.log(`[${new Date().toISOString()}] Closing detail modal`);
+    console.log(`[${new Date(). toISOString()}] Closing detail modal`);
     setDetailModal({ type: null, id: null });
-    
-    // Restore feed URL
-    window.history.pushState({}, '', '/parentcircle');
+    navigate('/parentcircle', { replace: false });
   };
 
   // Handle browser back button
-  React.useEffect(() => {
+  useEffect(() => {
     const handlePopState = () => {
-      setDetailModal({ type: null, id: null });
+      if (! location.pathname.includes('/question/') && !location.pathname.includes('/story/')) {
+        setDetailModal({ type: null, id: null });
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [location.pathname]);
 
   const handleCreateNew = () => {
     setShowCreateModal(true);
-    console.log(`[${new Date().toISOString()}] Create ${activeTab} modal opened`);
+    console.log(`[${new Date(). toISOString()}] Create ${activeTab} modal opened`);
   };
 
   const handleCloseCreateModal = () => {
@@ -135,7 +153,7 @@ const ParentCircleHub: React.FC = () => {
     setActiveTab(tab);
     setSelectedCategory(null);
     setSearchQuery('');
-    console.log(`[${new Date().toISOString()}] Tab switched to: ${tab}`);
+    console.log(`[${new Date(). toISOString()}] Tab switched to: ${tab}`);
   };
 
   const currentItems = activeTab === 'question' ? questions : stories;
@@ -159,7 +177,7 @@ const ParentCircleHub: React.FC = () => {
             ParentCircle Community 👨‍👩‍👧‍👦
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            A safe, anonymous space to share stories, ask questions, and support one another.
+            A safe, anonymous space to share stories, ask questions, and support one another. 
           </p>
         </motion.div>
 
@@ -177,7 +195,7 @@ const ParentCircleHub: React.FC = () => {
               <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
                 <button
                   onClick={() => handleTabChange('question')}
-                  className={`px-6 py-2.5 rounded-lg font-bold transition-all ${
+                  className={`px-6 py-2. 5 rounded-lg font-bold transition-all ${
                     activeTab === 'question'
                       ? 'bg-white text-teal shadow-md'
                       : 'text-gray-600 hover:text-teal'
@@ -205,7 +223,7 @@ const ParentCircleHub: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={`Search ${activeTab === 'question' ? 'questions' : 'stories'}...`}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2. 5 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none transition-all"
                 />
               </div>
 
@@ -217,7 +235,7 @@ const ParentCircleHub: React.FC = () => {
                 className="bg-teal text-white font-bold py-2.5 px-6 rounded-xl hover:bg-teal/90 transition-all flex items-center gap-2 shadow-lg"
               >
                 <PlusIcon className="w-5 h-5" />
-                {activeTab === 'question' ? 'Ask Question' : 'Share Story'}
+                {activeTab === 'question' ?  'Ask Question' : 'Share Story'}
               </motion.button>
             </div>
           </div>
@@ -228,7 +246,7 @@ const ParentCircleHub: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* Left Sidebar - Filters */}
-            <motion.div 
+            <motion. div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
@@ -289,18 +307,18 @@ const ParentCircleHub: React.FC = () => {
         </div>
 
         {/* Floating Action Button (Mobile) */}
-        <motion.button
+        <motion. button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleCreateNew}
           className="lg:hidden fixed bottom-6 right-6 bg-teal text-white p-4 rounded-full shadow-2xl z-40"
         >
           <PlusIcon className="w-6 h-6" />
-        </motion.button>
+        </motion. button>
       </div>
 
       {/* 🆕 Detail Modals */}
-      {detailModal.type === 'question' && detailModal.id && (
+      {detailModal.type === 'question' && detailModal. id && (
         <QuestionDetailModal
           questionId={detailModal.id}
           onClose={handleCloseModal}

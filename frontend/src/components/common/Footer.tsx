@@ -1,30 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FacebookIcon } from '../icons/FacebookIcon';
 import { InstagramIcon } from '../icons/InstagramIcon';
 import { LinkedInIcon } from '../icons/LinkedInIcon';
 import { XLogo } from '../icons/XLogo';
-import {TiktokIcon} from '../icons/TiktokIcon';
+import { TiktokIcon } from '../icons/TiktokIcon';
 import { YoutubeIcon } from '../icons/YoutubeIcon';
 import { WhatsappChannelIcon } from '../icons/WhatsappChannelIcon';
 
-interface FooterProps {
-  onGetStartedClick?: () => void;
-  onNavigateToPage?: (page: string) => void;
-}
-
-const Footer: React.FC<FooterProps> = ({ onGetStartedClick, onNavigateToPage }) => {
-
-  const handleNavClick = (page: string) => {
-    if (onNavigateToPage) {
-      onNavigateToPage(page);
-    }
-  };
-
-  const handleGetStartedClick = () => {
-    if (onGetStartedClick) {
-      onGetStartedClick();
-    }
-  };
+const Footer: React.FC = () => {
+  const navigate = useNavigate();
 
   return (
     <footer id="contact" className="bg-dark-text text-light-text">
@@ -34,43 +19,115 @@ const Footer: React.FC<FooterProps> = ({ onGetStartedClick, onNavigateToPage }) 
             <h3 className="text-xl font-bold font-heading text-white mb-2">Totoz Wellness</h3>
             <p className="text-light-text/70">Nurturing the mental health of the next generation, together.</p>
             <div className="flex space-x-4 mt-6">
-              <a href="https://x.com/totozwellness" target="blank" className="text-light-text/70 hover:text-white"><XLogo /></a>
-              <a href="https://web.facebook.com/profile.php?id=61582845514552" target="blank" className="text-light-text/70 hover:text-white"><FacebookIcon /></a>
-              <a href="https://www.instagram.com/totozwellness" target="blank" className="text-light-text/70 hover:text-white"><InstagramIcon /></a>
-              <a href="#" className="text-light-text/70 hover:text-white"><LinkedInIcon /></a>
-              <a href="https://www.tiktok.com/@totoz.wellness" target="blank" className="text-light-text/70 hover:text-white"><TiktokIcon /></a>
-              <a href="https://www.youtube.com/@totozwellness" target="blank" className="text-light-text/70 hover:text-white"><YoutubeIcon /></a>
-              <a href="https://whatsapp.com/channel/0029Vb796fyId7nG2ecaJQ2F" target="blank" className="text-light-text/70 hover:text-white"><WhatsappChannelIcon /></a>
+              <a href="https://x.com/totozwellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
+                <XLogo />
+              </a>
+              <a href="https://web.facebook. com/profile.php?id=61582845514552" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
+                <FacebookIcon />
+              </a>
+              <a href="https://www.instagram.com/totozwellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
+                <InstagramIcon />
+              </a>
+              <a href="#" className="text-light-text/70 hover:text-white transition">
+                <LinkedInIcon />
+              </a>
+              <a href="https://www.tiktok.com/@totoz.wellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
+                <TiktokIcon />
+              </a>
+              <a href="https://www.youtube.com/@totozwellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
+                <YoutubeIcon />
+              </a>
+              <a href="https://whatsapp.com/channel/0029Vb796fyId7nG2ecaJQ2F" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
+                <WhatsappChannelIcon />
+              </a>
             </div>
           </div>
           <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
             <div>
               <h4 className="font-bold text-white mb-4">Quick Links</h4>
               <ul className="space-y-2">
-                <li><button onClick={() => handleNavClick('home')} className="text-light-text/70 hover:text-white">Home</button></li>
-                <li><button onClick={() => handleNavClick('features')} className="text-light-text/70 hover:text-white">Features</button></li>
-                <li><button onClick={() => handleNavClick('whyus')} className="text-light-text/70 hover:text-white">Why Us</button></li>
-                <li><button onClick={() => handleNavClick('community')} className="text-light-text/70 hover:text-white">Community</button></li>
-                <li><button onClick={() => handleNavClick('learnwell')} className="text-light-text/70 hover:text-white">LearnWell</button></li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/')} 
+                    className="text-light-text/70 hover:text-white transition text-left"
+                  >
+                    Home
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/features')} 
+                    className="text-light-text/70 hover:text-white transition text-left"
+                  >
+                    Features
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/whyus')} 
+                    className="text-light-text/70 hover:text-white transition text-left"
+                  >
+                    Why Us
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/community')} 
+                    className="text-light-text/70 hover:text-white transition text-left"
+                  >
+                    Community
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/learnwell')} 
+                    className="text-light-text/70 hover:text-white transition text-left"
+                  >
+                    LearnWell
+                  </button>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-white mb-4">Support</h4>
               <ul className="space-y-2">
-                <li><button onClick={() => handleNavClick('faq')} className="text-light-text/70 hover:text-white">FAQ</button></li>
-                <li><a href="mailto:contact@totoz.com" className="text-light-text/70 hover:text-white">Contact Us</a></li>
-                <li><button onClick={() => handleNavClick('privacy')} className="text-light-text/70 hover:text-white">Privacy Policy</button></li>
-                {/* <li><button onClick={handleGetStartedClick} className="text-light-text/70 hover:text-white">Admin Login</button></li> */}
+                <li>
+                  <button 
+                    onClick={() => navigate('/faq')} 
+                    className="text-light-text/70 hover:text-white transition text-left"
+                  >
+                    FAQ
+                  </button>
+                </li>
+                <li>
+                  <a 
+                    href="mailto:contact@totoz.com" 
+                    className="text-light-text/70 hover:text-white transition"
+                  >
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/privacy')} 
+                    className="text-light-text/70 hover:text-white transition text-left"
+                  >
+                    Privacy Policy
+                  </button>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-white mb-4">Contact</h4>
-              <p className="text-light-text/70">+254 *** *** ***<br/>contact@totoz.com</p>
+              <p className="text-light-text/70">
+                +254 *** *** ***<br/>
+                contact@totoz.com
+              </p>
             </div>
           </div>
         </div>
         <div className="mt-12 border-t border-gray-700 pt-6 text-center text-light-text/50">
-          <p>&copy; {new Date().getFullYear()} Totoz Wellness. All Rights Reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Totoz Wellness.  All Rights Reserved.</p>
         </div>
       </div>
     </footer>

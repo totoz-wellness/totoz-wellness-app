@@ -1,22 +1,18 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
-interface CommunityProps {
-  onGetStartedClick: () => void;
-  onNavigateToPage: (page: string) => void;
-}
-
 const testimonials = [
   {
-    quote: "Finally, a resource that understands what parents are going through. Totoz Wellness has been a game-changer for our family's communication.",
+    quote: "Finally, a resource that understands what parents are going through.  Totoz Wellness has been a game-changer for our family's communication.",
     author: 'Davine O., Mother of Two',
     avatar: 'https://picsum.photos/id/1027/100/100',
     location: 'Nairobi, Kenya',
     rating: 5
   },
   {
-    quote: "Being part of the ParentCircle community makes me feel less alone. Sharing stories and advice with other caregivers is invaluable.",
+    quote: "Being part of the ParentCircle community makes me feel less alone.  Sharing stories and advice with other caregivers is invaluable.",
     author: 'Arogo C., Guardian',
     avatar: 'https://picsum.photos/id/1005/100/100',
     location: 'Kisumu, Kenya',
@@ -29,7 +25,6 @@ const testimonials = [
     location: 'Eldoret, Kenya',
     rating: 5
   },
-  
 ];
 
 const communityStats = [
@@ -39,13 +34,12 @@ const communityStats = [
   { number: '24/7', label: 'Support Available', icon: '🕐' }
 ];
 
-const Community: React.FC<CommunityProps> = ({ onGetStartedClick, onNavigateToPage }) => {
+const Community: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-light-bg overflow-x-hidden min-h-screen">
-      <Navbar 
-        onGetStartedClick={onGetStartedClick} 
-        onNavigateToPage={onNavigateToPage} 
-      />
+      <Navbar />
       
       <main className="pt-20">
         {/* Hero Section */}
@@ -56,7 +50,7 @@ const Community: React.FC<CommunityProps> = ({ onGetStartedClick, onNavigateToPa
             </h1>
             <p className="text-lg md:text-xl text-dark-text/70 mb-8 max-w-3xl mx-auto">
               Hear from caregivers who have found support and guidance with Totoz Wellness. 
-              Join a community that understands your journey.
+              Join a community that understands your journey. 
             </p>
           </div>
         </section>
@@ -101,7 +95,7 @@ const Community: React.FC<CommunityProps> = ({ onGetStartedClick, onNavigateToPa
                   <div className="flex items-center mb-6">
                     <img 
                       src={testimonial.avatar} 
-                      alt={testimonial.author} 
+                      alt={testimonial. author} 
                       className="w-16 h-16 rounded-full border-4 border-pastel-green" 
                     />
                     <div className="ml-4">
@@ -134,13 +128,13 @@ const Community: React.FC<CommunityProps> = ({ onGetStartedClick, onNavigateToPa
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <button 
-                onClick={onGetStartedClick}
+                onClick={() => navigate('/signup')}
                 className="bg-white text-teal font-bold py-4 px-8 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
               >
                 Join Our Community
               </button>
               <button 
-                onClick={() => onNavigateToPage('learnwell')}
+                onClick={() => navigate('/learnwell')}
                 className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105"
               >
                 Explore Resources
@@ -150,10 +144,7 @@ const Community: React.FC<CommunityProps> = ({ onGetStartedClick, onNavigateToPa
         </section>
       </main>
       
-      <Footer
-        onGetStartedClick={onGetStartedClick}
-        onNavigateToPage={onNavigateToPage}
-      />
+      <Footer />
     </div>
   );
 };

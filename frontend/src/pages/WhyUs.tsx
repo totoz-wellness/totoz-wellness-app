@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   Users, 
@@ -19,11 +20,6 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
-
-interface WhyUsProps {
-  onGetStartedClick: () => void;
-  onNavigateToPage: (page: string) => void;
-}
 
 const CHART_DATA = [
   { name: 'Aware of Need', value: 85.7 },
@@ -146,13 +142,12 @@ const BenefitCard: React.FC<{
   );
 };
 
-const WhyUs: React.FC<WhyUsProps> = ({ onGetStartedClick, onNavigateToPage }) => {
+const WhyUs: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-light-bg overflow-x-hidden min-h-screen">
-      <Navbar 
-        onGetStartedClick={onGetStartedClick} 
-        onNavigateToPage={onNavigateToPage} 
-      />
+      <Navbar />
       
       <main className="pt-20">
         {/* Hero Section */}
@@ -192,7 +187,7 @@ const WhyUs: React.FC<WhyUsProps> = ({ onGetStartedClick, onNavigateToPage }) =>
                   Research-Backed Solutions
                 </h2>
                 <p className="text-lg text-dark-text/70 mb-6 leading-relaxed">
-                  Our approach is backed by comprehensive research and surveys conducted with parents and caregivers. 
+                  Our approach is backed by comprehensive research and surveys conducted with parents and caregivers.  
                   We found a strong desire for accessible, supportive tools like Totoz Wellness.
                 </p>
                 <p className="text-lg text-dark-text/70 mb-8 leading-relaxed">
@@ -200,7 +195,7 @@ const WhyUs: React.FC<WhyUsProps> = ({ onGetStartedClick, onNavigateToPage }) =>
                   but are actively seeking solutions that fit into their busy lives.
                 </p>
                 <button 
-                  onClick={() => onNavigateToPage('learnwell')}
+                  onClick={() => navigate('/learnwell')}
                   className="bg-teal text-white font-bold py-3 px-6 rounded-full hover:bg-teal/90 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 group"
                 >
                   Explore Our Resources
@@ -254,7 +249,7 @@ const WhyUs: React.FC<WhyUsProps> = ({ onGetStartedClick, onNavigateToPage }) =>
                 The Numbers Tell the Story
               </h2>
               <p className="text-lg text-dark-text/70 max-w-2xl mx-auto leading-relaxed">
-                Our research reveals the urgent need for accessible mental health support tools for families.
+                Our research reveals the urgent need for accessible mental health support tools for families. 
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -305,14 +300,14 @@ const WhyUs: React.FC<WhyUsProps> = ({ onGetStartedClick, onNavigateToPage }) =>
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <button 
-                onClick={onGetStartedClick}
+                onClick={() => navigate('/signup')}
                 className="bg-white text-teal font-bold py-4 px-8 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 group"
               >
                 Get Started Now
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               <button 
-                onClick={() => onNavigateToPage('community')}
+                onClick={() => navigate('/community')}
                 className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105 flex items-center gap-2 group"
               >
                 Learn About Our Community
@@ -323,10 +318,7 @@ const WhyUs: React.FC<WhyUsProps> = ({ onGetStartedClick, onNavigateToPage }) =>
         </section>
       </main>
       
-      <Footer
-        onGetStartedClick={onGetStartedClick}
-        onNavigateToPage={onNavigateToPage}
-      />
+      <Footer />
     </div>
   );
 };

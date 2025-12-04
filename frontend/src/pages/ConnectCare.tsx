@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { XIcon } from '../components/icons/XIcon';
 import { LocationMarkerIcon } from '../components/icons/LocationMarkerIcon';
 import { PhoneIcon } from '../components/icons/PhoneIcon';
@@ -58,11 +59,8 @@ const TypeLabels: { [key in ResourceType]: string } = {
   ONLINE_SERVICE: 'Online Service',
 };
 
-interface ConnectCareProps {
-  onNavigate: (page: string) => void;
-}
-
-const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
+const ConnectCare: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<ResourceType | 'All'>('All');
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
@@ -79,12 +77,11 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.get('/directory?limit=100');
+      const response = await api.get('/directory? limit=100');
       
       if (response.data.success) {
-        const directories = response.data.data.directories;
+        const directories = response.data.data. directories;
         
-        // Transform backend data to match frontend interface
         const transformedResources: Resource[] = directories.map((dir: any) => ({
           id: dir.id,
           name: dir.name,
@@ -110,12 +107,11 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
           isFeatured: dir.isFeatured,
         }));
         
-        // Sort: Featured first, then verified, then by name
         transformedResources.sort((a, b) => {
           if (a.isFeatured && !b.isFeatured) return -1;
-          if (!a.isFeatured && b.isFeatured) return 1;
-          if (a.isVerified && !b.isVerified) return -1;
-          if (!a.isVerified && b.isVerified) return 1;
+          if (! a.isFeatured && b.isFeatured) return 1;
+          if (a.isVerified && ! b.isVerified) return -1;
+          if (!a. isVerified && b.isVerified) return 1;
           return a.name.localeCompare(b.name);
         });
         
@@ -123,7 +119,7 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
       }
     } catch (err: any) {
       console.error('Failed to fetch resources:', err);
-      setError('Failed to load resources. Please try again later.');
+      setError('Failed to load resources.  Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -135,19 +131,18 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
       .filter(r => {
         const lowercasedTerm = searchTerm.toLowerCase();
         return (
-          r.name.toLowerCase().includes(lowercasedTerm) ||
-          r.description.toLowerCase().includes(lowercasedTerm) ||
-          r.location.city?.toLowerCase().includes(lowercasedTerm) ||
-          r.location.county?.toLowerCase().includes(lowercasedTerm) ||
+          r.name.toLowerCase(). includes(lowercasedTerm) ||
+          r.description. toLowerCase().includes(lowercasedTerm) ||
+          r. location.city?. toLowerCase().includes(lowercasedTerm) ||
+          r. location.county?.toLowerCase().includes(lowercasedTerm) ||
           r.specializations.some(s => s.toLowerCase().includes(lowercasedTerm)) ||
           r.tags.some(t => t.toLowerCase().includes(lowercasedTerm))
         );
       });
   }, [searchTerm, activeFilter, resources]);
 
-  // Get unique types from resources for filter buttons
   const availableTypes = useMemo(() => {
-    const types = new Set(resources.map(r => r.type));
+    const types = new Set(resources.map(r => r. type));
     return Array.from(types).sort();
   }, [resources]);
 
@@ -215,10 +210,10 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-12">
           <button
-            onClick={() => onNavigate('home')}
+            onClick={() => navigate('/')}
             className="flex items-center text-dark-text/80 hover:text-teal font-semibold transition-colors group"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3. org/2000/svg" className="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Home
@@ -279,12 +274,12 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
               </div>
               <p className="text-dark-text/70 mb-4 text-sm">
                 {resource.location.city && resource.location.county 
-                  ? `${resource.location.city}, ${resource.location.county}`
+                  ? `${resource. location.city}, ${resource.location.county}`
                   : resource.location.city || resource.location.county || 'Location not specified'}
               </p>
               <div className="flex-grow">
                 <p className="text-dark-text/60 text-sm italic">
-                  {resource.excerpt || resource.description.substring(0, 100) + '...'}
+                  {resource.excerpt || resource.description. substring(0, 100) + '...'}
                 </p>
               </div>
               {resource.specializations.length > 0 && (
@@ -298,7 +293,7 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
             </div>
           ))}
            {filteredResources.length === 0 && (
-            <p className="text-center text-dark-text/60 md:col-span-2 lg:col-span-3">No resources found. Try adjusting your search or filters.</p>
+            <p className="text-center text-dark-text/60 md:col-span-2 lg:col-span-3">No resources found.  Try adjusting your search or filters.</p>
           )}
         </div>
       </div>
@@ -312,12 +307,12 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
             </button>
             <div className="flex justify-between items-start mb-4">
                 <h3 className="text-2xl md:text-3xl font-bold font-heading text-dark-text pr-4">
-                  {selectedResource.name}
+                  {selectedResource. name}
                   {selectedResource.isVerified && (
                     <span className="ml-2 text-blue-500 text-lg" title="Verified">✓</span>
                   )}
                 </h3>
-                <span className={`text-sm font-bold px-3 py-1 rounded-full whitespace-nowrap mt-1 ${TypeColors[selectedResource.type]}`}>
+                <span className={`text-sm font-bold px-3 py-1 rounded-full whitespace-nowrap mt-1 ${TypeColors[selectedResource. type]}`}>
                   {TypeLabels[selectedResource.type]}
                 </span>
             </div>
@@ -358,7 +353,7 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
               <div className="mb-6">
                   <h4 className="font-bold text-dark-text mb-2">Tags</h4>
                   <div className="flex flex-wrap gap-2">
-                      {selectedResource.tags.map((tag, idx) => (
+                      {selectedResource. tags.map((tag, idx) => (
                           <span key={idx} className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">{tag}</span>
                       ))}
                   </div>
@@ -370,16 +365,16 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
                    <p><ClockIcon /> <strong>Hours:</strong> {selectedResource.operatingHours}</p>
                  )}
                  {(selectedResource.location.address || selectedResource.location.city || selectedResource.location.county) && (
-                   <p><LocationMarkerIcon /> <strong>Location:</strong> {[selectedResource.location.address, selectedResource.location.city, selectedResource.location.county].filter(Boolean).join(', ')}</p>
+                   <p><LocationMarkerIcon /> <strong>Location:</strong> {[selectedResource.location.address, selectedResource.location.city, selectedResource. location.county].filter(Boolean). join(', ')}</p>
                  )}
                  {selectedResource.contact.phone && (
                    <p><PhoneIcon /> <strong>Phone:</strong> <a href={`tel:${selectedResource.contact.phone}`} className="text-teal hover:underline">{selectedResource.contact.phone}</a></p>
                  )}
                  {selectedResource.contact.email && (
-                   <p><strong>Email:</strong> <a href={`mailto:${selectedResource.contact.email}`} className="text-teal hover:underline">{selectedResource.contact.email}</a></p>
+                   <p><strong>Email:</strong> <a href={`mailto:${selectedResource. contact.email}`} className="text-teal hover:underline">{selectedResource.contact.email}</a></p>
                  )}
                  {selectedResource.contact.website && (
-                   <p><strong>Website:</strong> <a href={selectedResource.contact.website.startsWith('http') ? selectedResource.contact.website : `https://${selectedResource.contact.website}`} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">{selectedResource.contact.website}</a></p>
+                   <p><strong>Website:</strong> <a href={selectedResource.contact.website.startsWith('http') ? selectedResource.contact.website : `https://${selectedResource.contact.website}`} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">{selectedResource. contact.website}</a></p>
                  )}
             </div>
 
@@ -391,8 +386,8 @@ const ConnectCare: React.FC<ConnectCareProps> = ({ onNavigate }) => {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out;
+        . animate-fade-in {
+          animation: fade-in 0. 3s ease-out;
         }
       `}</style>
     </section>

@@ -2,13 +2,15 @@
  * ============================================
  * STORY DETAIL PAGE
  * ============================================
- * @version     1.0.0
+ * @version     5.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 06:57:02 UTC
+ * @updated     2025-11-27
+ * @description Story detail with React Router navigation
  * ============================================
  */
 
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, EyeIcon, ChatBubbleLeftIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { motion } from 'framer-motion';
@@ -22,13 +24,10 @@ import CommentCard from '../../components/ParentCircle/Detail/CommentCard';
 import LoadingSkeleton from '../../components/ParentCircle/Shared/LoadingSkeleton';
 import EmptyState from '../../components/ParentCircle/Shared/EmptyState';
 
-interface StoryDetailProps {
-  storyId: number | string;
-  onBack: () => void;
-}
-
-const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
-  const { story, comments, loading, error, refresh } = useStory(storyId);
+const StoryDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { story, comments, loading, error, refresh } = useStory(id || '');
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -40,12 +39,18 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
     }
   }, [story]);
 
+  const handleBack = () => {
+    navigate('/parentcircle');
+  };
+
   const handleLike = async () => {
+    if (! id) return;
+
     try {
-      await API.likeStory(Number(storyId));
-      setLiked(!liked);
+      await API.likeStory(Number(id));
+      setLiked(! liked);
       setLikeCount(liked ? likeCount - 1 : likeCount + 1);
-      toast.success(liked ? '💔 Unliked' : '❤️ Liked!');
+      toast.success(liked ? '💔 Unliked' : '❤️ Liked! ');
     } catch (error: any) {
       toast.error(error.message || 'Failed to like story');
     }
@@ -53,12 +58,12 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !id) return;
 
     try {
       setSubmitting(true);
-      await API.createComment(Number(storyId), { content: newComment.trim() });
-      toast.success('✅ Comment submitted! It will appear after moderation.');
+      await API.createComment(Number(id), { content: newComment. trim() });
+      toast.success('✅ Comment submitted!  It will appear after moderation.');
       setNewComment('');
       refresh();
     } catch (error: any) {
@@ -87,7 +92,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
             message="Story not found"
             submessage={error || "The story you're looking for doesn't exist or has been removed"}
             actionLabel="← Go Back"
-            onAction={onBack}
+            onAction={handleBack}
           />
         </div>
       </div>
@@ -99,10 +104,10 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
       <div className="container mx-auto px-4 max-w-4xl">
         
         {/* Back Button */}
-        <motion.button
+        <motion. button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          onClick={onBack}
+          onClick={handleBack}
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-teal transition-colors font-semibold"
         >
           <ArrowLeftIcon className="w-5 h-5" />
@@ -119,8 +124,8 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             {story.category && (
               <CategoryBadge 
-                name={story.category.name}
-                color={story.category.color}
+                name={story.category. name}
+                color={story.category. color}
                 icon={story.category.icon}
               />
             )}
@@ -167,7 +172,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
               <UserAvatar 
                 name={story.authorName}
                 size="lg"
-                isAnonymous={!story.author}
+                isAnonymous={! story.author}
               />
               <div>
                 <div className="font-semibold text-gray-900">{story.authorName}</div>
@@ -216,7 +221,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
           className="mb-8"
         >
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            💬 {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+            💬 {comments. length} {comments.length === 1 ? 'Comment' : 'Comments'}
           </h2>
 
           {comments.length === 0 ? (

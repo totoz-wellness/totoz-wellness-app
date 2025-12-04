@@ -2,13 +2,15 @@
  * ============================================
  * QUESTION DETAIL PAGE
  * ============================================
- * @version     1.0.0
+ * @version     5.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 06:57:02 UTC
+ * @updated     2025-11-27
+ * @description Question detail with React Router navigation
  * ============================================
  */
 
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, EyeIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -22,20 +24,23 @@ import AnswerCard from '../../components/ParentCircle/Detail/AnswerCard';
 import LoadingSkeleton from '../../components/ParentCircle/Shared/LoadingSkeleton';
 import EmptyState from '../../components/ParentCircle/Shared/EmptyState';
 
-interface QuestionDetailProps {
-  questionId: number | string;
-  onBack: () => void;
-}
-
-const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) => {
-  const { question, answers, loading, error, refresh } = useQuestion(questionId);
+const QuestionDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { question, answers, loading, error, refresh } = useQuestion(id || '');
   const [newAnswer, setNewAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState('best');
 
+  const handleBack = () => {
+    navigate('/parentcircle');
+  };
+
   const handleVote = async (isHelpful: boolean) => {
+    if (! id) return;
+    
     try {
-      await API.voteQuestion(Number(questionId), isHelpful);
+      await API.voteQuestion(Number(id), isHelpful);
       toast.success(isHelpful ? '👍 Marked as helpful!' : '👎 Feedback recorded');
       refresh();
     } catch (error: any) {
@@ -45,12 +50,12 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
 
   const handleSubmitAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAnswer.trim()) return;
+    if (! newAnswer.trim() || !id) return;
 
     try {
       setSubmitting(true);
-      await API.createAnswer(Number(questionId), newAnswer.trim());
-      toast.success('✅ Answer submitted! It will appear after moderation.');
+      await API.createAnswer(Number(id), newAnswer. trim());
+      toast.success('✅ Answer submitted!   It will appear after moderation.');
       setNewAnswer('');
       refresh();
     } catch (error: any) {
@@ -63,10 +68,10 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
   const handleMarkAnswerHelpful = async (answerId: number) => {
     try {
       await API.markAnswerHelpful(answerId);
-      toast.success('👍 Marked as helpful!');
+      toast.success('👍 Marked as helpful!  ');
       refresh();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to mark as helpful');
+      toast. error(error.message || 'Failed to mark as helpful');
     }
   };
 
@@ -89,7 +94,7 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
             message="Question not found"
             submessage={error || "The question you're looking for doesn't exist or has been removed"}
             actionLabel="← Go Back"
-            onAction={onBack}
+            onAction={handleBack}
           />
         </div>
       </div>
@@ -97,15 +102,15 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
   }
 
   // Sort answers
-  const sortedAnswers = [...answers].sort((a, b) => {
+  const sortedAnswers = [... answers].sort((a, b) => {
     if (sortBy === 'best') {
       if (a.isAccepted) return -1;
       if (b.isAccepted) return 1;
-      if (a.isVerified && !b.isVerified) return -1;
+      if (a.isVerified && ! b.isVerified) return -1;
       if (b.isVerified && !a.isVerified) return 1;
       return b.helpfulCount - a.helpfulCount;
     } else if (sortBy === 'newest') {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return new Date(b.createdAt). getTime() - new Date(a.createdAt).getTime();
     } else {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     }
@@ -116,10 +121,10 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
       <div className="container mx-auto px-4 max-w-4xl">
         
         {/* Back Button */}
-        <motion.button
+        <motion. button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          onClick={onBack}
+          onClick={handleBack}
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-teal transition-colors font-semibold"
         >
           <ArrowLeftIcon className="w-5 h-5" />
@@ -135,8 +140,8 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
           {/* Header */}
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <CategoryBadge 
-              name={question.category.name}
-              color={question.category.color}
+              name={question.category. name}
+              color={question. category.color}
               icon={question.category.icon}
             />
             
@@ -156,7 +161,7 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
           {/* Title */}
           {question.title && (
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              {question.title}
+              {question.  title}
             </h1>
           )}
 
@@ -187,7 +192,7 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
               <UserAvatar 
                 name={question.authorName}
                 size="lg"
-                isAnonymous={!question.author}
+                isAnonymous={! question.author}
               />
               <div>
                 <div className="font-semibold text-gray-900">{question.authorName}</div>
@@ -230,7 +235,7 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
               {answers.length} {answers.length === 1 ? 'Answer' : 'Answers'}
             </h2>
             
-            {answers.length > 0 && (
+            {answers. length > 0 && (
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -249,10 +254,10 @@ const QuestionDetail: React.FC<QuestionDetailProps> = ({ questionId, onBack }) =
               <EmptyState
                 type="content"
                 message="No answers yet"
-                submessage="Be the first to help answer this question!"
+                submessage="Be the first to help answer this question!  "
               />
             ) : (
-              sortedAnswers.map((answer) => (
+              sortedAnswers. map((answer) => (
                 <AnswerCard
                   key={answer.id}
                   answer={answer}
