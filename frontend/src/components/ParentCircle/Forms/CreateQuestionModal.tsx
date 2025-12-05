@@ -2,9 +2,10 @@
  * ============================================
  * CREATE QUESTION MODAL
  * ============================================
- * @version     1.0.0
+ * @version     2.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 07:04:02 UTC
+ * @updated     2025-12-05
+ * @description Clean, professional question creation form
  * ============================================
  */
 
@@ -48,7 +49,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.content.trim() || formData.content.trim().length < 20) {
+    if (!formData.content.trim() || formData.content.trim(). length < 20) {
       newErrors.content = 'Question must be at least 20 characters';
     }
 
@@ -56,8 +57,8 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
       newErrors.categoryId = 'Please select a category';
     }
 
-    if (formData.isAnonymous && !formData.authorName.trim()) {
-      newErrors.authorName = 'Please provide a display name for anonymous posting';
+    if (formData.isAnonymous && !formData. authorName. trim()) {
+      newErrors. authorName = 'Please provide a display name';
     }
 
     setErrors(newErrors);
@@ -91,10 +92,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
 
       await API.createQuestion(payload);
 
-      toast.success(
-        '✅ Question submitted! It will appear after moderation.',
-        { duration: 5000 }
-      );
+      toast.success('Question submitted successfully!  It will appear after moderation.');
 
       // Reset form
       setFormData({
@@ -117,7 +115,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   };
 
   const handleClose = () => {
-    if (!submitting) {
+    if (! submitting) {
       setFormData({
         title: '',
         content: '',
@@ -144,7 +142,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
         </Transition.Child>
 
         {/* Modal Container */}
@@ -161,41 +159,40 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
             >
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-teal to-blue-500 p-6 text-white">
+                <div className="bg-white border-b border-gray-200 p-6">
                   <div className="flex items-center justify-between">
-                    <Dialog.Title className="text-2xl font-bold flex items-center gap-2">
-                      <span>🙋</span>
-                      Ask the Community
-                    </Dialog.Title>
+                    <Dialog.Title className="text-2xl font-bold text-gray-900">
+                      Ask a Question
+                    </Dialog. Title>
                     <button
                       onClick={handleClose}
                       disabled={submitting}
-                      className="text-white hover:text-gray-200 transition-colors disabled:opacity-50"
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      <XMarkIcon className="w-6 h-6" />
+                      <XMarkIcon className="w-5 h-5" />
                     </button>
                   </div>
-                  <p className="mt-2 text-sm text-white/90">
-                    Share your question with our supportive community
+                  <p className="mt-1 text-sm text-gray-600">
+                    Get support and advice from our community
                   </p>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
                   {/* Category Selection */}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
                       Category <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={formData.categoryId}
                       onChange={(e) => setFormData({ ...formData, categoryId: parseInt(e.target.value) })}
-                      className={`w-full px-4 py-3 rounded-xl border-2 ${
-                        errors.categoryId ? 'border-red-500' : 'border-gray-200'
-                      } focus:border-teal focus:outline-none transition-all`}
+                      className={`w-full px-4 py-2. 5 rounded-lg border ${
+                        errors.categoryId ?  'border-red-300 bg-red-50' : 'border-gray-300'
+                      } focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all`}
                       required
                     >
-                      <option value={0}>Select a category...</option>
+                      <option value={0}>Select a category... </option>
                       {questionCategories.map(cat => (
                         <option key={cat.id} value={cat.id}>
                           {cat.icon} {cat.name}
@@ -203,81 +200,81 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                       ))}
                     </select>
                     {errors.categoryId && (
-                      <p className="text-red-500 text-xs mt-1">{errors.categoryId}</p>
+                      <p className="text-red-600 text-xs mt-1">{errors.categoryId}</p>
                     )}
                   </div>
 
                   {/* Title (Optional) */}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Title (Optional)
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Title <span className="text-gray-500 font-normal">(Optional)</span>
                     </label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="e.g., My toddler won't sleep through the night"
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none transition-all"
+                      placeholder="Brief summary of your question"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all"
                       maxLength={200}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {formData.title.length}/200 characters
+                      {formData.title. length}/200
                     </p>
                   </div>
 
                   {/* Content */}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
                       Your Question <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       value={formData.content}
                       onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      placeholder="Describe your situation in detail. What have you tried? What specific help are you looking for?"
-                      className={`w-full px-4 py-3 rounded-xl border-2 ${
-                        errors.content ? 'border-red-500' : 'border-gray-200'
-                      } focus:border-teal focus:outline-none transition-all min-h-[150px] resize-none`}
+                      placeholder="Describe your situation in detail.  What have you tried?  What specific help are you looking for?"
+                      className={`w-full px-4 py-3 rounded-lg border ${
+                        errors.content ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      } focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all min-h-[120px] resize-none`}
                       required
                     />
                     {errors.content && (
-                      <p className="text-red-500 text-xs mt-1">{errors.content}</p>
+                      <p className="text-red-600 text-xs mt-1">{errors.content}</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      {formData.content.length} characters (minimum 20)
+                      {formData. content.length} characters (min.  20)
                     </p>
                   </div>
 
                   {/* Tags */}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Tags (Optional)
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Tags <span className="text-gray-500 font-normal">(Optional)</span>
                     </label>
                     <input
                       type="text"
                       value={formData.tags}
                       onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                      placeholder="e.g., sleep, toddler, nighttime (comma-separated)"
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none transition-all"
+                      placeholder="sleep, toddler, nighttime"
+                      className="w-full px-4 py-2. 5 rounded-lg border border-gray-300 focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Separate tags with commas
+                      Separate with commas
                     </p>
                   </div>
 
                   {/* Anonymous Option */}
-                  <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
-                    <label className="flex items-center gap-3 cursor-pointer">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.isAnonymous}
+                        checked={formData. isAnonymous}
                         onChange={(e) => setFormData({ ...formData, isAnonymous: e.target.checked })}
-                        className="w-5 h-5 rounded text-teal focus:ring-teal"
+                        className="mt-1 w-4 h-4 rounded text-teal focus:ring-2 focus:ring-teal/20"
                       />
-                      <div>
-                        <span className="text-sm font-bold text-gray-900">
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-gray-900">
                           Post anonymously
                         </span>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 mt-0.5">
                           Your identity will be hidden from the community
                         </p>
                       </div>
@@ -287,67 +284,79 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-4"
+                        className="mt-3 pl-7"
                       >
                         <input
                           type="text"
-                          value={formData.authorName}
-                          onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
+                          value={formData. authorName}
+                          onChange={(e) => setFormData({ ... formData, authorName: e. target.value })}
                           placeholder="Display name (e.g., Concerned Parent)"
-                          className={`w-full px-4 py-2 rounded-lg border-2 ${
-                            errors.authorName ? 'border-red-500' : 'border-gray-200'
-                          } focus:border-teal focus:outline-none transition-all text-sm`}
+                          className={`w-full px-3 py-2 rounded-lg border ${
+                            errors.authorName ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                          } focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all text-sm`}
                           maxLength={50}
                         />
                         {errors.authorName && (
-                          <p className="text-red-500 text-xs mt-1">{errors.authorName}</p>
+                          <p className="text-red-600 text-xs mt-1">{errors.authorName}</p>
                         )}
-                      </motion.div>
+                      </motion. div>
                     )}
                   </div>
 
                   {/* Guidelines */}
-                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                    <h4 className="font-bold text-sm text-blue-900 mb-2">
-                      📌 Posting Guidelines
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h4 className="font-semibold text-sm text-gray-900 mb-2">
+                      Posting Guidelines
                     </h4>
-                    <ul className="text-xs text-blue-800 space-y-1">
-                      <li>• Be specific about your situation</li>
-                      <li>• Mention what you've already tried</li>
-                      <li>• Be respectful and kind to all members</li>
-                      <li>• All questions are reviewed before posting</li>
+                    <ul className="text-xs text-gray-700 space-y-1. 5">
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400 mt-0.5">•</span>
+                        <span>Be specific about your situation and what you need help with</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400 mt-0.5">•</span>
+                        <span>Mention what you've already tried</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400 mt-0.5">•</span>
+                        <span>Be respectful and kind to all members</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-400 mt-0.5">•</span>
+                        <span>All questions are reviewed before posting</span>
+                      </li>
                     </ul>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      disabled={submitting}
-                      className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 px-6 py-3 rounded-xl bg-teal text-white font-bold hover:bg-teal/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Submitting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <PlusIcon className="w-5 h-5" />
-                          <span>Post Question</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
                 </form>
+
+                {/* Footer Actions */}
+                <div className="bg-gray-50 px-6 py-4 flex gap-3 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2. 5 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-white transition-all disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-teal text-white font-semibold hover:bg-teal/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="w-4 h-4" />
+                        <span>Post Question</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

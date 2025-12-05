@@ -121,6 +121,10 @@ model Directory {
   region      String?
   coordinates String?  // Lat,Long format for mapping
 
+
+  latitude    Float?
+  longitude   Float?
+
   // Service Details
   operatingHours  String?
   languages       String[]

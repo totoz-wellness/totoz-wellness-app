@@ -215,9 +215,12 @@ export const submitForReview = async (req, res) => {
   }
 };
 
-// Get all articles with filtering (Public & Admin) - FIXED FOR CONTENT WRITERS
+
+// Get all articles with filtering (Public & Admin)
+
 export const getArticles = async (req, res) => {
   try {
+    const user = req.user; // ✅ Can be null for public users
     const { 
       status, 
       category, 
@@ -227,16 +230,16 @@ export const getArticles = async (req, res) => {
       publishedOnly = 'true' 
     } = req.query;
 
-    console.log(`🔍 [${getCurrentDateTime()}] getArticles called by ${req.user?.name || 'Public'} (${req.user?.role || 'Public'}) with:`, {
+    console.log(`🔍 [${getCurrentDateTime()}] getArticles called by ${user?. name || 'Public'} (${user?.role || 'Public'}) with:`, {
       status,
       category,
       authorId,
       page,
       limit,
       publishedOnly,
-      hasUser: !!req.user,
-      userRole: req.user?.role,
-      userId: req.user?.userId
+      hasUser: !!user,
+      userRole: user?.role,
+      userId: user?.userId
     });
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -244,24 +247,24 @@ export const getArticles = async (req, res) => {
     // Base where clause
     let where = {};
     
-    // Handle filtering logic based on user and publishedOnly flag
-    if (publishedOnly === 'true') {
-      // Public query: only published articles
-      where.status = 'PUBLISHED';
-      console.log(`📚 [${getCurrentDateTime()}] Public query: filtering for PUBLISHED articles only`);
-    } else if (req.user) {
-      // Admin/authenticated user query
+    // ✅ HANDLE PUBLIC VS AUTHENTICATED ACCESS
+    if (! user || publishedOnly === 'true') {
+      // Public users or explicit publishedOnly query: only PUBLISHED articles
+      where. status = 'PUBLISHED';
+      console.log(`📚 [${getCurrentDateTime()}] Public/publishedOnly query: filtering for PUBLISHED articles only`);
+    } else {
+      // Authenticated users with publishedOnly=false
       
-      // FIXED: Role-based filtering
-      if (req.user.role === 'CONTENT_WRITER') {
+      // Role-based filtering
+      if (user.role === 'CONTENT_WRITER') {
         // Content Writers can ONLY see their own articles
-        where.authorId = req.user.userId;
-        console.log(`👤 [${getCurrentDateTime()}] CONTENT_WRITER ${req.user.name}: Filtering for OWN articles only (${req.user.userId})`);
-      } else if (req.user.role === 'CONTENT_LEAD' || req.user.role === 'SUPER_ADMIN') {
+        where.authorId = user.userId;
+        console.log(`👤 [${getCurrentDateTime()}] CONTENT_WRITER ${user.name}: Filtering for OWN articles only`);
+      } else if (user.role === 'CONTENT_LEAD' || user.role === 'SUPER_ADMIN') {
         // Content Leads and Super Admins can see all articles
-        console.log(`🔐 [${getCurrentDateTime()}] ${req.user.role} ${req.user.name}: Access to ALL articles`);
+        console.log(`🔐 [${getCurrentDateTime()}] ${user.role} ${user.name}: Access to ALL articles`);
         
-        // Apply specific author filter if provided (for admins viewing specific author's work)
+        // Apply specific author filter if provided
         if (authorId) {
           where.authorId = authorId;
           console.log(`👤 [${getCurrentDateTime()}] Admin filtering for specific author:`, authorId);
@@ -275,11 +278,13 @@ export const getArticles = async (req, res) => {
       }
     }
     
+    // Apply category filter (works for both public and authenticated)
     if (category) {
       where.category = category;
+      console.log(`🏷️ [${getCurrentDateTime()}] Category filter applied:`, category);
     }
 
-    console.log(`🔍 [${getCurrentDateTime()}] Final where clause for ${req.user?.name || 'Public'}:`, where);
+    console.log(`🔍 [${getCurrentDateTime()}] Final where clause for ${user?.name || 'Public'}:`, where);
 
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
@@ -305,18 +310,18 @@ export const getArticles = async (req, res) => {
         skip,
         take: parseInt(limit)
       }),
-      prisma.article.count({ where })
+      prisma.article. count({ where })
     ]);
 
-    console.log(`📦 [${getCurrentDateTime()}] Query result for ${req.user?.name || 'Public'}:`, {
+    console.log(`📦 [${getCurrentDateTime()}] Query result for ${user?.name || 'Public'}:`, {
       totalFound: total,
       articlesReturned: articles.length,
-      userRole: req.user?.role,
+      userRole: user?.role,
       statuses: articles.map(a => ({ 
         id: a.id.substring(0, 8), 
         status: a.status,
-        author: a.author.name,
-        isOwnArticle: req.user && a.authorId === req.user.userId
+        author: a.author. name,
+        isOwnArticle: user && a.authorId === user.userId
       }))
     });
 
@@ -333,7 +338,7 @@ export const getArticles = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Get articles error for ${req.user?.name || 'Public'}:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Get articles error for ${user?.name || 'Public'}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -345,14 +350,13 @@ export const getArticles = async (req, res) => {
 export const getArticle = async (req, res) => {
   try {
     const { id } = req.params;
-    const isAdminRoute = req.path.includes('/admin');
+    const user = req.user; // ✅ Can be null for public users
 
-    console.log(`📖 [${getCurrentDateTime()}] getArticle called by ${req.user?.name || 'Public'}:`, {
+    console.log(`📖 [${getCurrentDateTime()}] getArticle called by ${user?. name || 'Public'}:`, {
       id: id.substring(0, 8),
-      isAdminRoute,
-      hasUser: !!req.user,
-      userRole: req.user?.role,
-      userId: req.user?.userId
+      hasUser: !!user,
+      userRole: user?.role,
+      userId: user?.userId
     });
 
     const article = await prisma.article.findUnique({
@@ -382,62 +386,63 @@ export const getArticle = async (req, res) => {
       });
     }
 
-    console.log(`📄 [${getCurrentDateTime()}] Found article for ${req.user?.name || 'Public'}:`, {
+    console.log(`📄 [${getCurrentDateTime()}] Found article for ${user?.name || 'Public'}:`, {
       id: article.id.substring(0, 8),
       title: article.title.substring(0, 30) + '...',
       status: article.status,
       authorId: article.authorId,
-      requestUserId: req.user?.userId
+      requestUserId: user?.userId
     });
 
-    // For admin routes or authenticated users, check ownership or admin rights
-    if (isAdminRoute || req.user) {
-      const isAuthor = req.user?.userId === article.authorId;
-      const isContentLead = req.user?.role === 'CONTENT_LEAD';
-      const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
-      
-      // Content Writers can only see their own articles
-      if (req.user?.role === 'CONTENT_WRITER' && !isAuthor) {
-        console.log(`❌ [${getCurrentDateTime()}] Access denied for CONTENT_WRITER ${req.user.name} - not author:`, {
-          userId: req.user.userId,
-          authorId: article.authorId
-        });
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have permission to access this article'
-        });
-      }
-      
-      // Content Leads and Super Admins can see any article
-      if (!isAuthor && !isContentLead && !isSuperAdmin) {
-        console.log(`❌ [${getCurrentDateTime()}] Access denied - not author or admin:`, {
-          userId: req.user?.userId,
-          authorId: article.authorId,
-          userRole: req.user?.role
-        });
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have permission to access this article'
-        });
-      }
-
-      console.log(`✅ [${getCurrentDateTime()}] Admin/Author access granted to ${req.user.name}`);
+    // ✅ PUBLIC ACCESS: Allow anyone to view PUBLISHED articles
+    if (article.status === 'PUBLISHED') {
+      console.log(`✅ [${getCurrentDateTime()}] Public access granted for published article`);
       return res.json({
         success: true,
         data: { article }
       });
     }
 
-    // For public access, only show published articles
-    if (article.status !== 'PUBLISHED') {
+    // ✅ RESTRICTED ACCESS: Only authenticated users can see non-published
+    if (! user) {
       console.log(`❌ [${getCurrentDateTime()}] Public access denied - article not published:`, article.status);
-      return res.status(404).json({
+      return res.status(403).json({
         success: false,
-        message: 'Article not found'
+        message: 'This article has not been published yet'
       });
     }
 
-    console.log(`✅ [${getCurrentDateTime()}] Public access granted for published article`);
+    // Check if user is author or has admin rights
+    const isAuthor = user. userId === article.authorId;
+    const isContentLead = user.role === 'CONTENT_LEAD';
+    const isSuperAdmin = user.role === 'SUPER_ADMIN';
+    
+    // Content Writers can only see their own articles
+    if (user.role === 'CONTENT_WRITER' && !isAuthor) {
+      console.log(`❌ [${getCurrentDateTime()}] Access denied for CONTENT_WRITER ${user.name} - not author:`, {
+        userId: user. userId,
+        authorId: article.authorId
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to access this article'
+      });
+    }
+    
+    // Content Leads and Super Admins can see any article
+    if (! isAuthor && !isContentLead && !isSuperAdmin) {
+      console.log(`❌ [${getCurrentDateTime()}] Access denied - not author or admin:`, {
+        userId: user.userId,
+        authorId: article.authorId,
+        userRole: user.role
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to access this article'
+      });
+    }
+
+    console.log(`✅ [${getCurrentDateTime()}] Admin/Author access granted to ${user. name}`);
     return res.json({
       success: true,
       data: { article }
@@ -445,7 +450,7 @@ export const getArticle = async (req, res) => {
 
   } catch (error) {
     console.error(`❌ [${getCurrentDateTime()}] Get article error:`, error);
-    return res.status(500).json({
+    return res. status(500).json({
       success: false,
       message: 'Internal server error'
     });

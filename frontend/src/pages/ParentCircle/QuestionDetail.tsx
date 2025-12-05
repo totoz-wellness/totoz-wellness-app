@@ -1,18 +1,17 @@
 /**
- * ============================================
- * QUESTION DETAIL PAGE
- * ============================================
- * @version     5.0.0
- * @author      ArogoClin
- * @updated     2025-11-27
- * @description Question detail with React Router navigation
- * ============================================
+ * QUESTION DETAIL - WITH STICKY FAB
+ * @version 6.0.0
  */
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, EyeIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { 
+  ArrowLeftIcon, 
+  EyeIcon, 
+  ChatBubbleLeftIcon,
+  PencilSquareIcon  // ✅ NEW
+} from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useQuestion } from '../../hooks/useParentCircle';
 import * as API from '../../services/parentcircle.service';
@@ -31,6 +30,7 @@ const QuestionDetail: React.FC = () => {
   const [newAnswer, setNewAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState('best');
+  const [showAnswerModal, setShowAnswerModal] = useState(false);  // ✅ NEW
 
   const handleBack = () => {
     navigate('/parentcircle');
@@ -50,13 +50,14 @@ const QuestionDetail: React.FC = () => {
 
   const handleSubmitAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (! newAnswer.trim() || !id) return;
+    if (!newAnswer.trim() || ! id) return;
 
     try {
       setSubmitting(true);
       await API.createAnswer(Number(id), newAnswer. trim());
-      toast.success('✅ Answer submitted!   It will appear after moderation.');
+      toast.success('✅ Answer submitted!  It will appear after moderation.');
       setNewAnswer('');
+      setShowAnswerModal(false);  // ✅ Close modal
       refresh();
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit answer');
@@ -68,7 +69,7 @@ const QuestionDetail: React.FC = () => {
   const handleMarkAnswerHelpful = async (answerId: number) => {
     try {
       await API.markAnswerHelpful(answerId);
-      toast.success('👍 Marked as helpful!  ');
+      toast.success('👍 Marked as helpful!');
       refresh();
     } catch (error: any) {
       toast. error(error.message || 'Failed to mark as helpful');
@@ -107,7 +108,7 @@ const QuestionDetail: React.FC = () => {
       if (a.isAccepted) return -1;
       if (b.isAccepted) return 1;
       if (a.isVerified && ! b.isVerified) return -1;
-      if (b.isVerified && !a.isVerified) return 1;
+      if (b. isVerified && !a.isVerified) return 1;
       return b.helpfulCount - a.helpfulCount;
     } else if (sortBy === 'newest') {
       return new Date(b.createdAt). getTime() - new Date(a.createdAt).getTime();
@@ -161,7 +162,7 @@ const QuestionDetail: React.FC = () => {
           {/* Title */}
           {question.title && (
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              {question.  title}
+              {question.title}
             </h1>
           )}
 
@@ -254,56 +255,115 @@ const QuestionDetail: React.FC = () => {
               <EmptyState
                 type="content"
                 message="No answers yet"
-                submessage="Be the first to help answer this question!  "
+                submessage="Be the first to help answer this question!"
               />
             ) : (
-              sortedAnswers. map((answer) => (
+              sortedAnswers.map((answer) => (
                 <AnswerCard
                   key={answer.id}
                   answer={answer}
-                  onMarkHelpful={() => handleMarkAnswerHelpful(answer.id)}
+                  onMarkHelpful={() => handleMarkAnswerHelpful(answer. id)}
                 />
               ))
             )}
           </div>
         </motion.div>
-
-        {/* Answer Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100"
-        >
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            Your Answer
-          </h3>
-          
-          <form onSubmit={handleSubmitAnswer}>
-            <textarea
-              value={newAnswer}
-              onChange={(e) => setNewAnswer(e.target.value)}
-              placeholder="Share your knowledge, experience, or advice..."
-              className="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none min-h-[150px] resize-none"
-              required
-            />
-            
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-500">
-                💡 <strong>Tip:</strong> Be specific and provide helpful details
-              </p>
-              
-              <button
-                type="submit"
-                disabled={submitting || !newAnswer.trim()}
-                className="bg-teal text-white font-bold py-3 px-8 rounded-full hover:bg-teal/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-              >
-                {submitting ? 'Submitting...' : 'Post Answer'}
-              </button>
-            </div>
-          </form>
-        </motion.div>
       </div>
+
+      {/* ✅ STICKY FLOATING ACTION BUTTON */}
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setShowAnswerModal(true)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-teal to-blue-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all flex items-center justify-center z-50 group"
+        aria-label="Write answer"
+      >
+        <PencilSquareIcon className="w-7 h-7" />
+        
+        {/* Tooltip */}
+        <span className="absolute right-full mr-3 px-3 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          Write Answer
+        </span>
+      </motion.button>
+
+      {/* ✅ ANSWER MODAL (FULLSCREEN ON MOBILE, CENTERED ON DESKTOP) */}
+      <AnimatePresence>
+        {showAnswerModal && (
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAnswerModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal */}
+            <div className="absolute inset-0 flex items-end md:items-center justify-center p-0 md:p-4">
+              <motion.div
+                initial={{ y: '100%', opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: '100%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="bg-white w-full md:max-w-3xl md:rounded-2xl rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+              >
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between z-10">
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    Your Answer
+                  </h3>
+                  <button
+                    onClick={() => setShowAnswerModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSubmitAnswer} className="p-6">
+                  <textarea
+                    value={newAnswer}
+                    onChange={(e) => setNewAnswer(e.target. value)}
+                    placeholder="Share your knowledge, experience, or advice..."
+                    className="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none min-h-[200px] md:min-h-[300px] resize-none text-base"
+                    required
+                    autoFocus
+                  />
+
+                  <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
+                    <p className="text-sm text-gray-500">
+                      💡 <strong>Tip:</strong> Be specific and provide helpful details
+                    </p>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowAnswerModal(false)}
+                        className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting || !newAnswer.trim()}
+                        className="bg-gradient-to-r from-teal to-blue-600 text-white font-bold py-3 px-8 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {submitting ? 'Posting.. .' : 'Post Answer'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -11,7 +11,7 @@ import {
   unpublishArticle
 } from '../controllers/article.controller.js';
 // ✅ Import ALL middleware from the SAME file (auth.middleware.js)
-import { authenticateToken, requireAuth, requireRole } from '../middleware/auth.middleware.js';
+import { authenticateToken, requireAuth, requireRole, optionalAuth } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -23,12 +23,12 @@ const router = express.Router();
 // @route   GET /articles
 // @access  Public (or authenticated users see more based on role)
 // @query   page, limit, category, tags, status, publishedOnly
-router.get('/', authenticateToken, getArticles);
+router.get('/', optionalAuth, getArticles);
 
 // @desc    Get single article by ID (public - only published)
 // @route   GET /articles/:id
 // @access  Public
-router.get('/:id', authenticateToken, getArticle);
+router.get('/:id', optionalAuth, getArticle);
 
 // ======================================
 // PROTECTED ROUTES (Authentication Required)

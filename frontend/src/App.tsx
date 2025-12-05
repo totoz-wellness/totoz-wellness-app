@@ -2,14 +2,14 @@
  * ============================================
  * TOTOZ WELLNESS - MAIN APP COMPONENT
  * ============================================
- * @version     5.0.0
+ * @version     5.1.0
  * @author      ArogoClin
- * @updated     2025-11-27
- * @description Clean router-based architecture
+ * @updated     2025-12-05
+ * @description Fixed ParentCircle routing
  * ============================================
  */
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import {Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // ========== PUBLIC PAGES ==========
@@ -21,8 +21,10 @@ import LearnWell from './pages/LearnWell';
 import ArticleReader from './pages/ArticleReader';
 import ConnectCare from './pages/ConnectCare';
 import ParentCircleHub from './pages/ParentCircle/ParentCircleHub';
-import QuestionDetail from './pages/ParentCircle/QuestionDetail';  // 🆕 ADD THIS
-import StoryDetail from './pages/ParentCircle/StoryDetail';        // 🆕 ADD THIS
+
+// ❌ REMOVE THESE - Not needed with drawers
+// import QuestionDetail from './pages/ParentCircle/QuestionDetail';
+// import StoryDetail from './pages/ParentCircle/StoryDetail';
 
 // ========== AUTH PAGES ==========
 import LoginPage from './pages/Auth/LoginPage';
@@ -56,7 +58,7 @@ import PublicLayout from './layouts/PublicLayout'
 
 function App() {
   return (
-    <BrowserRouter>
+      <>
       {/* Toast Notifications */}
       <Toaster 
         position="top-right"
@@ -90,23 +92,22 @@ function App() {
           </PublicLayout>
         } />
         
-        {/* ParentCircle - Hub and Detail Pages */}
+        {/* ✅ FIXED: ParentCircle Routes - All use the same component */}
         <Route path="/parentcircle" element={
           <PublicLayout>
             <ParentCircleHub />
           </PublicLayout>
         } />
         
-        {/* 🆕 ADD THESE TWO ROUTES */}
-        <Route path="/question/:id" element={
+        <Route path="/parentcircle/question/:id" element={
           <PublicLayout>
-            <QuestionDetail />
+            <ParentCircleHub />
           </PublicLayout>
         } />
         
-        <Route path="/story/:id" element={
+        <Route path="/parentcircle/story/:id" element={
           <PublicLayout>
-            <StoryDetail />
+            <ParentCircleHub />
           </PublicLayout>
         } />
 
@@ -283,7 +284,7 @@ function App() {
         {/* ========== 404 FALLBACK ========== */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 
@@ -298,7 +299,7 @@ function AdminRedirect() {
   }
 
   try {
-    const user = JSON. parse(userData);
+    const user = JSON.  parse(userData);
     const role = user.role;
 
     // Role-based redirects

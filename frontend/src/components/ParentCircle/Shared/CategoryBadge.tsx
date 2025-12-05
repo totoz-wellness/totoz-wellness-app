@@ -1,11 +1,6 @@
 /**
- * ============================================
- * CATEGORY BADGE COMPONENT
- * ============================================
- * @version     1.0.0
- * @author      ArogoClin
- * @updated     2025-11-23 06:41:53 UTC
- * ============================================
+ * CategoryBadge - Displays category with icon and color
+ * @version 2.0.0
  */
 
 import React from 'react';
@@ -19,23 +14,22 @@ interface CategoryBadgeProps {
 
 const CategoryBadge: React.FC<CategoryBadgeProps> = ({ 
   name, 
-  color = '#6B7280', 
+  color = '#3AAFA9', 
   icon,
   size = 'md' 
 }) => {
   const sizeClasses = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
-    lg: 'px-4 py-1.5 text-base'
+    sm: 'px-2 py-1 text-xs',
+    md: 'px-3 py-1.5 text-sm',
+    lg: 'px-4 py-2 text-base'
   };
 
   return (
     <span 
-      className={`inline-flex items-center gap-1.5 rounded-full font-bold ${sizeClasses[size]}`}
+      className={`inline-flex items-center gap-1. 5 rounded-full font-bold ${sizeClasses[size]}`}
       style={{ 
         backgroundColor: `${color}15`, 
-        color: color,
-        border: `1.5px solid ${color}30`
+        color: color 
       }}
     >
       {icon && <span>{icon}</span>}

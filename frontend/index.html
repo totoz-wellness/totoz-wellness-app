@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Totoz Wellness</title>
     
-    <!-- Favicon with multiple sizes for better visibility -->
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="/logo3.jpg" sizes="192x192" />
     <link rel="icon" type="image/png" href="/logo3.jpg" sizes="128x128" />
     <link rel="icon" type="image/png" href="/logo3.jpg" sizes="64x64" />
@@ -22,55 +22,13 @@
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Poppins:wght@400;600;700;800&display=swap" 
       rel="stylesheet" 
     />
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'pastel-green': '#A8D5BA',
-              'teal': '#3AAFA9',
-              'light-bg': '#F9FAFB',
-              'dark-text': '#17252A',
-              'light-text': '#FEFFFF',
-            },
-            fontFamily: {
-              sans: ['Nunito', 'sans-serif'],
-              heading: ['Poppins', 'sans-serif'],
-            }
-          }
-        }
-      }
-    </script>
-    
-    <!-- Import Map (MUST come before any module scripts) -->
-    <script type="importmap">
-      {
-        "imports": {
-          "react/": "https://aistudiocdn.com/react@^19.1.1/",
-          "react": "https://aistudiocdn.com/react@^19.1.1",
-          "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-          "recharts": "https://aistudiocdn.com/recharts@^3.2.1"
-        }
-      }
-    </script>
-    
-    <!-- External Scripts (after import map) -->
-    <script type="module" src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="/index.css" />
-    
-    <!-- Custom Favicon Styling -->
-    <style>
-      /* Force larger favicon display in browser tabs */
-      link[rel="icon"] {
-        width: 64px;
-        height: 64px;
-      }
-    </style>
+
+    <link 
+      rel="stylesheet" 
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
   </head>
   
   <body class="bg-light-bg text-dark-text font-sans">

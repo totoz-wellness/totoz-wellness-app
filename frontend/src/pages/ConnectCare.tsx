@@ -1,10 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { XIcon } from '../components/icons/XIcon';
-import { LocationMarkerIcon } from '../components/icons/LocationMarkerIcon';
-import { PhoneIcon } from '../components/icons/PhoneIcon';
-import { ClockIcon } from '../components/icons/ClockIcon';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { LayoutGrid, Map as MapIcon, Heart } from 'lucide-react';
 import api from '../config/api';
+import { useFavorites } from '../hooks/useFavorites';
+import { useGeolocation } from '../hooks/useGeolocation';
+import { calculateDistance } from '../utils/distance';
+import { trackSearch, trackFilterChange, trackFavoriteToggle } from '../utils/analytics';
+import AdvancedFilters, { FilterState } from '../components/ConnectCare/AdvancedFilters';
+import LocationFilter from '../components/ConnectCare/LocationFilter';
+import ResourceCard from '../components/ConnectCare/ResourceCard';
+import ResourceDetailModal from '../components/ConnectCare/ResourceDetailModal';
+import ResourceMap from '../components/ConnectCare/ResourceMap';
 
 type ResourceType = 'NGO' | 'COUNSELOR' | 'HELPLINE' | 'SUPPORT_GROUP' | 'HOSPITAL' | 'CLINIC' | 'THERAPIST' | 'PSYCHIATRIST' | 'COMMUNITY_CENTER' | 'ONLINE_SERVICE';
 
@@ -25,6 +31,8 @@ interface Resource {
     city?: string;
     county?: string;
     region?: string;
+    latitude?: number;
+    longitude?: number;
   };
   operatingHours?: string;
   languages: string[];
@@ -33,363 +41,479 @@ interface Resource {
   isFeatured: boolean;
 }
 
-const TypeColors: { [key in ResourceType]: string } = {
-  NGO: 'bg-purple-500/20 text-purple-600',
-  COUNSELOR: 'bg-teal/20 text-teal',
-  HELPLINE: 'bg-blue-500/20 text-blue-600',
-  SUPPORT_GROUP: 'bg-pink-500/20 text-pink-600',
-  HOSPITAL: 'bg-red-500/20 text-red-600',
-  CLINIC: 'bg-green-500/20 text-green-600',
-  THERAPIST: 'bg-indigo-500/20 text-indigo-600',
-  PSYCHIATRIST: 'bg-orange-500/20 text-orange-600',
-  COMMUNITY_CENTER: 'bg-yellow-500/20 text-yellow-600',
-  ONLINE_SERVICE: 'bg-cyan-500/20 text-cyan-600',
-};
-
-const TypeLabels: { [key in ResourceType]: string } = {
-  NGO: 'NGO',
-  COUNSELOR: 'Counselor',
-  HELPLINE: 'Helpline',
-  SUPPORT_GROUP: 'Support Group',
-  HOSPITAL: 'Hospital',
-  CLINIC: 'Clinic',
-  THERAPIST: 'Therapist',
-  PSYCHIATRIST: 'Psychiatrist',
-  COMMUNITY_CENTER: 'Community Center',
-  ONLINE_SERVICE: 'Online Service',
+const typeConfig: Record<ResourceType, { label: string; color: string; bg: string }> = {
+  NGO: { label: 'NGO', color: 'text-purple-700', bg: 'bg-purple-50' },
+  COUNSELOR: { label: 'Counselor', color: 'text-teal-700', bg: 'bg-teal-50' },
+  HELPLINE: { label: 'Helpline', color: 'text-blue-700', bg: 'bg-blue-50' },
+  SUPPORT_GROUP: { label: 'Support Group', color: 'text-pink-700', bg: 'bg-pink-50' },
+  HOSPITAL: { label: 'Hospital', color: 'text-red-700', bg: 'bg-red-50' },
+  CLINIC: { label: 'Clinic', color: 'text-green-700', bg: 'bg-green-50' },
+  THERAPIST: { label: 'Therapist', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  PSYCHIATRIST: { label: 'Psychiatrist', color: 'text-orange-700', bg: 'bg-orange-50' },
+  COMMUNITY_CENTER: { label: 'Community Center', color: 'text-amber-700', bg: 'bg-amber-50' },
+  ONLINE_SERVICE: { label: 'Online Service', color: 'text-cyan-700', bg: 'bg-cyan-50' },
 };
 
 const ConnectCare: React.FC = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<ResourceType | 'All'>('All');
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
+    verifiedOnly: false,
+    featuredOnly: false,
+    languages: [],
+    counties: [],
+    maxDistance: undefined
+  });
 
-  useEffect(() => {
-    fetchResources();
-  }, []);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { location: userLocation, loading: locationLoading, getCurrentLocation } = useGeolocation();
 
-  const fetchResources = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await api.get('/directory? limit=100');
-      
-      if (response.data.success) {
-        const directories = response.data.data. directories;
-        
-        const transformedResources: Resource[] = directories.map((dir: any) => ({
-          id: dir.id,
-          name: dir.name,
-          type: dir.type,
-          description: dir.description,
-          excerpt: dir.excerpt,
-          specializations: dir.specializations || [],
-          contact: {
-            phone: dir.phone,
-            email: dir.email,
-            website: dir.website,
-          },
-          location: {
-            address: dir.address,
-            city: dir.city,
-            county: dir.county,
-            region: dir.region,
-          },
-          operatingHours: dir.operatingHours,
-          languages: dir.languages || [],
-          tags: dir.tags || [],
-          isVerified: dir.isVerified,
-          isFeatured: dir.isFeatured,
-        }));
-        
-        transformedResources.sort((a, b) => {
-          if (a.isFeatured && !b.isFeatured) return -1;
-          if (! a.isFeatured && b.isFeatured) return 1;
-          if (a.isVerified && ! b.isVerified) return -1;
-          if (!a. isVerified && b.isVerified) return 1;
-          return a.name.localeCompare(b.name);
-        });
-        
-        setResources(transformedResources);
-      }
-    } catch (err: any) {
-      console.error('Failed to fetch resources:', err);
-      setError('Failed to load resources.  Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredResources = useMemo(() => {
-    return resources
-      .filter(r => activeFilter === 'All' || r.type === activeFilter)
-      .filter(r => {
-        const lowercasedTerm = searchTerm.toLowerCase();
-        return (
-          r.name.toLowerCase(). includes(lowercasedTerm) ||
-          r.description. toLowerCase().includes(lowercasedTerm) ||
-          r. location.city?. toLowerCase().includes(lowercasedTerm) ||
-          r. location.county?.toLowerCase().includes(lowercasedTerm) ||
-          r.specializations.some(s => s.toLowerCase().includes(lowercasedTerm)) ||
-          r.tags.some(t => t.toLowerCase().includes(lowercasedTerm))
-        );
+  // Infinite Query
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError
+  } = useInfiniteQuery({
+    queryKey: ['resources', activeFilter],
+    queryFn: async ({ pageParam = 1 }) => {
+      const params = new URLSearchParams({
+        page: pageParam.toString(),
+        limit: '12',
+        publishedOnly: 'true'
       });
-  }, [searchTerm, activeFilter, resources]);
+
+      if (activeFilter !== 'All') {
+        params.append('type', activeFilter);
+      }
+
+      const response = await api.get(`/directory?${params. toString()}`);
+      return response.data;
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const currentPage = pages.length;
+      const totalPages = lastPage. data.pagination?. totalPages || 1;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
+    initialPageParam: 1
+  });
+
+  // Flatten all pages into single array
+  const allResources = useMemo(() => {
+    if (!data) return [];
+    return data.pages.flatMap(page => 
+      page.data.directories.map((dir: any): Resource => ({
+        id: dir.id,
+        name: dir.name,
+        type: dir.type,
+        description: dir.description,
+        excerpt: dir.excerpt,
+        specializations: dir.specializations || [],
+        contact: {
+          phone: dir.phone,
+          email: dir.email,
+          website: dir.website,
+        },
+        location: {
+          address: dir.address,
+          city: dir.city,
+          county: dir.county,
+          region: dir.region,
+          latitude: dir.latitude,
+          longitude: dir.longitude,
+        },
+        operatingHours: dir.operatingHours,
+        languages: dir.languages || [],
+        tags: dir.tags || [],
+        isVerified: dir.isVerified || false,
+        isFeatured: dir.isFeatured || false,
+      }))
+    );
+  }, [data]);
+
+  // Infinite scroll observer
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]. isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Filter resources
+  const filteredResources = useMemo(() => {
+    let filtered = allResources;
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(r =>
+        r.name.toLowerCase(). includes(term) ||
+        r.description.toLowerCase().includes(term) ||
+        r.location.city?. toLowerCase().includes(term) ||
+        r.location.county?.toLowerCase().includes(term) ||
+        r.specializations.some(s => s.toLowerCase().includes(term)) ||
+        r.tags.some(t => t.toLowerCase().includes(term))
+      );
+    }
+
+    // Advanced filters
+    if (advancedFilters.verifiedOnly) {
+      filtered = filtered.filter(r => r.isVerified);
+    }
+
+    if (advancedFilters.featuredOnly) {
+      filtered = filtered.filter(r => r. isFeatured);
+    }
+
+    if (advancedFilters.languages.length > 0) {
+      filtered = filtered.filter(r =>
+        advancedFilters.languages.some(lang => r.languages.includes(lang))
+      );
+    }
+
+    if (advancedFilters.counties.length > 0) {
+      filtered = filtered.filter(r =>
+        r.location.county && advancedFilters.counties. includes(r.location.county)
+      );
+    }
+
+    // Distance filter
+    if (userLocation && advancedFilters.maxDistance) {
+      filtered = filtered.filter(r => {
+        if (!r.location.latitude || !r.location.longitude) return false;
+        const distance = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          r.location.latitude,
+          r.location.longitude
+        );
+        return distance <= advancedFilters.maxDistance! ;
+      });
+    }
+
+    // Favorites filter
+    if (showFavoritesOnly) {
+      filtered = filtered.filter(r => favorites.includes(r.id));
+    }
+
+    // Sort: Featured > Verified > Distance > Name
+    return filtered.sort((a, b) => {
+      if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
+      if (a.isVerified !== b.isVerified) return a.isVerified ? -1 : 1;
+
+      if (userLocation && a.location.latitude && b.location.latitude) {
+        const distA = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          a.location.latitude,
+          a.location.longitude
+        );
+        const distB = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          b. location.latitude,
+          b. location.longitude
+        );
+        if (distA !== distB) return distA - distB;
+      }
+
+      return a.name.localeCompare(b.name);
+    });
+  }, [allResources, searchTerm, advancedFilters, userLocation, showFavoritesOnly, favorites]);
+
+  // Track search
+  React.useEffect(() => {
+    if (searchTerm) {
+      const timer = setTimeout(() => {
+        trackSearch(searchTerm, filteredResources. length);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, filteredResources.length]);
+
+  // Extract unique values for filters
+  const availableLanguages = useMemo(() => {
+    const langs = new Set<string>();
+    allResources.forEach(r => r.languages.forEach(l => langs.add(l)));
+    return Array.from(langs). sort();
+  }, [allResources]);
+
+  const availableCounties = useMemo(() => {
+    const counties = new Set<string>();
+    allResources. forEach(r => {
+      if (r.location. county) counties.add(r.location.county);
+    });
+    return Array.from(counties).sort();
+  }, [allResources]);
 
   const availableTypes = useMemo(() => {
-    const types = new Set(resources.map(r => r. type));
-    return Array.from(types).sort();
-  }, [resources]);
+    return ['All', ...new Set(allResources.map(r => r.type))] as const;
+  }, [allResources]);
 
-  useEffect(() => {
-    const body = document.querySelector('body');
-    if (body) {
-        body.style.overflow = selectedResource ? 'hidden' : 'auto';
+  const handleTypeFilterChange = (type: ResourceType | 'All') => {
+    setActiveFilter(type);
+    trackFilterChange('type', type);
+  };
+
+  const handleToggleFavorite = useCallback((resourceId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const wasFavorite = isFavorite(resourceId);
+    toggleFavorite(resourceId);
+    trackFavoriteToggle(resourceId, wasFavorite ?  'remove' : 'add');
+  }, [isFavorite, toggleFavorite]);
+
+  const handleResourceClick = (resource: Resource) => {
+    setSelectedResource(resource);
+  };
+
+  const calculateResourceDistance = (resource: Resource): number | undefined => {
+    if (!userLocation || !resource.location.latitude || !resource.location.longitude) {
+      return undefined;
     }
-    return () => {
-        if(body) body.style.overflow = 'auto';
-    };
-  }, [selectedResource]);
-
-  const FilterButton: React.FC<{ type: ResourceType | 'All' }> = ({ type }) => (
-    <button
-      onClick={() => setActiveFilter(type)}
-      className={`px-4 py-2 text-sm sm:text-base sm:px-6 sm:py-2 font-bold rounded-full transition-all duration-300 ${
-        activeFilter === type
-          ? 'bg-teal text-white shadow-md'
-          : 'bg-white text-dark-text/80 hover:bg-teal/10'
-      }`}
-    >
-      {type === 'All' ? 'All' : TypeLabels[type as ResourceType]}
-    </button>
-  );
-
-  if (loading) {
-    return (
-      <section id="connect-care" className="py-20 bg-white min-h-screen">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-teal border-t-transparent"></div>
-              <h3 className="mt-4 text-xl font-semibold text-gray-700">Loading resources...</h3>
-            </div>
-          </div>
-        </div>
-      </section>
+    return calculateDistance(
+      userLocation. lat,
+      userLocation.lng,
+      resource.location.latitude,
+      resource.location.longitude
     );
-  }
-
-  if (error) {
-    return (
-      <section id="connect-care" className="py-20 bg-white min-h-screen">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="text-red-500 text-6xl mb-4">⚠️</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{error}</h3>
-              <button
-                onClick={fetchResources}
-                className="mt-4 px-6 py-3 bg-teal text-white rounded-full hover:bg-teal/90 transition-all font-semibold"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  };
 
   return (
-    <section id="connect-care" className="py-20 bg-white min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-12">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center text-dark-text/80 hover:text-teal font-semibold transition-colors group"
-          >
-            <svg xmlns="http://www.w3. org/2000/svg" className="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Home
-          </button>
-        </div>
-
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-extrabold font-heading text-dark-text">
-            Find Support Near You
-          </h2>
-          <p className="mt-4 text-lg text-dark-text/60 max-w-3xl mx-auto">
-            Search our directory of counselors, helplines, and organizations dedicated to children's mental wellness.
+    <section className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mt-8 mb-8">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+            Find Mental Health Support
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Connect with verified counselors, helplines, clinics, and support services dedicated to children and families. 
           </p>
         </div>
 
-        <div className="mb-10 space-y-6">
-          <input
-            type="text"
-            placeholder="Search by name, specialization, city..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full p-4 border-2 border-gray-200 rounded-full text-lg focus:ring-2 focus:ring-teal focus:border-transparent transition-all"
-          />
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
-            <FilterButton type="All" />
-            {availableTypes.map(type => (
-              <FilterButton key={type} type={type} />
+        {/* Search & Controls */}
+        <div className="max-w-4xl mx-auto mb-8 space-y-6">
+          {/* Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by name, city, specialization..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target. value)}
+              className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-teal/20 focus:border-teal transition-all shadow-sm"
+              aria-label="Search resources"
+            />
+            <svg className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          {/* Filter Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap gap-3">
+              <LocationFilter
+                onLocationChange={(loc) => {
+                  if (loc) getCurrentLocation();
+                }}
+                loading={locationLoading}
+                hasLocation={!! userLocation}
+              />
+
+              <AdvancedFilters
+                filters={advancedFilters}
+                onFilterChange={setAdvancedFilters}
+                availableLanguages={availableLanguages}
+                availableCounties={availableCounties}
+                userLocation={userLocation}
+              />
+
+              {favorites.length > 0 && (
+                <button
+                  onClick={() => setShowFavoritesOnly(! showFavoritesOnly)}
+                  className={`flex items-center gap-2 px-4 py-2. 5 rounded-xl font-medium transition-all ${
+                    showFavoritesOnly
+                      ? 'bg-red-500 text-white shadow-md'
+                      : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-red-300'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+                  Favorites ({favorites.length})
+                </button>
+              )}
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex gap-2 bg-white rounded-xl p-1 border-2 border-gray-200">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-teal text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                aria-label="Grid view"
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  viewMode === 'map'
+                    ? 'bg-teal text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                aria-label="Map view"
+              >
+                <MapIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Type Filters */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {availableTypes. map((type) => (
+              <button
+                key={type}
+                onClick={() => handleTypeFilterChange(type)}
+                className={`px-5 py-2. 5 rounded-full font-semibold transition-all transform hover:scale-105 ${
+                  activeFilter === type
+                    ? 'bg-teal text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+                }`}
+              >
+                {type === 'All' ? 'All Services' : typeConfig[type as ResourceType]?.label || type}
+              </button>
             ))}
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredResources.map(resource => (
-            <div
-              key={resource.id}
-              onClick={() => setSelectedResource(resource)}
-              className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border border-gray-100 flex flex-col relative"
-            >
-              {resource.isFeatured && (
-                <div className="absolute top-3 left-3">
-                  <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
-                    ⭐ Featured
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between items-start mb-4 mt-6">
-                <div className="flex-1 pr-2">
-                  <h3 className="text-xl font-bold font-heading text-dark-text">
-                    {resource.name}
-                    {resource.isVerified && (
-                      <span className="ml-2 text-blue-500 text-sm">✓</span>
-                    )}
-                  </h3>
-                </div>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap ${TypeColors[resource.type]}`}>
-                  {TypeLabels[resource.type]}
-                </span>
-              </div>
-              <p className="text-dark-text/70 mb-4 text-sm">
-                {resource.location.city && resource.location.county 
-                  ? `${resource. location.city}, ${resource.location.county}`
-                  : resource.location.city || resource.location.county || 'Location not specified'}
-              </p>
-              <div className="flex-grow">
-                <p className="text-dark-text/60 text-sm italic">
-                  {resource.excerpt || resource.description. substring(0, 100) + '...'}
-                </p>
-              </div>
-              {resource.specializations.length > 0 && (
-                <p className="text-dark-text/60 text-sm italic mt-2">
-                  "{resource.specializations.slice(0, 2).join(', ')}{resource.specializations.length > 2 ? '...' : ''}"
-                </p>
-              )}
-              <div className="mt-6 text-center">
-                 <span className="font-bold text-teal hover:text-teal/80">View Details &rarr;</span>
-              </div>
-            </div>
-          ))}
-           {filteredResources.length === 0 && (
-            <p className="text-center text-dark-text/60 md:col-span-2 lg:col-span-3">No resources found.  Try adjusting your search or filters.</p>
-          )}
-        </div>
-      </div>
-      
-      {/* Modal */}
-      {selectedResource && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedResource(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setSelectedResource(null)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
-              <XIcon />
-            </button>
-            <div className="flex justify-between items-start mb-4">
-                <h3 className="text-2xl md:text-3xl font-bold font-heading text-dark-text pr-4">
-                  {selectedResource. name}
-                  {selectedResource.isVerified && (
-                    <span className="ml-2 text-blue-500 text-lg" title="Verified">✓</span>
-                  )}
-                </h3>
-                <span className={`text-sm font-bold px-3 py-1 rounded-full whitespace-nowrap mt-1 ${TypeColors[selectedResource. type]}`}>
-                  {TypeLabels[selectedResource.type]}
-                </span>
-            </div>
-            
-            {selectedResource.isFeatured && (
-              <div className="mb-4">
-                <span className="bg-yellow-400 text-yellow-900 text-sm font-bold px-3 py-1 rounded-full">
-                  ⭐ Featured Provider
-                </span>
-              </div>
-            )}
-            
-            <p className="text-dark-text/80 mb-6">{selectedResource.description}</p>
-            
-            {selectedResource.specializations.length > 0 && (
-              <div className="mb-6">
-                  <h4 className="font-bold text-dark-text mb-2">Specializations</h4>
-                  <div className="flex flex-wrap gap-2">
-                      {selectedResource.specializations.map((spec, idx) => (
-                          <span key={idx} className="bg-pastel-green/60 text-dark-text/80 text-sm px-3 py-1 rounded-full">{spec}</span>
-                      ))}
-                  </div>
-              </div>
-            )}
 
-            {selectedResource.languages.length > 0 && (
-              <div className="mb-6">
-                  <h4 className="font-bold text-dark-text mb-2">Languages</h4>
-                  <div className="flex flex-wrap gap-2">
-                      {selectedResource.languages.map((lang, idx) => (
-                          <span key={idx} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">{lang}</span>
-                      ))}
-                  </div>
-              </div>
-            )}
-
-            {selectedResource.tags.length > 0 && (
-              <div className="mb-6">
-                  <h4 className="font-bold text-dark-text mb-2">Tags</h4>
-                  <div className="flex flex-wrap gap-2">
-                      {selectedResource. tags.map((tag, idx) => (
-                          <span key={idx} className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">{tag}</span>
-                      ))}
-                  </div>
-              </div>
-            )}
-
-            <div className="space-y-4 text-dark-text/90 bg-light-bg p-4 rounded-lg">
-                 {selectedResource.operatingHours && (
-                   <p><ClockIcon /> <strong>Hours:</strong> {selectedResource.operatingHours}</p>
-                 )}
-                 {(selectedResource.location.address || selectedResource.location.city || selectedResource.location.county) && (
-                   <p><LocationMarkerIcon /> <strong>Location:</strong> {[selectedResource.location.address, selectedResource.location.city, selectedResource. location.county].filter(Boolean). join(', ')}</p>
-                 )}
-                 {selectedResource.contact.phone && (
-                   <p><PhoneIcon /> <strong>Phone:</strong> <a href={`tel:${selectedResource.contact.phone}`} className="text-teal hover:underline">{selectedResource.contact.phone}</a></p>
-                 )}
-                 {selectedResource.contact.email && (
-                   <p><strong>Email:</strong> <a href={`mailto:${selectedResource. contact.email}`} className="text-teal hover:underline">{selectedResource.contact.email}</a></p>
-                 )}
-                 {selectedResource.contact.website && (
-                   <p><strong>Website:</strong> <a href={selectedResource.contact.website.startsWith('http') ? selectedResource.contact.website : `https://${selectedResource.contact.website}`} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">{selectedResource. contact.website}</a></p>
-                 )}
-            </div>
-
+        {/* Results Count */}
+        {filteredResources.length > 0 && (
+          <div className="text-center mb-6">
+            <p className="text-gray-600 font-medium">
+              Showing {filteredResources.length} {filteredResources.length === 1 ? 'resource' : 'resources'}
+              {showFavoritesOnly && ' from your favorites'}
+              {userLocation && advancedFilters.maxDistance && ` within ${advancedFilters.maxDistance}km`}
+            </p>
           </div>
-        </div>
+        )}
+
+        {/* Content */}
+        {viewMode === 'map' ?  (
+          <ResourceMap
+            resources={filteredResources}
+            onResourceClick={handleResourceClick}
+            selectedResource={selectedResource}
+            userLocation={userLocation}
+          />
+        ) : (
+          <>
+            {/* Loading State */}
+            {isLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded-lg w-3/4 mb-4" />
+                    <div className="h-4 bg-gray-200 rounded w-full mb-2" />
+                    <div className="h-4 bg-gray-200 rounded w-5/6" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Error State */}
+            {isError && (
+              <div className="text-center py-16">
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 max-w-md mx-auto">
+                  <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-. 833-1.864-.833-2.634 0L3.732 16. 5c-.77.833. 192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-red-800 font-semibold text-lg">Failed to load resources</p>
+                  <p className="text-red-600 mt-2">Please try again later</p>
+                </div>
+              </div>
+            )}
+
+            {/* Resource Grid */}
+            {! isLoading && ! isError && (
+              <>
+                {filteredResources. length === 0 ? (
+                  <div className="text-center py-16">
+                    <svg className="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9. 172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-gray-500 text-lg font-medium mb-2">No resources found</p>
+                    <p className="text-gray-400">Try adjusting your search or filters</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {filteredResources.map((resource) => (
+                        <ResourceCard
+                          key={resource.id}
+                          resource={resource}
+                          onClick={() => handleResourceClick(resource)}
+                          isFavorite={isFavorite(resource.id)}
+                          onToggleFavorite={(e) => handleToggleFavorite(resource.id, e)}
+                          distance={calculateResourceDistance(resource)}
+                          typeConfig={typeConfig}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Infinite Scroll Trigger */}
+                    <div ref={observerTarget} className="py-8">
+                      {isFetchingNextPage && (
+                        <div className="text-center">
+                          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal" />
+                          <p className="mt-4 text-gray-600">Loading more resources...</p>
+                        </div>
+                      )}
+                      {! hasNextPage && filteredResources.length > 12 && (
+                        <p className="text-center text-gray-500 font-medium">
+                          You've reached the end of the list
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Resource Detail Modal */}
+      {selectedResource && (
+        <ResourceDetailModal
+          resource={selectedResource}
+          onClose={() => setSelectedResource(null)}
+          typeConfig={typeConfig}
+          isFavorite={isFavorite(selectedResource.id)}
+          onToggleFavorite={() => handleToggleFavorite(selectedResource.id)}
+        />
       )}
-      <style>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        . animate-fade-in {
-          animation: fade-in 0. 3s ease-out;
-        }
-      `}</style>
     </section>
   );
 };

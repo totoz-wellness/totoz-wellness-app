@@ -22,13 +22,13 @@ const Footer: React.FC = () => {
               <a href="https://x.com/totozwellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
                 <XLogo />
               </a>
-              <a href="https://web.facebook. com/profile.php?id=61582845514552" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
+              <a href="https://web.facebook.com/profile.php?id=61582845514552" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
                 <FacebookIcon />
               </a>
               <a href="https://www.instagram.com/totozwellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
                 <InstagramIcon />
               </a>
-              <a href="#" className="text-light-text/70 hover:text-white transition">
+              <a href="https://www.linkedin.com/company/totozwellness/" className="text-light-text/70 hover:text-white transition">
                 <LinkedInIcon />
               </a>
               <a href="https://www.tiktok.com/@totoz.wellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
@@ -120,7 +120,7 @@ const Footer: React.FC = () => {
             <div>
               <h4 className="font-bold text-white mb-4">Contact</h4>
               <p className="text-light-text/70">
-                +254 *** *** ***<br/>
+                +254 797 641 690<br/>
                 contact@totoz.com
               </p>
             </div>

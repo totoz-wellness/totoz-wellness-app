@@ -163,19 +163,7 @@ const Features: React.FC = () => {
               From AI-powered conversations to community support. 
             </p>
             
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-              <button 
-                onClick={() => navigate('/growtrack')}
-                className="bg-teal text-white font-bold py-3 px-8 rounded-full hover:bg-teal/90 transition-all transform hover:scale-105 shadow-lg"
-              >
-                🆕 Try GrowTrack
-              </button>
-              <button 
-                onClick={() => navigate('/parentcircle')}
-                className="bg-purple-500 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-600 transition-all transform hover:scale-105 shadow-lg"
-              >
-                Join ParentCircle
-              </button>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">    
               <button 
                 onClick={() => navigate('/learnwell')}
                 className="bg-white text-teal border-2 border-teal font-bold py-3 px-8 rounded-full hover:bg-teal/10 transition-all transform hover:scale-105"
