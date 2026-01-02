@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ Add this import
 import api from '../../config/api';
+import { setAuthTokens, setUser } from '../../utils/auth'; // ✅ Add this import
 
-interface LoginPageProps {
-  onLoginSuccess: () => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+// ✅ Remove the props interface entirely
+const LoginPage: React.FC = () => { // ✅ Remove props parameter
+  const navigate = useNavigate(); // ✅ Add this hook
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -28,24 +28,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       const response = await api.post('/auth/login', loginData);
 
       if (response.data.success) {
-        const { user, token } = response.data.data;
+        // ✅ Updated to use new token structure
+        const { user, accessToken, refreshToken, expiresIn } = response.data.data;
         
         // Check if user has admin/staff privileges
-        const allowedRoles = ['CONTENT_WRITER', 'CONTENT_LEAD', 'SUPER_ADMIN'];
+        const allowedRoles = ['CONTENT_WRITER', 'CONTENT_LEAD', 'MODERATOR', 'SUPER_ADMIN'];
         
         if (allowedRoles.includes(user.role)) {
-          // Store token and user data
-          localStorage.setItem('token', token);
-          localStorage.setItem('user', JSON.stringify(user));
+          // ✅ Store tokens using new auth utilities
+          setAuthTokens(accessToken, refreshToken, expiresIn);
+          setUser(user);
           sessionStorage.setItem('isAdminAuthenticated', 'true');
           
-          // Set axios default header
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          onLoginSuccess();
+          // ✅ Navigate directly instead of calling callback
+          navigate('/admin/dashboard');
         } else {
           setError('You do not have admin/staff privileges to access this area.');
-          localStorage.removeItem('token');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('tokenExpiration');
           localStorage.removeItem('user');
         }
       }
@@ -80,17 +81,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       const response = await api.post('/auth/admin-setup', setupData);
 
       if (response.data.success) {
-        const { user, token } = response.data.data;
+        // ✅ Updated to use new token structure
+        const { user, accessToken, refreshToken, expiresIn } = response.data.data;
         
-        // Store token and user data
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        // ✅ Store tokens using new auth utilities
+        setAuthTokens(accessToken, refreshToken, expiresIn);
+        setUser(user);
         sessionStorage.setItem('isAdminAuthenticated', 'true');
         
-        // Set axios default header
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        onLoginSuccess();
+        // ✅ Navigate directly instead of calling callback
+        navigate('/admin/dashboard');
       }
     } catch (setupError: any) {
       console.error('Setup error:', setupError);
@@ -106,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   const handleBackToHome = () => {
-    window.location.href = '/';
+    navigate('/'); // ✅ Use navigate instead of window.location
   };
 
   const toggleSetupMode = () => {

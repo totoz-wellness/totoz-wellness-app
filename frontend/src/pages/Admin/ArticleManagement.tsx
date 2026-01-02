@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../config/api';
 import { getCurrentUser, getRolePermissions, hasRole, getRoleDisplayName } from '../../utils/roleUtils';
+import { clearAuth } from '../../utils/auth'; 
 
 interface Article {
   id: string;
@@ -24,21 +26,9 @@ interface DashboardStats {
   rejectedArticles: number;
 }
 
-interface ArticleManagementProps {
-  onLogout: () => void;
-  onNavigateToDashboard: () => void;
-  onNavigateToCreate: () => void;
-  onNavigateToManage: () => void;
-  onNavigateToReview: () => void;
-}
+const ArticleManagement: React.FC = () => {
+  const navigate = useNavigate(); 
 
-const ArticleManagement: React.FC<ArticleManagementProps> = ({ 
-  onLogout, 
-  onNavigateToDashboard, 
-  onNavigateToCreate, 
-  onNavigateToManage, 
-  onNavigateToReview 
-}) => {
   const [stats, setStats] = useState<DashboardStats>({
     totalArticles: 0,
     publishedArticles: 0,
@@ -54,6 +44,13 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
   const currentUser = getCurrentUser();
   const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
   const canReview = permissions?.canReviewArticles || false;
+
+  const handleLogout = () => {
+  clearAuth();
+  sessionStorage.removeItem('isAdminAuthenticated');
+  navigate('/');
+};
+
 
   useEffect(() => {
     fetchStats();
@@ -128,7 +125,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={onNavigateToDashboard}
+                onClick={() => navigate('/admin/dashboard')}
                 className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +134,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                 Dashboard
               </button>
               <button 
-                onClick={onLogout} 
+                onClick={handleLogout}
                 className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-md"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +249,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                       : 'Start writing a new wellness article for the community.'}
                   </p>
                   <button
-                    onClick={onNavigateToCreate}
+                    onClick={() => navigate('/admin/articles/create')}
                     className="w-full bg-white text-[#3AAFA9] px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
                   >
                     🖊️ Start Writing Now
@@ -278,7 +275,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                       : 'View, edit, and organize all your articles.'}
                   </p>
                   <button
-                    onClick={onNavigateToManage}
+                   onClick={() => navigate('/admin/articles/manage')}
                     className="w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
                   >
                     📋 Manage All Articles
@@ -305,7 +302,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                         : 'No articles currently pending review.'}
                     </p>
                     <button
-                      onClick={onNavigateToReview}
+                      onClick={() => navigate('/admin/articles/review')}
                       className="w-full bg-white text-purple-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg transform hover:scale-105"
                     >
                       🔍 Review Articles
@@ -367,7 +364,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                         to all users on the LearnWell page.
                       </p>
                       <button
-                        onClick={onNavigateToManage}
+                        onClick={() => navigate('/admin/articles/manage')}
                         className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium shadow-md"
                       >
                         📤 Go to Manage Articles
@@ -384,7 +381,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                   <h4 className="text-xl font-bold text-gray-700 mb-2">No Articles Yet</h4>
                   <p className="text-gray-500 mb-6">Start your wellness content journey by creating your first article.</p>
                   <button
-                    onClick={onNavigateToCreate}
+                    onClick={() => navigate('/admin/articles/create')}
                     className="px-8 py-4 bg-[#3AAFA9] text-white rounded-lg hover:bg-[#2D8B87] transition-all duration-200 font-bold text-lg shadow-lg"
                   >
                     🖊️ Create Your First Article

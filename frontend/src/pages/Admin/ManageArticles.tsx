@@ -24,6 +24,8 @@ import {
 import toast, { Toaster } from 'react-hot-toast';
 import api from '../../config/api';
 import { getCurrentUser, getRolePermissions, hasRole, getRoleDisplayName } from '../../utils/roleUtils';
+import { useNavigate } from 'react-router-dom';
+import { clearAuth } from '../../utils/auth';
 
 interface Article {
   id: string;
@@ -48,13 +50,6 @@ interface Article {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
-}
-
-interface ManageArticlesProps {
-  onNavigateBack: () => void;
-  onNavigateToCreate: () => void;
-  onNavigateToEdit: (articleId: string) => void;
-  onLogout: () => void;
 }
 
 // Custom Modal Component for Confirmations
@@ -166,12 +161,9 @@ const InputModal: React.FC<{
   );
 };
 
-const ManageArticles: React.FC<ManageArticlesProps> = ({ 
-  onNavigateBack, 
-  onNavigateToCreate, 
-  onNavigateToEdit, 
-  onLogout 
-}) => {
+const ManageArticles: React.FC = () => {
+  const navigate = useNavigate();
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,6 +201,24 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
     isOpen: false,
     articleId: null,
   });
+
+  const handleLogout = () => {
+  clearAuth();
+  sessionStorage.removeItem('isAdminAuthenticated');
+  navigate('/');
+};
+
+  const handleNavigateBack = () => {
+    navigate('/admin/articles');
+  };
+
+  const handleNavigateToCreate = () => {
+    navigate('/admin/articles/create');
+  };
+
+  const handleNavigateToEdit = (articleId: string) => {
+    navigate(`/admin/articles/edit/${articleId}`);
+  };
 
   const getCurrentDateTime = (): string => {
     return '2025-10-31 14:54:43';
@@ -616,7 +626,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
     }
 
     if (article.status === 'DRAFT' || article.status === 'REJECTED') {
-      onNavigateToEdit(article.id);
+      handleNavigateToEdit(article.id);
       return;
     }
 
@@ -629,7 +639,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
       type: 'warning',
       onConfirm: () => {
         toast.loading('Opening editor...', { duration: 1000 });
-        onNavigateToEdit(article.id);
+        handleNavigateToEdit(article.id);
       }
     });
   };
@@ -836,21 +846,21 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={onNavigateBack}
+                onClick={handleNavigateBack}
                 className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Back to Articles Hub
               </button>
               <button
-                onClick={onNavigateToCreate}
+                onClick={handleNavigateToCreate}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 font-medium shadow-md"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New Article
               </button>
               <button 
-                onClick={onLogout} 
+                onClick={handleLogout} 
                 className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-md"
               >
                 <LogOut className="w-4 h-4 mr-2" />
@@ -955,7 +965,7 @@ const ManageArticles: React.FC<ManageArticlesProps> = ({
                     : 'Get started by creating your first article.'}
                 </p>
                 <button
-                  onClick={onNavigateToCreate}
+                  onClick={handleNavigateToCreate}
                   className="px-8 py-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 font-bold text-lg shadow-lg flex items-center gap-3 mx-auto"
                 >
                   <Edit className="w-5 h-5" />

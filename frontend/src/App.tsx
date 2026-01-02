@@ -22,9 +22,6 @@ import ArticleReader from './pages/ArticleReader';
 import ConnectCare from './pages/ConnectCare';
 import ParentCircleHub from './pages/ParentCircle/ParentCircleHub';
 
-// ❌ REMOVE THESE - Not needed with drawers
-// import QuestionDetail from './pages/ParentCircle/QuestionDetail';
-// import StoryDetail from './pages/ParentCircle/StoryDetail';
 
 // ========== AUTH PAGES ==========
 import LoginPage from './pages/Auth/LoginPage';

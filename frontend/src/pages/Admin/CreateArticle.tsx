@@ -1,12 +1,10 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Edit, LogOut, ChevronLeft, AlertCircle, Tag, Info, Shield } from 'lucide-react';
 import api from '../../config/api';
 import { getCurrentUser, getRolePermissions, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
+import { clearAuth } from '../../utils/auth';
 
-interface CreateArticleProps {
-  onNavigateBack: () => void;
-  onLogout: () => void;
-}
 
 interface ArticleFormData {
   title: string;
@@ -56,7 +54,9 @@ const FORMAT_BUTTONS = [
   { label: '•', before: '- ', tooltip: 'Bullet Point' },
 ];
 
-const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout }) => {
+const CreateArticle: React.FC = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<ArticleFormData>(INITIAL_FORM_DATA);
   const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,6 +68,16 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
   // Get current user and permissions
   const currentUser = getCurrentUser();
   const permissions = currentUser ? getRolePermissions(currentUser.role) : null;
+
+  const handleLogout = () => {
+      clearAuth();
+      sessionStorage.removeItem('isAdminAuthenticated');
+      navigate('/');
+    };
+
+    const handleNavigateBack = () => {
+      navigate('/admin/articles');
+    };
 
   const getCurrentDateTime = (): string => {
     return '2025-10-31 15:03:56';
@@ -197,14 +207,14 @@ const CreateArticle: React.FC<CreateArticleProps> = ({ onNavigateBack, onLogout 
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={onNavigateBack}
+                onClick={handleNavigateBack}
                 className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Back to Articles
               </button>
               <button 
-                onClick={onLogout} 
+                onClick={handleLogout}
                 className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium shadow-md"
               >
                 <LogOut className="w-4 h-4 mr-2" />
@@ -509,7 +519,7 @@ Regular paragraph text..."
 
                   <button
                     type="button"
-                    onClick={onNavigateBack}
+                    onClick={handleNavigateBack}
                     className="sm:w-auto px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-bold text-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-md disabled:opacity-50"
                     disabled={loading}
                   >
@@ -553,7 +563,7 @@ Regular paragraph text..."
                 <button
                   onClick={() => {
                     setShowSuccessModal(false);
-                    onNavigateBack();
+                    handleNavigateBack();
                   }}
                   className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
                 >

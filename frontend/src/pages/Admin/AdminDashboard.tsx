@@ -11,6 +11,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../config/api';
 import { getCurrentUser, getRolePermissions, hasRole, hasAnyRole, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
+import { useNavigate } from 'react-router-dom';
+import { clearAuth } from '../../utils/auth'; 
+
 
 interface DashboardStats {
   totalArticles: number;
@@ -44,25 +47,10 @@ interface RecentArticle {
   createdAt: string;
 }
 
-interface AdminDashboardProps {
-  onLogout: () => void;
-  onNavigateToArticles: () => void;
-  onNavigateToConnectCare: () => void;
-  onNavigateToTalkEasyStats?: () => void;
-  onNavigateToTalkEasyInsights?: () => void;
-  onNavigateToTalkEasyExport?: () => void;
-  onNavigateToParentCircleModeration?: () => void; // 🆕
-}
+const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate(); 
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  onLogout, 
-  onNavigateToArticles,
-  onNavigateToConnectCare,
-  onNavigateToTalkEasyStats,
-  onNavigateToTalkEasyInsights,
-  onNavigateToTalkEasyExport,
-  onNavigateToParentCircleModeration // 🆕
-}) => {
+
   const [stats, setStats] = useState<DashboardStats>({
     totalArticles: 0,
     publishedArticles: 0,
@@ -93,6 +81,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const isContentLeadOrAbove = currentUser && hasRole(currentUser.role, 'CONTENT_LEAD');
   const isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
   const isModerator = currentUser && hasAnyRole(currentUser.role, ['MODERATOR', 'SUPER_ADMIN']);
+
+  const handleLogout = () => {
+    clearAuth();
+    sessionStorage.removeItem('isAdminAuthenticated');
+    navigate('/');
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -265,7 +259,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
             </div>
             <button
-              onClick={onLogout}
+              onClick={handleLogout}
               className="inline-flex items-center px-6 py-3 bg-teal text-white rounded-full hover:bg-teal/90 transition-all font-medium shadow-md hover:shadow-lg"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,7 +339,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               
               <button
-                onClick={onNavigateToArticles}
+                onClick={() => navigate('/admin/articles')}
                 className="w-full bg-teal text-white px-6 py-3 rounded-full font-semibold hover:bg-teal/90 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -402,7 +396,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 
                 <button
-                  onClick={onNavigateToConnectCare}
+                  onClick={() => navigate('/admin/connectcare')}
                   className="w-full bg-[#347EAD] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#347EAD]/90 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -454,7 +448,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 
                 <button
-                  onClick={onNavigateToParentCircleModeration}
+                  onClick={() => navigate('/admin/parentcircle/moderation')}
                   className="w-full bg-orange-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-orange-600 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -490,7 +484,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 
                 <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={onNavigateToTalkEasyStats}
+                    onClick={() => navigate('/admin/talkeasy/stats')}
                     className="bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md flex flex-col items-center justify-center gap-1 text-xs"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -499,7 +493,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     Stats
                   </button>
                   <button
-                    onClick={onNavigateToTalkEasyInsights}
+                    onClick={() => navigate('/admin/talkeasy/insights')}
                     className="bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md flex flex-col items-center justify-center gap-1 text-xs"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -508,7 +502,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     Insights
                   </button>
                   <button
-                    onClick={onNavigateToTalkEasyExport}
+                    onClick={() => navigate('/admin/talkeasy/export')}
                     className="bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md flex flex-col items-center justify-center gap-1 text-xs"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
