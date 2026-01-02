@@ -1,28 +1,36 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { getCurrentUser } from '../utils/roleUtils';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles: string[];
+  children: React.ReactElement;
+  allowedRoles?: string[]; // Changed from requiredRole to allowedRoles to match App.tsx
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const user = getCurrentUser();
+  const location = useLocation();
+  const currentUser = getCurrentUser();
 
-  // Not logged in
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  // Debug logs (remove after testing)
+  console.log('🛡️ ProtectedRoute Check:');
+  console.log('currentUser:', currentUser);
+  console.log('location:', location.pathname);
+  console.log('allowedRoles:', allowedRoles);
+
+  // Not logged in - redirect to login with return URL
+  if (!currentUser) {
+    console.log('❌ No user, redirecting to login with state:', { from: location });
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Logged in but wrong role
-  if (! allowedRoles.includes(user.role)) {
-    console.warn(`Access denied: User role ${user.role} not in ${allowedRoles. join(', ')}`);
+  // Check role if specified
+  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    console.log('❌ User role not allowed:', currentUser.role);
     return <Navigate to="/" replace />;
   }
 
-  // All good! 
-  return <>{children}</>;
+  console.log('✅ Access granted');
+  return children;
 };
 
 export default ProtectedRoute;

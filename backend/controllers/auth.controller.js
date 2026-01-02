@@ -87,23 +87,36 @@ export const register = async (req, res) => {
       }
     });
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        role: user.role
-      },
+    // Generate JWT tokens
+    const accessToken = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30m' } // 30 minutes
     );
+
+    const refreshToken = jwt.sign(
+      { userId: user.id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: '7d' } // 7 days
+    );
+
+     // Store refresh token in the database
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
 
     return res.status(201).json({
       success: true,
       message: 'User registered successfully',
       data: {
         user,
-        token
+        accessToken,
+        refreshToken,
+        expiresIn: 1800 // 30 minutes in seconds
       }
     });
 
@@ -151,16 +164,27 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        role: user.role
-      },
+    // Generate JWT tokens
+    const accessToken = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30m' }
     );
+
+    const refreshToken = jwt.sign(
+      { userId: user.id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Store refresh token in database
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
 
     // Remove password from user object
     const { password: _, ...userWithoutPassword } = user;
@@ -170,12 +194,121 @@ export const login = async (req, res) => {
       message: 'Login successful',
       data: {
         user: userWithoutPassword,
-        token
+        accessToken,
+        refreshToken,
+        expiresIn: 1800
       }
     });
 
   } catch (error) {
     console.error('Login error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Refresh access token
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token'
+      });
+    }
+
+    // Check if refresh token exists in database
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken }
+    });
+
+    if (!storedToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not found'
+      });
+    }
+
+    // Check if token is expired
+    if (new Date() > storedToken.expiresAt) {
+      // Delete expired token
+      await prisma.refreshToken.delete({
+        where: { id: storedToken.id }
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token has expired'
+      });
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Generate new access token
+    const accessToken = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '30m' }
+    );
+
+    // Generate new refresh token
+    const newRefreshToken = jwt.sign(
+      { userId: user.id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Delete old refresh token
+    await prisma.refreshToken.delete({
+      where: { id: storedToken.id }
+    });
+
+    // Store new refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: newRefreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      data: {
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: 1800 // 30 minutes in seconds
+      }
+    });
+
+  } catch (error) {
+    console.error('Refresh token error:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -250,22 +383,35 @@ export const adminSetup = async (req, res) => {
     });
 
     // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        role: user.role
-      },
+    const accessToken = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30m' }
     );
+
+    const refreshToken = jwt.sign(
+      { userId: user.id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Store refresh token in database
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
 
     return res.status(201).json({
       success: true,
       message: `${role.replace('_', ' ')} account created successfully`,
       data: {
         user,
-        token
+        accessToken,
+        refreshToken,
+        expiresIn: 1800
       }
     });
 

@@ -216,8 +216,6 @@ export const submitForReview = async (req, res) => {
 };
 
 
-// Get all articles with filtering (Public & Admin)
-
 export const getArticles = async (req, res) => {
   try {
     const user = req.user; // ✅ Can be null for public users
@@ -230,7 +228,7 @@ export const getArticles = async (req, res) => {
       publishedOnly = 'true' 
     } = req.query;
 
-    console.log(`🔍 [${getCurrentDateTime()}] getArticles called by ${user?. name || 'Public'} (${user?.role || 'Public'}) with:`, {
+    console.log(`🔍 [${getCurrentDateTime()}] getArticles called by ${user?.name || 'Public'} (${user?.role || 'Public'}) with:`, {
       status,
       category,
       authorId,
@@ -248,9 +246,9 @@ export const getArticles = async (req, res) => {
     let where = {};
     
     // ✅ HANDLE PUBLIC VS AUTHENTICATED ACCESS
-    if (! user || publishedOnly === 'true') {
+    if (!user || publishedOnly === 'true') {
       // Public users or explicit publishedOnly query: only PUBLISHED articles
-      where. status = 'PUBLISHED';
+      where.status = 'PUBLISHED';
       console.log(`📚 [${getCurrentDateTime()}] Public/publishedOnly query: filtering for PUBLISHED articles only`);
     } else {
       // Authenticated users with publishedOnly=false
@@ -310,17 +308,17 @@ export const getArticles = async (req, res) => {
         skip,
         take: parseInt(limit)
       }),
-      prisma.article. count({ where })
+      prisma.article.count({ where })
     ]);
 
-    console.log(`📦 [${getCurrentDateTime()}] Query result for ${user?.name || 'Public'}:`, {
+    console.log(`📦 [${getCurrentDateTime()}] Query result for ${user?.name || 'Public'}:`, { // ← FIXED LINE
       totalFound: total,
       articlesReturned: articles.length,
       userRole: user?.role,
       statuses: articles.map(a => ({ 
         id: a.id.substring(0, 8), 
         status: a.status,
-        author: a.author. name,
+        author: a.author.name,
         isOwnArticle: user && a.authorId === user.userId
       }))
     });
@@ -338,7 +336,7 @@ export const getArticles = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(`❌ [${getCurrentDateTime()}] Get articles error for ${user?.name || 'Public'}:`, error);
+    console.error(`❌ [${getCurrentDateTime()}] Get articles error for ${req.user?.name || 'Public'}:`, error); // ← ALSO FIX THIS LINE
     return res.status(500).json({
       success: false,
       message: 'Internal server error'

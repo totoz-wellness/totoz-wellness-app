@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../config/api';
 import toast from 'react-hot-toast';
+import { setAuthTokens, setUser } from '../../utils/auth';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -83,11 +84,13 @@ const SignupPage: React.FC = () => {
       });
 
       if (response.data.success) {
-        // Store token and user data
-        localStorage.setItem('token', response.data.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        // Store tokens and user data using new auth utilities
+        const { accessToken, refreshToken, expiresIn, user } = response.data.data;
         
-        toast.success(`🎉 Welcome to Totoz Wellness, ${response.data.data.user.name}!`);
+        setAuthTokens(accessToken, refreshToken, expiresIn);
+        setUser(user);
+        
+        toast.success(`🎉 Welcome to Totoz Wellness, ${user.name}!`);
         
         // Navigate to home after successful signup
         setTimeout(() => {

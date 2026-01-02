@@ -2,10 +2,10 @@
  * ============================================
  * PROFESSIONAL NAVBAR - FLOWBITE INSPIRED
  * ============================================
- * @version     8.0.0
+ * @version     9.0.0
  * @author      ArogoClin
- * @updated     2025-11-27
- * @description Clean, professional navbar with Flowbite design patterns
+ * @updated     2025-01-02
+ * @description Clean navbar with generated avatars
  * ============================================
  */
 
@@ -57,13 +57,13 @@ const Navbar: React.FC = () => {
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef. current.contains(event.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
     };
 
     if (showUserMenu) {
-      document. addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
@@ -84,7 +84,9 @@ const Navbar: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('tokenExpiration');
     localStorage.removeItem('user');
     sessionStorage.removeItem('isAdminAuthenticated');
     setCurrentUser(null);
@@ -98,8 +100,20 @@ const Navbar: React.FC = () => {
     setShowUserMenu(false);
   };
 
-  const getInitial = (name: string) => {
-    return name. charAt(0).toUpperCase();
+  /**
+   * Generate avatar URL using DiceBear API
+   * Uses user's email as seed for consistent avatars
+   */
+  const getAvatarUrl = (user: any) => {
+    // Use email as seed for consistent avatar generation
+    const seed = encodeURIComponent(user.email);
+    
+    // Available styles: adventurer, avataaars, big-ears, bottts, croodles, fun-emoji, 
+    // identicon, initials, lorelei, micah, miniavs, notionists, open-peeps, personas, pixel-art
+    const style = 'avataaars'; // Change this to try different styles!
+    
+    // Generate avatar URL
+    return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
   };
 
   return (
@@ -122,7 +136,7 @@ const Navbar: React.FC = () => {
               src={logo} 
               alt="Totoz Wellness" 
               className={`rounded-full object-cover transition-all duration-300 ${
-                isScrolled ?  'w-10 h-10' : 'w-12 h-12'
+                isScrolled ? 'w-10 h-10' : 'w-12 h-12'
               }`}
             />
             <span className="text-xl font-bold text-gray-900 hidden sm:block">
@@ -150,7 +164,7 @@ const Navbar: React.FC = () => {
               <button
                 onClick={() => handleNavClick('/growtrack')}
                 className={`font-medium text-sm transition-colors ${
-                  location. pathname. startsWith('/growtrack')
+                  location.pathname.startsWith('/growtrack')
                     ? 'text-teal'
                     : 'text-gray-700 hover:text-teal'
                 }`}
@@ -162,8 +176,8 @@ const Navbar: React.FC = () => {
 
           {/* Right Side */}
           <div className="flex items-center space-x-3">
-            {currentUser ?  (
-              // User Menu Button
+            {currentUser ? (
+              // User Menu Button with Avatar
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -171,9 +185,11 @@ const Navbar: React.FC = () => {
                   aria-expanded={showUserMenu}
                 >
                   <span className="sr-only">Open user menu</span>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-blue-600 flex items-center justify-center text-white font-bold shadow-md">
-                    {getInitial(currentUser.name)}
-                  </div>
+                  <img
+                    src={getAvatarUrl(currentUser)}
+                    alt={`${currentUser.name}'s avatar`}
+                    className="w-10 h-10 rounded-full border-2 border-gray-200 shadow-md"
+                  />
                 </button>
 
                 {/* Dropdown Menu */}
@@ -181,8 +197,17 @@ const Navbar: React.FC = () => {
                   <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-scale-in">
                     {/* User Info */}
                     <div className="px-4 py-3 text-sm border-b border-gray-200">
-                      <div className="font-medium text-gray-900 truncate">{currentUser.name}</div>
-                      <div className="text-gray-500 truncate">{currentUser.email}</div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <img
+                          src={getAvatarUrl(currentUser)}
+                          alt={`${currentUser.name}'s avatar`}
+                          className="w-10 h-10 rounded-full border-2 border-gray-200"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{currentUser.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{currentUser.email}</div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Menu Items */}
@@ -213,7 +238,7 @@ const Navbar: React.FC = () => {
                             className="inline-flex items-center w-full px-4 py-2 hover:bg-gray-100 transition-colors text-left"
                           >
                             <svg className="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10. 325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c. 94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1. 724 1.724 0 00-2.573-1. 066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-. 426-1.756-2. 924 0-3.35a1.724 1.724 0 001.066-2. 573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                             Admin Panel
@@ -273,14 +298,14 @@ const Navbar: React.FC = () => {
             {navLinks.map((link) => (
               <button
                 key={link.name}
-                onClick={() => handleNavClick(link. path)}
+                onClick={() => handleNavClick(link.path)}
                 className={`block w-full text-left px-4 py-2 rounded-lg font-medium transition-all ${
                   location.pathname === link.path
                     ? 'text-white bg-teal'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {link. name}
+                {link.name}
               </button>
             ))}
 
@@ -288,7 +313,7 @@ const Navbar: React.FC = () => {
               <button
                 onClick={() => handleNavClick('/growtrack')}
                 className={`block w-full text-left px-4 py-2 rounded-lg font-medium transition-all ${
-                  location.pathname. startsWith('/growtrack')
+                  location.pathname.startsWith('/growtrack')
                     ? 'text-white bg-teal'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
@@ -299,13 +324,15 @@ const Navbar: React.FC = () => {
 
             {/* Mobile Auth */}
             <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
-              {currentUser ?  (
+              {currentUser ? (
                 <>
                   <div className="px-4 py-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-blue-600 flex items-center justify-center text-white font-bold">
-                        {getInitial(currentUser.name)}
-                      </div>
+                      <img
+                        src={getAvatarUrl(currentUser)}
+                        alt={`${currentUser.name}'s avatar`}
+                        className="w-12 h-12 rounded-full border-2 border-gray-200"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-900 truncate">{currentUser.name}</div>
                         <div className="text-sm text-gray-500 truncate">{currentUser.email}</div>

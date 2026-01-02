@@ -13,12 +13,16 @@ const Footer: React.FC = () => {
 
   return (
     <footer id="contact" className="bg-dark-text text-light-text">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-1">
-            <h3 className="text-xl font-bold font-heading text-white mb-2">Totoz Wellness</h3>
-            <p className="text-light-text/70">Nurturing the mental health of the next generation, together.</p>
-            <div className="flex space-x-4 mt-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {/* Brand Section */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <h3 className="text-lg sm:text-xl font-bold font-heading text-white mb-2">Totoz Wellness</h3>
+            <p className="text-sm text-light-text/70 mb-4">Nurturing the mental health of the next generation, together.</p>
+            
+            {/* Social Icons - Compact on mobile */}
+            <div className="flex flex-wrap gap-3 sm:gap-4">
               <a href="https://x.com/totozwellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
                 <XLogo />
               </a>
@@ -28,7 +32,7 @@ const Footer: React.FC = () => {
               <a href="https://www.instagram.com/totozwellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
                 <InstagramIcon />
               </a>
-              <a href="https://www.linkedin.com/company/totozwellness/" className="text-light-text/70 hover:text-white transition">
+              <a href="https://www.linkedin.com/company/totozwellness/" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
                 <LinkedInIcon />
               </a>
               <a href="https://www.tiktok.com/@totoz.wellness" target="_blank" rel="noopener noreferrer" className="text-light-text/70 hover:text-white transition">
@@ -42,92 +46,76 @@ const Footer: React.FC = () => {
               </a>
             </div>
           </div>
-          <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
-            <div>
-              <h4 className="font-bold text-white mb-4">Quick Links</h4>
-              <ul className="space-y-2">
-                <li>
-                  <button 
-                    onClick={() => navigate('/')} 
-                    className="text-light-text/70 hover:text-white transition text-left"
-                  >
-                    Home
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => navigate('/features')} 
-                    className="text-light-text/70 hover:text-white transition text-left"
-                  >
-                    Features
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => navigate('/whyus')} 
-                    className="text-light-text/70 hover:text-white transition text-left"
-                  >
-                    Why Us
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => navigate('/community')} 
-                    className="text-light-text/70 hover:text-white transition text-left"
-                  >
-                    Community
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => navigate('/learnwell')} 
-                    className="text-light-text/70 hover:text-white transition text-left"
-                  >
-                    LearnWell
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-4">Support</h4>
-              <ul className="space-y-2">
-                <li>
-                  <button 
-                    onClick={() => navigate('/faq')} 
-                    className="text-light-text/70 hover:text-white transition text-left"
-                  >
-                    FAQ
-                  </button>
-                </li>
-                <li>
-                  <a 
-                    href="mailto:contact@totoz.com" 
-                    className="text-light-text/70 hover:text-white transition"
-                  >
-                    Contact Us
-                  </a>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => navigate('/privacy')} 
-                    className="text-light-text/70 hover:text-white transition text-left"
-                  >
-                    Privacy Policy
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-4">Contact</h4>
-              <p className="text-light-text/70">
-                +254 797 641 690<br/>
-                contact@totoz.com
-              </p>
-            </div>
+
+          {/* Quick Links */}
+          <div>
+            <h4 className="font-bold text-white mb-3 text-sm sm:text-base">Quick Links</h4>
+            <ul className="space-y-1.5 sm:space-y-2">
+              <li>
+                <button onClick={() => navigate('/')} className="text-sm text-light-text/70 hover:text-white transition text-left">
+                  Home
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate('/features')} className="text-sm text-light-text/70 hover:text-white transition text-left">
+                  Features
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate('/whyus')} className="text-sm text-light-text/70 hover:text-white transition text-left">
+                  Why Us
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate('/community')} className="text-sm text-light-text/70 hover:text-white transition text-left">
+                  Community
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate('/learnwell')} className="text-sm text-light-text/70 hover:text-white transition text-left">
+                  LearnWell
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h4 className="font-bold text-white mb-3 text-sm sm:text-base">Support</h4>
+            <ul className="space-y-1.5 sm:space-y-2">
+              <li>
+                <button onClick={() => navigate('/faq')} className="text-sm text-light-text/70 hover:text-white transition text-left">
+                  FAQ
+                </button>
+              </li>
+              <li>
+                <a href="mailto:contact@totoz.com" className="text-sm text-light-text/70 hover:text-white transition">
+                  Contact Us
+                </a>
+              </li>
+              <li>
+                <button onClick={() => navigate('/privacy')} className="text-sm text-light-text/70 hover:text-white transition text-left">
+                  Privacy Policy
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4 className="font-bold text-white mb-3 text-sm sm:text-base">Contact</h4>
+            <p className="text-sm text-light-text/70">
+              +254 797 641 690<br/>
+              contact@totoz.com
+            </p>
           </div>
         </div>
-        <div className="mt-12 border-t border-gray-700 pt-6 text-center text-light-text/50">
-          <p>&copy; {new Date().getFullYear()} Totoz Wellness.  All Rights Reserved.</p>
+
+        {/* Copyright - Compact on mobile */}
+        <div className="mt-6 sm:mt-8 md:mt-12 pt-4 sm:pt-6 border-t border-gray-700 text-center">
+          <p className="text-xs sm:text-sm text-light-text/50">
+            &copy; {new Date().getFullYear()} Totoz Wellness. All Rights Reserved.
+          </p>
         </div>
       </div>
     </footer>

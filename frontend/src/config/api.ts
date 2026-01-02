@@ -2,15 +2,22 @@
  * ============================================
  * AXIOS API CONFIGURATION
  * ============================================
- * @version     3.0.0
+ * @version     4.0.0
  * @author      ArogoClin
- * @updated     2025-11-23 10:02:53 UTC
- * @description Enhanced error handling with user-friendly UX
+ * @updated     2025-01-02
+ * @description Enhanced with automatic token refresh
  * ============================================
  */
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from "axios";
 import toast from 'react-hot-toast';
+import { 
+  getAccessToken, 
+  getRefreshToken, 
+  isTokenExpired, 
+  clearAuth, 
+  setAuthTokens 
+} from '../utils/auth';
 
 // Support both variable names for backward compatibility
 const API_BASE_URL: string = 
@@ -47,15 +54,6 @@ const getActionFromEndpoint = (url: string = ''): string => {
 };
 
 /**
- * Clear authentication data
- */
-const clearAuth = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  sessionStorage.removeItem("isAdminAuthenticated");
-};
-
-/**
  * Redirect to login page (works with both SPA and traditional routing)
  */
 const redirectToLogin = (delay: number = 500) => {
@@ -74,15 +72,106 @@ const redirectToLogin = (delay: number = 500) => {
 };
 
 // ============================================
+// TOKEN REFRESH LOGIC
+// ============================================
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any = null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+/**
+ * Refresh the access token using the refresh token
+ */
+const refreshAccessToken = async (): Promise<string> => {
+  const refreshToken = getRefreshToken();
+  
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+      refreshToken
+    });
+
+    const { accessToken, refreshToken: newRefreshToken, expiresIn } = response.data.data;
+    
+    // Store new tokens
+    setAuthTokens(accessToken, newRefreshToken, expiresIn);
+    
+    return accessToken;
+  } catch (error) {
+    // Refresh failed - clear auth and redirect
+    clearAuth();
+    throw error;
+  }
+};
+
+// ============================================
 // REQUEST INTERCEPTOR
 // ============================================
 
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("token");
+  async (config: InternalAxiosRequestConfig) => {
+    // Skip token check for refresh endpoint
+    if (config.url?.includes('/auth/refresh')) {
+      return config;
+    }
+
+    const token = getAccessToken();
     
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Check if token is expired
+      if (isTokenExpired()) {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          
+          try {
+            const newToken = await refreshAccessToken();
+            isRefreshing = false;
+            processQueue(null, newToken);
+            config.headers.Authorization = `Bearer ${newToken}`;
+          } catch (error) {
+            isRefreshing = false;
+            processQueue(error, null);
+            
+            toast.error('⏱️ Your session has expired. Please login again.', {
+              duration: 4000,
+              icon: '🔐',
+              position: 'top-center',
+            });
+            
+            redirectToLogin(1000);
+            return Promise.reject(error);
+          }
+        } else {
+          // Wait for token refresh to complete
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          }).then((token) => {
+            config.headers.Authorization = `Bearer ${token}`;
+            return config;
+          }).catch((error) => {
+            return Promise.reject(error);
+          });
+        }
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
       
       // Log request for debugging (only in development)
       if (import.meta.env.DEV) {
@@ -118,9 +207,10 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
-    const url = error.config?.url || '';
+    const url = originalRequest?.url || '';
     const errorData = error.response?.data as any;
     const errorMessage = errorData?.message || error.message;
 
@@ -133,14 +223,37 @@ api.interceptors.response.use(
     });
 
     // ============================================
-    // 401 UNAUTHORIZED - Not logged in or token invalid
+    // 401 UNAUTHORIZED - Try token refresh
     // ============================================
-    if (status === 401) {
-      const isAuthenticated = !!localStorage.getItem('token');
-      
-      if (isAuthenticated) {
-        // Token expired or invalid
-        console.warn('🔒 Token expired or invalid - clearing auth');
+    if (status === 401 && !originalRequest._retry && !url.includes('/auth/refresh')) {
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        // Wait for the refresh to complete
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch((err) => {
+          return Promise.reject(err);
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        const newToken = await refreshAccessToken();
+        isRefreshing = false;
+        processQueue(null, newToken);
+        
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        isRefreshing = false;
+        processQueue(refreshError, null);
+        
+        console.warn('🔒 Token refresh failed - clearing auth');
         clearAuth();
         
         toast.error('⏱️ Your session has expired. Please login again.', {
@@ -158,26 +271,7 @@ api.interceptors.response.use(
         });
         
         redirectToLogin(1000);
-      } else {
-        // Not logged in at all
-        const action = getActionFromEndpoint(url);
-        console.warn(`🔐 Authentication required to ${action}`);
-        
-        toast.error(`🔐 Please login to ${action}`, {
-          duration: 4000,
-          icon: '👋',
-          position: 'top-center',
-          style: {
-            background: '#DBEAFE',
-            color: '#1E40AF',
-            fontWeight: 'bold',
-            padding: '16px',
-            borderRadius: '12px',
-            border: '2px solid #93C5FD'
-          }
-        });
-        
-        redirectToLogin(500);
+        return Promise.reject(refreshError);
       }
     }
     
@@ -185,36 +279,21 @@ api.interceptors.response.use(
     // 403 FORBIDDEN - Insufficient permissions
     // ============================================
     else if (status === 403) {
-      // Check for specific forbidden reasons
-      if (errorMessage === 'Token expired' || errorMessage === 'Invalid token') {
-        console.warn('🔒 Token validation failed - clearing auth');
-        clearAuth();
-        
-        toast.error('⏱️ Your session has expired. Please login again.', {
-          duration: 4000,
-          icon: '🔐',
-          position: 'top-center'
-        });
-        
-        redirectToLogin(1000);
-      } else {
-        // Permission denied (user is logged in but lacks permission)
-        console.warn('⛔ Insufficient permissions for action');
-        
-        toast.error('⛔ You don\'t have permission to perform this action', {
-          duration: 4000,
-          icon: '🚫',
-          position: 'top-center',
-          style: {
-            background: '#FEF3C7',
-            color: '#92400E',
-            fontWeight: 'bold',
-            padding: '16px',
-            borderRadius: '12px',
-            border: '2px solid #FCD34D'
-          }
-        });
-      }
+      console.warn('⛔ Insufficient permissions for action');
+      
+      toast.error('⛔ You don\'t have permission to perform this action', {
+        duration: 4000,
+        icon: '🚫',
+        position: 'top-center',
+        style: {
+          background: '#FEF3C7',
+          color: '#92400E',
+          fontWeight: 'bold',
+          padding: '16px',
+          borderRadius: '12px',
+          border: '2px solid #FCD34D'
+        }
+      });
     }
     
     // ============================================

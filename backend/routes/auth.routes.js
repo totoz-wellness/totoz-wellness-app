@@ -3,11 +3,11 @@ import {
   register,
   login,
   adminSetup,
+  refreshToken,
   getProfile,
   updateUserRole,
   getAllUsers
 } from '../controllers/auth.controller.js';
-// ✅ Import ALL middleware from auth.middleware.js (not role.middleware.js)
 import { authenticateToken, requireAuth, requireRole } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -31,6 +31,11 @@ router.post('/login', login);
 // @access  Public (requires admin code)
 router.post('/admin-setup', adminSetup);
 
+// @desc    Refresh access token
+// @route   POST /auth/refresh
+// @access  Public (requires valid refresh token)
+router.post('/refresh', refreshToken);
+
 // ======================================
 // PROTECTED ROUTES
 // ======================================
@@ -51,7 +56,7 @@ router.patch(
   '/users/role',
   authenticateToken,
   requireAuth,
-  requireRole('SUPER_ADMIN'),  // ✅ Changed from array to spread syntax
+  requireRole('SUPER_ADMIN'),
   updateUserRole
 );
 
@@ -63,7 +68,7 @@ router.get(
   '/users',
   authenticateToken,
   requireAuth,
-  requireRole('SUPER_ADMIN'),  // ✅ Changed from array to spread syntax
+  requireRole('SUPER_ADMIN'),
   getAllUsers
 );
 
