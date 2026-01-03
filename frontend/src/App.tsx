@@ -35,6 +35,7 @@ import GrowTrackCreate from './pages/GrowTrack/CreateEntry';
 import GrowTrackEntries from './pages/GrowTrack/ViewEntries';
 import GrowTrackInsights from './pages/GrowTrack/Insights';
 import GrowTrackChildren from './pages/GrowTrack/ChildManager';
+import KidsCornerPage from './pages/KidsCorner/KidsCornerPage';
 
 // ========== ADMIN PAGES ==========
 import AdminDashboard from './pages/Admin/AdminDashboard';
@@ -168,6 +169,17 @@ function App() {
             </ProtectedRoute>
           } 
         />
+
+        {/* New KidsCorner Route */}
+        <Route 
+          path="/kids-corner" 
+          element={
+            <ProtectedRoute allowedRoles={['USER', 'CONTENT_WRITER', 'CONTENT_LEAD', 'MODERATOR', 'SUPER_ADMIN']}>
+              {/* Note: We do NOT use PublicLayout here to allow full-screen immersion */}
+              <KidsCornerPage />
+            </ProtectedRoute>
+          } 
+        />        
 
         {/* ========== ADMIN ROUTES ========== */}
         

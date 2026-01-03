@@ -69,9 +69,10 @@ const features = [
     icon: <div className="text-3xl">🧸</div>,
     title: 'Kids Corner',
     description: 'Engaging activities and resources designed for children to learn about emotions in a fun, interactive way.',
-    status: 'Coming Soon',
+    status: 'Available Now',
     color: 'bg-yellow-50 border-yellow-200',
-    isAvailable: false,
+    isAvailable: true,
+    action: '/kids-corner'
   }
 ];
 
