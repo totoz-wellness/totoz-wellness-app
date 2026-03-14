@@ -16,6 +16,7 @@ import articleRoutes from './routes/articles.routes.js';
 import directoryRoutes from './routes/directory.routes.js';
 import talkEasyRoutes from './routes/talkeasy.routes.js';
 
+
 // ParentCircle Routes
 import categoryRoutes from './routes/category.routes.js';
 import questionRoutes from './routes/question.routes.js';
@@ -23,13 +24,16 @@ import answerRoutes from './routes/answer.routes.js';
 import storyRoutes from './routes/story.routes.js';
 import moderationRoutes from './routes/moderation.routes.js';
 
-// 🆕 GrowTrack Routes
+// GrowTrack Routes
 import growtrackRoutes from './routes/growtrack.routes.js';
+
+// KidsCorner Routes
+import kidscornerRoutes from './routes/kidscorner.routes.js'; 
 
 import { startCleanupScheduler } from './utils/database-cleanup.js';
 
 // ============================================
-// 🆕 Fix BigInt Serialization for PostgreSQL
+// Fix BigInt Serialization for PostgreSQL
 // ============================================
 BigInt.prototype.toJSON = function() {
   return Number(this);
@@ -90,6 +94,7 @@ app.get('/', (req, res) => {
       directory: '/directory',
       talkeasy: '/talkeasy',
       growtrack: '/growtrack',
+      kidscorner: '/kidscorner',
       parentcircle: {
         categories: '/parentcircle/categories',
         questions: '/parentcircle/questions',
@@ -476,7 +481,7 @@ app.get('/parentcircle/health', (req, res) => {
   });
 });
 
-// 🆕 GrowTrack health check
+// GrowTrack health check
 app.get('/growtrack/health', (req, res) => {
   res.json({
     success: true,
@@ -490,6 +495,9 @@ app.get('/growtrack/health', (req, res) => {
     }
   });
 });
+
+// KidsCorner Routes
+app.use('/kidscorner', kidscornerRoutes);
 
 // ============================================
 // Error Handling
@@ -534,13 +542,13 @@ app.listen(PORT, () => {
   console.log('║                    TOTOZ WELLNESS API v2.0                     ║');
   console.log('╚════════════════════════════════════════════════════════════════╝\n');
   
-  console.log(`\x1b[32m✅ Server Status: RUNNING\x1b[0m`);
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log(`👤 Current User: ArogoClin\n`);
+  console.log(`\x1b[32mServer Status: RUNNING\x1b[0m`);
+  console.log(`Port: ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Started: ${new Date().toISOString()}`);
+  console.log(`Current User: ArogoClin\n`);
   
-  console.log('📡 Core Endpoints:');
+  console.log('Core Endpoints:');
   console.log(`   ├─ Health Check:         \x1b[36mGET http://localhost:${PORT}/\x1b[0m`);
   console.log(`   ├─ API Docs:             \x1b[36mGET http://localhost:${PORT}/api-docs\x1b[0m`);
   console.log(`   ├─ Auth:                 \x1b[36mhttp://localhost:${PORT}/auth\x1b[0m`);
@@ -548,6 +556,7 @@ app.listen(PORT, () => {
   console.log(`   ├─ Directory:            \x1b[36mhttp://localhost:${PORT}/directory\x1b[0m`);
   console. log(`   ├─ TalkEasy AI:          \x1b[36mhttp://localhost:${PORT}/talkeasy\x1b[0m`);
   console. log(`   ├─ GrowTrack:            \x1b[36mhttp://localhost:${PORT}/growtrack\x1b[0m`);
+  console.log(`    ├─ KidsCorner:            \x1b[36mhttp://localhost:${PORT}/kidscorner\x1b[0m`);
   console.log(`   └─ ParentCircle:         \x1b[36mhttp://localhost:${PORT}/parentcircle\x1b[0m`);
   console.log(`      ├─ Categories:        \x1b[36mhttp://localhost:${PORT}/parentcircle/categories\x1b[0m`);
   console.log(`      ├─ Questions:         \x1b[36mhttp://localhost:${PORT}/parentcircle/questions\x1b[0m`);
@@ -555,14 +564,14 @@ app.listen(PORT, () => {
   console.log(`      ├─ Stories:           \x1b[36mhttp://localhost:${PORT}/parentcircle/stories\x1b[0m`);
   console.log(`      └─ Moderation:        \x1b[36mhttp://localhost:${PORT}/parentcircle/moderation\x1b[0m\n`);
   
-  console.log('🔐 Role-Based Access Control:');
+  console.log('Role-Based Access Control:');
   console.log('   ├─ \x1b[90mUSER (Lvl 0)\x1b[0m         Public access + community participation + mood tracking');
   console.log('   ├─ \x1b[32mCONTENT_WRITER (Lvl 1)\x1b[0m Manage articles + answer questions + GrowTrack');
   console.log('   ├─ \x1b[34mCONTENT_LEAD (Lvl 2)\x1b[0m   Review/publish articles + manage directory');
   console.log('   ├─ \x1b[33mMODERATOR (Lvl 2)\x1b[0m     Moderate ParentCircle content');
   console.log('   └─ \x1b[35mSUPER_ADMIN (Lvl 3)\x1b[0m  Full system access\n');
   
-  console. log('🤖 AI Features:');
+  console. log('AI Features:');
   console.log('   TalkEasy:');
   console.log('   ├─ Smart resource recommendations (articles & directories)');
   console.log('   ├─ Crisis detection with emergency support');
@@ -575,7 +584,7 @@ app.listen(PORT, () => {
   console.log('   ├─ Coping strategy recommendations');
   console. log('   └─ No raw data logging - only AI summaries shown\n');
   
-  console.log('👥 ParentCircle Community Features:');
+  console.log('ParentCircle Community Features:');
   console.log('   ├─ Q&A System - Ask & answer questions');
   console.log('   ├─ Personal Stories - Share experiences anonymously');
   console.log('   ├─ Professional Verification - Verified expert answers');
@@ -583,16 +592,16 @@ app.listen(PORT, () => {
   console.log('   ├─ Content Moderation - Review & approve content');
   console. log('   └─ Anonymous Posting - Privacy-first support\n');
   
-  console.log('🗄️  Database Management:');
+  console.log('Database Management:');
   try {
     startCleanupScheduler();
-    console.log('   ✅ Cleanup scheduler started');
-    console.log('   ✅ Analytics aggregation enabled');
-    console.log('   ✅ GrowTrack privacy protection active');
-    console.log('   📅 Message Retention: 90 days (regular), 365 days (crisis)\n');
+    console.log('   Cleanup scheduler started');
+    console.log('   Analytics aggregation enabled');
+    console.log('   GrowTrack privacy protection active');
+    console.log('   Message Retention: 90 days (regular), 365 days (crisis)\n');
   } catch (error) {
-    console.error('   ❌ Failed to start cleanup scheduler:', error. message);
-    console.log('   ⚠️  Database cleanup will not run automatically\n');
+    console.error('    Failed to start cleanup scheduler:', error. message);
+    console.log('     Database cleanup will not run automatically\n');
   }
   
   console.log('✨ All Systems Ready!  Accepting requests...\n');
@@ -604,11 +613,11 @@ app.listen(PORT, () => {
 // ============================================
 
 process.on('SIGTERM', () => {
-  console. log('\n🛑 SIGTERM signal received: closing HTTP server gracefully');
+  console. log('\n SIGTERM signal received: closing HTTP server gracefully');
   console.log('⏳ Waiting for pending requests to complete...');
   
   setTimeout(() => {
-    console.log('✅ HTTP server closed');
+    console.log(' HTTP server closed');
     process.exit(0);
   }, 10000);
 });

@@ -1,24 +1,55 @@
-// 1. Define the specific Moods allowed in the app
-// This matches the 'MOODS' array in your KidsCorner component
+// ============================================
+// KIDSCORNER TYPES - Frontend
+// ============================================
+// @version     2.0.0
+// @updated     2026-02-10
+// @description Updated types for multi-child backend integration
+// ============================================
+
+// Mood types (matching backend)
 export type Mood = 'happy' | 'calm' | 'sad' | 'angry' | 'silly' | 'worried';
 
-// 2. Define the Main Data Structure for the Child
-export interface KidsData {
-  // Array of collected stickers (e.g., ['🎈', '⭐'])
+// Child profile (from backend)
+export interface Child {
+  id: string;
+  name: string;
+  age: number;
+  avatarEmoji: string;
+  parentId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  progress?: ChildProgress;
+  _count?: {
+    moodLogs: number;
+    worries: number;
+    buddyChats: number;
+    activityLogs: number;
+  };
+}
+
+export interface ChildProgress {
+  id: string;
+  childId: string;
   stickers: string[];
-  
-  // Current streak count
   streak: number;
-  
-  // Array of worry strings locked away in the box
+  lastActiveDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Legacy type (for backward compatibility with old localStorage code)
+export interface KidsData {
+  stickers: string[];
+  streak: number;
   worries: string[];
-  
-  // The last mood selected (Optional, as it might be undefined on first load)
   lastMood?: Mood;
+}
 
-  // Track if they hit reading goal during this daily session
-  hasReadBook?: boolean;
-
-  // Track if they played a game during this daily session
-  hasPlayedGame?: boolean;
+// Context state
+export interface KidsCornerContextState {
+  children: Child[];
+  activeChild: Child | null;
+  loading: boolean;
+  error: string | null;
 }

@@ -12,6 +12,8 @@
 import {Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
+import { KidsCornerProvider } from './contexts/KidsCornerContext';
+
 // ========== PUBLIC PAGES ==========
 import Home from './pages/Home';
 import Features from './pages/Features';
@@ -170,16 +172,16 @@ function App() {
           } 
         />
 
-        {/* New KidsCorner Route */}
         <Route 
           path="/kids-corner" 
           element={
             <ProtectedRoute allowedRoles={['USER', 'CONTENT_WRITER', 'CONTENT_LEAD', 'MODERATOR', 'SUPER_ADMIN']}>
-              {/* Note: We do NOT use PublicLayout here to allow full-screen immersion */}
-              <KidsCornerPage />
+              <KidsCornerProvider>
+                <KidsCornerPage />
+              </KidsCornerProvider>
             </ProtectedRoute>
           } 
-        />        
+        />     
 
         {/* ========== ADMIN ROUTES ========== */}
         

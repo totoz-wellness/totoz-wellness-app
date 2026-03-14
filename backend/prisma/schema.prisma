@@ -1,11 +1,11 @@
 // ============================================
 // TOTOZ WELLNESS - DATABASE SCHEMA
 // ============================================
-// @version     2. 1.0
+// @version     2.2.0
 // @author      ArogoClin
-// @updated     2025-11-27 07:30:00 UTC
+// @updated     2026-02-10
 // @description Complete schema for Totoz Wellness mental health platform
-//              Includes: Articles, Directory, TalkEasy AI, ParentCircle Community, GrowTrack
+//              Includes: Articles, Directory, TalkEasy AI, ParentCircle Community, GrowTrack, KidsCorner
 // ============================================
 
 generator client {
@@ -64,9 +64,12 @@ model User {
   // GrowTrack Relations
   growTrackEntries GrowTrackEntry[]
 
+  // KidsCorner Relations (Multi-child support)
+  children          Child[]
+  kidsCornerData    KidsCorner? // Legacy - will be deprecated
+
   @@map("users")
 }
-
 
 /// RefreshToken - Stores long-lived refresh tokens for automatic token renewal
 /// Enables seamless user experience without forced logouts
@@ -94,11 +97,11 @@ model Article {
   id        String        @id @default(cuid())
   title     String
   content   String        @db.Text
-  excerpt   String? 
+  excerpt   String?
   coverImage String?
   videoUrl  String?
   status    ArticleStatus @default(DRAFT)
-  category  String? 
+  category  String?
   tags      String[]
   readTime  Int?          // Estimated read time in minutes
   slug      String?        @unique
@@ -108,14 +111,14 @@ model Article {
   author   User   @relation("AuthoredArticles", fields: [authorId], references: [id], onDelete: Cascade)
 
   // Review Relations
-  reviewerId     String? 
+  reviewerId     String?
   reviewer       User?   @relation("ReviewedArticles", fields: [reviewerId], references: [id])
   reviewFeedback String?  @db.Text
 
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  publishedAt DateTime? 
+  publishedAt DateTime?
 
   @@map("articles")
 }
@@ -127,20 +130,19 @@ model Directory {
   name        String
   type        DirectoryType
   description String        @db.Text
-  excerpt     String? 
+  excerpt     String?
 
   // Contact Information
   phone   String?
-  email   String? 
+  email   String?
   website String?
 
   // Location Information
   address     String?
-  city        String? 
+  city        String?
   county      String?
   region      String?
   coordinates String?  // Lat,Long format for mapping
-
 
   latitude    Float?
   longitude   Float?
@@ -191,12 +193,12 @@ model TalkEasyMessage {
   detectedTopics String[] @default([])
   detectedKeywords String[] @default([])
   emotionalIntensity String? // low, medium, high
-  conversationTurn Int? 
+  conversationTurn Int?
   processingTimeMs Int?  // AI response time
 
   // Categorization
   primaryCategory   String?
-  secondaryCategory String? 
+  secondaryCategory String?
 
   // Resource Recommendations
   recommendedArticles    String[] @default([])
@@ -246,7 +248,7 @@ model TalkEasyAnalytics {
   // Performance Metrics
   avgProcessingTime Float? // Average AI response time (ms)
   avgMessageLength  Float? // Average characters
-  avgResponseLength Float? 
+  avgResponseLength Float?
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -279,7 +281,7 @@ model TalkEasyTrainingData {
 
   // Metadata
   originalTimestamp DateTime
-  conversationTurn  Int? 
+  conversationTurn  Int?
 
   createdAt DateTime @default(now())
 
@@ -295,7 +297,7 @@ model TalkEasyTrainingData {
 model TalkEasyFeedback {
   id        String  @id @default(cuid())
   userId    String
-  messageId String  // References TalkEasyMessage. id
+  messageId String  // References TalkEasyMessage.id
   rating    Int     // 1-5 stars
   helpful   Boolean?  // Was the response helpful?
   feedback  String?  @db.Text // Optional text feedback
@@ -372,7 +374,7 @@ model Question {
   // Timestamps
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
-  approvedAt DateTime? 
+  approvedAt DateTime?
   rejectedAt DateTime?
 
   // Relations
@@ -433,7 +435,7 @@ model Story {
   slug    String? @unique
 
   // Category (optional)
-  categoryId Int? 
+  categoryId Int?
   category   ParentCircleCategory? @relation(fields: [categoryId], references: [id])
 
   // Author (nullable for anonymous)
@@ -588,7 +590,7 @@ model ModerationLog {
   // Polymorphic Relations
   questionId Int?
   question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  storyId    Int? 
+  storyId    Int?
   story      Story?    @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
   // Action Details
@@ -665,22 +667,22 @@ model ParentCircleAnalytics {
 /// Can track for themselves (SELF) or their children (CHILD)
 model GrowTrackEntry {
   id        String   @id @default(cuid())
-  
+
   // Who created this entry (the caregiver/user)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Who is this entry about? 
+  // Who is this entry about?
   trackedPersonType TrackedPersonType @default(SELF) // SELF or CHILD
   trackedPersonName String?  // Child's name (required if CHILD, null if SELF)
-  
+
   // Mood tracking
   mood          String   // "Happy", "Sad", "Anxious", "Calm", etc.
   moodIntensity Int      // 1-10 scale
 
   // Behavior tracking
   behaviors     String[] @default([]) // Array of observed behaviors
-  
+
   // Triggers/Stressors
   triggers      String[] @default([]) // Array of triggers/stressors
 
@@ -700,7 +702,164 @@ model GrowTrackEntry {
   @@map("growtrack_entries")
 }
 
+// ============================================
+// KIDSCORNER - Multi-Child Support with Privacy
+// ============================================
 
+/// Child - Individual child profiles under parent account
+/// One parent can manage multiple children
+model Child {
+  id          String   @id @default(cuid())
+  name        String   // Child's first name
+  age         Int      // Age for age-appropriate content
+  avatarEmoji String   @default("😊") // Fun avatar selection
+
+  // Parent Relationship
+  parentId    String
+  parent      User     @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  // Status
+  isActive    Boolean  @default(true) // Soft delete support
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  progress      ChildProgress?
+  moodLogs      ChildMoodLog[]
+  worries       ChildWorry[]
+  buddyChats    ChildBuddyChat[]
+  activityLogs  ChildActivityLog[]
+
+  @@index([parentId])
+  @@index([parentId, isActive])
+  @@map("children")
+}
+
+/// Child Progress - Gamification & streak tracking
+model ChildProgress {
+  id        String   @id @default(cuid())
+  childId   String   @unique
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  // Gamification
+  stickers  String[] @default([]) // Emoji stickers earned
+  streak    Int      @default(0)  // Consecutive days active
+
+  // Activity
+  lastActiveDate DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([childId])
+  @@map("child_progress")
+}
+
+/// Child Mood Log - Track emotional state over time
+/// Parents see trends, not individual entries
+model ChildMoodLog {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  mood      String   // happy, calm, sad, angry, silly, worried
+  timestamp DateTime @default(now())
+
+  @@index([childId])
+  @@index([timestamp])
+  @@index([childId, timestamp]) // For trend queries
+  @@map("child_mood_logs")
+}
+
+/// Child Worry - Encrypted worry box entries
+/// Parents can see count, not content (privacy-first)
+model ChildWorry {
+  id               String   @id @default(cuid())
+  childId          String
+  child            Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  encryptedContent String   @db.Text // AES-256 encrypted
+  createdAt        DateTime @default(now())
+
+  @@index([childId])
+  @@map("child_worries")
+}
+
+/// Child Buddy Chat - AI conversation history
+/// Parents see AI-generated summaries, full history available on request
+model ChildBuddyChat {
+  id            String   @id @default(cuid())
+  childId       String
+  child         Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  sessionId     String?  // Group conversations
+  userMessage   String   @db.Text
+  buddyResponse String   @db.Text
+
+  // AI Analysis
+  sentiment     String?  // positive, neutral, concerning
+  isFlagged     Boolean  @default(false) // Auto-flag concerning topics
+  flagReason    String?  // Why it was flagged
+
+  timestamp     DateTime @default(now())
+
+  @@index([childId])
+  @@index([sessionId])
+  @@index([isFlagged]) // Quick access to flagged conversations
+  @@map("child_buddy_chats")
+}
+
+/// Child Activity Log - Track games, zones, and engagement
+model ChildActivityLog {
+  id              String   @id @default(cuid())
+  childId         String
+  child           Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  activityType    String   // game, story, breathing_exercise
+  activityName    String   // MindfulGames, Puzzle, etc.
+  zone            String   // play, learn, help, hub
+
+  stickerEarned   String?  // Emoji if sticker was awarded
+  durationSeconds Int?     // Time spent (optional)
+
+  completedAt     DateTime @default(now())
+
+  @@index([childId])
+  @@index([completedAt])
+  @@index([childId, completedAt]) // For analytics
+  @@map("child_activity_logs")
+}
+
+/// Legacy KidsCorner model - Deprecated, will be removed after migration
+model KidsCorner {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Gamification
+  stickers  String[] @default([])
+  streak    Int      @default(0)
+
+  // Emotional Tracking
+  worries   String[] @default([])
+  lastMood  String?
+  lastMoodDate DateTime?
+
+  // Activity Tracking
+  completedActivities String[] @default([])
+  lastActiveDate      DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([lastActiveDate])
+  @@map("kids_corner")
+}
 
 // ============================================
 // ENUMS - Type Definitions

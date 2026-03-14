@@ -9,11 +9,6 @@ import CreativeCorner from './PlayZone/CreativeCorner';
 import EmotionAdventures from './PlayZone/EmotionAdventures';
 import Puzzle from './PlayZone/Puzzle';
 
-interface PlayZoneProps {
-  kidsData: KidsData;
-  onUpdateData: (newData: Partial<KidsData>) => void;
-}
-
 type CategoryID = 'emotion' | 'mindful' | 'creative' | 'puzzle';
 
 const PlayZone: React.FC<PlayZoneProps> = ({ kidsData, onUpdateData }) => {
