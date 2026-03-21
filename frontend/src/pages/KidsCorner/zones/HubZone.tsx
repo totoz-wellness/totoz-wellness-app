@@ -4,6 +4,7 @@ import { KidsData, Mood } from '../../../types/kidscorner.types';
 interface HubZoneProps {
   kidsData: KidsData;
   onUpdateData: (newData: Partial<KidsData>) => void;
+  onNavigate?: (zone: 'hub' | 'play' | 'learn' | 'help') => void;
 }
 
 const MOODS: { type: Mood; emoji: string; label: string }[] = [
@@ -23,7 +24,7 @@ const DAILY_FACTS = [
   "Smiling can actually trick your brain into feeling a little bit happier!",
 ];
 
-const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData }) => {
+const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData, onNavigate }) => {
   const [dailyFact] = useState(DAILY_FACTS[Math.floor(Math.random() * DAILY_FACTS.length)]);
   
   // LOGIC FIX: Determine initial view based on if data exists
@@ -98,19 +99,20 @@ const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Sticker Book */}
-          <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-dashed border-pastel-green">
+          <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-dashed border-pastel-green flex flex-col">
             <h3 className="font-black text-xl mb-4 text-dark-text">Your Sticker Book 📓</h3>
-            <div className="grid grid-cols-4 gap-4">
-              {[...Array(12)].map((_, i) => (
-                 <div key={i} className={`aspect-square rounded-2xl flex items-center justify-center text-3xl shadow-inner transition-all hover:scale-110 ${i < kidsData.stickers.length ? 'bg-pastel-green/20' : 'bg-gray-100 grayscale opacity-30'}`}>
-                   {i < kidsData.stickers.length ? kidsData.stickers[i] : '❓'}
-                 </div>
-              ))}
+            <div className="flex-1 overflow-y-auto max-h-[22rem] pr-2 custom-scrollbar">
+                <div className="grid grid-cols-4 gap-4">
+                  {[...Array(Math.max(12, kidsData.stickers.length + (4 - (kidsData.stickers.length % 4 || 4))))].map((_, i) => (
+                     <div key={i} className={`aspect-square rounded-2xl flex items-center justify-center text-3xl shadow-inner transition-all hover:scale-110 ${i < kidsData.stickers.length ? 'bg-pastel-green/20' : 'bg-gray-100 grayscale opacity-30'}`}>
+                       {i < kidsData.stickers.length ? kidsData.stickers[i] : '❓'}
+                     </div>
+                  ))}
+                </div>
             </div>
             <p className="mt-4 text-sm text-center text-gray-500">Collect more by trying new activities!</p>
           </div>
           
-          {/* Daily Progress */}
           <div className="bg-white p-6 rounded-3xl shadow-lg">
             <h3 className="font-black text-xl mb-4 text-dark-text">Daily Progress 📈</h3>
             <div className="space-y-4">
@@ -119,12 +121,26 @@ const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData }) => {
                     <span>Mood Check-in</span>
                     {kidsData.lastMood && <span className="text-xs text-gray-400 font-normal">Feeling {kidsData.lastMood}</span>}
                  </div>
-                 <span className="text-green-500 flex items-center gap-1">Done! ✅</span>
+                 <span className={kidsData.lastMood ? 'text-green-500 flex items-center gap-1' : 'text-gray-400 italic'}>
+                   {kidsData.lastMood ? 'Done! ✅' : 'Not yet'}
+                 </span>
               </div>
-              <div className="flex justify-between items-center text-sm font-bold p-3 bg-gray-50 rounded-xl">
+              <div 
+                 className="flex justify-between items-center text-sm font-bold p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                 onClick={() => onNavigate && onNavigate('play')}
+              >
                  <span>Play a Game</span>
-                 <span className={kidsData.stickers.length > 0 ? 'text-green-500' : 'text-gray-400 italic'}>
-                   {kidsData.stickers.length > 0 ? 'Done! ✅' : 'Not yet'}
+                 <span className={kidsData.hasPlayedGame ? 'text-green-500 flex items-center gap-1' : 'text-gray-400 italic'}>
+                   {kidsData.hasPlayedGame ? 'Done! ✅' : 'Not yet'}
+                 </span>
+              </div>
+              <div 
+                 className="flex justify-between items-center text-sm font-bold p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                 onClick={() => onNavigate && onNavigate('learn')}
+              >
+                 <span>Read a Book</span>
+                 <span className={kidsData.hasReadBook ? 'text-green-500 flex items-center gap-1' : 'text-gray-400 italic'}>
+                   {kidsData.hasReadBook ? 'Done! ✅' : 'Not yet'}
                  </span>
               </div>
             </div>

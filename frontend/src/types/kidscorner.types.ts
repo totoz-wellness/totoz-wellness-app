@@ -15,4 +15,10 @@ export interface KidsData {
   
   // The last mood selected (Optional, as it might be undefined on first load)
   lastMood?: Mood;
+
+  // Track if they hit reading goal during this daily session
+  hasReadBook?: boolean;
+
+  // Track if they played a game during this daily session
+  hasPlayedGame?: boolean;
 }

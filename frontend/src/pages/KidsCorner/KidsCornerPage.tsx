@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KidsData } from '../../types/kidscorner.types';
 
@@ -25,6 +25,16 @@ const KidsCornerPage = () => {
 
   // 2. STATE: Manage Active Zone
   const [activeZone, setActiveZone] = useState<'hub' | 'play' | 'learn' | 'help'>('hub');
+
+  // 3. EFFECT: Reset session check-ins when entering Kids Corner
+  useEffect(() => {
+    setKidsData(prev => {
+      const updated = { ...prev, lastMood: undefined, hasReadBook: false, hasPlayedGame: false };
+      // Save it so the reload doesn't resurrect the mood unexpectedly
+      localStorage.setItem('totoz_kids_data', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   // 3. HANDLER: Update Data Wrapper
   const handleUpdateData = (newData: Partial<KidsData>) => {
@@ -89,7 +99,7 @@ const KidsCornerPage = () => {
           {/* --- RENDER THE ACTIVE ZONE --- */}
           <div className="min-h-[500px]">
             {activeZone === 'hub' && (
-              <HubZone kidsData={kidsData} onUpdateData={handleUpdateData} />
+              <HubZone kidsData={kidsData} onUpdateData={handleUpdateData} onNavigate={setActiveZone} />
             )}
             
             {activeZone === 'play' && (
@@ -98,7 +108,7 @@ const KidsCornerPage = () => {
             
             {/* LearnZone usually only reads data, doesn't update it, but passing it is fine */}
             {activeZone === 'learn' && (
-              <LearnZone kidsData={kidsData} />
+              <LearnZone kidsData={kidsData} onUpdateData={handleUpdateData} />
             )}
             
             {activeZone === 'help' && (
