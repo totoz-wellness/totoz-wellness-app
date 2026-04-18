@@ -65,6 +65,10 @@ const ConnectCare: React.FC = () => {
     featuredOnly: false,
     languages: [],
     counties: [],
+    religions: [],
+    sessionTypes: [],
+    ageGroups: [],
+    areasOfSupport: [],
     maxDistance: undefined
   });
 
@@ -192,9 +196,33 @@ const ConnectCare: React.FC = () => {
       );
     }
 
-    if (advancedFilters.counties.length > 0) {
+    if (advancedFilters.counties && advancedFilters.counties.length > 0) {
       filtered = filtered.filter(r =>
-        r.location.county && advancedFilters.counties. includes(r.location.county)
+        r.location.county && advancedFilters.counties.includes(r.location.county)
+      );
+    }
+
+    if (advancedFilters.religions && advancedFilters.religions.length > 0) {
+      filtered = filtered.filter(r =>
+        advancedFilters.religions.some(rel => r.tags?.includes(rel) || r.specializations?.includes(rel))
+      );
+    }
+
+    if (advancedFilters.sessionTypes && advancedFilters.sessionTypes.length > 0) {
+      filtered = filtered.filter(r =>
+        advancedFilters.sessionTypes.some(type => r.tags?.includes(type) || r.operatingHours?.includes(type) || r.description?.includes(type))
+      );
+    }
+
+    if (advancedFilters.ageGroups && advancedFilters.ageGroups.length > 0) {
+      filtered = filtered.filter(r =>
+        advancedFilters.ageGroups.some(age => r.tags?.includes(age) || r.description?.includes(age))
+      );
+    }
+
+    if (advancedFilters.areasOfSupport && advancedFilters.areasOfSupport.length > 0) {
+      filtered = filtered.filter(r =>
+        advancedFilters.areasOfSupport.some(area => r.specializations?.includes(area) || r.tags?.includes(area))
       );
     }
 
@@ -332,13 +360,13 @@ const ConnectCare: React.FC = () => {
           {/* Filter Controls */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-3">
-              <LocationFilter
+              {/* <LocationFilter
                 onLocationChange={(loc) => {
                   if (loc) getCurrentLocation();
                 }}
                 loading={locationLoading}
                 hasLocation={!! userLocation}
-              />
+              /> */}
 
               <AdvancedFilters
                 filters={advancedFilters}
@@ -364,7 +392,7 @@ const ConnectCare: React.FC = () => {
             </div>
 
             {/* View Toggle */}
-            <div className="flex gap-2 bg-white rounded-xl p-1 border-2 border-gray-200">
+            {/* <div className="flex gap-2 bg-white rounded-xl p-1 border-2 border-gray-200">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
@@ -387,11 +415,11 @@ const ConnectCare: React.FC = () => {
               >
                 <MapIcon className="w-5 h-5" />
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* Type Filters */}
-          <div className="flex flex-wrap justify-center gap-3">
+          {/* <div className="flex flex-wrap justify-center gap-3">
             {availableTypes. map((type) => (
               <button
                 key={type}
@@ -405,7 +433,7 @@ const ConnectCare: React.FC = () => {
                 {type === 'All' ? 'All Services' : typeConfig[type as ResourceType]?.label || type}
               </button>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* Results Count */}

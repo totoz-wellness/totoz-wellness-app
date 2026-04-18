@@ -86,33 +86,31 @@ const FeatureCard: React.FC<{ feature: typeof features[0] }> = ({ feature }) => 
   };
 
   return (
-    <div 
-      className={`${feature.color} border-2 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group h-full flex flex-col ${
-        feature.isAvailable ? 'cursor-pointer' : 'opacity-75'
-      }`}
+    <div
+      className={`${feature.color} border-2 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group h-full flex flex-col ${feature.isAvailable ? 'cursor-pointer' : 'opacity-75'
+        }`}
       onClick={handleClick}
     >
       <div className="bg-white text-teal rounded-full w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-md">
-        {feature. icon}
+        {feature.icon}
       </div>
-      
+
       <div className="flex items-center gap-3 mb-3 flex-wrap">
         <h3 className="text-2xl font-bold font-heading text-dark-text">{feature.title}</h3>
-        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
-          feature.isAvailable 
-            ? 'bg-green-100 text-green-800' 
+        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${feature.isAvailable
+            ? 'bg-green-100 text-green-800'
             : 'bg-gray-100 text-gray-600'
-        }`}>
+          }`}>
           {feature.status}
         </span>
       </div>
-      
+
       <p className="text-dark-text/70 flex-grow mb-4">{feature.description}</p>
-      
+
       {feature.isAvailable && (
         <div className="mt-auto pt-4 border-t border-gray-200">
           <span className="text-teal font-semibold text-sm group-hover:text-teal/80 transition-colors flex items-center gap-2">
-            Explore Now 
+            Explore Now
             <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -120,7 +118,7 @@ const FeatureCard: React.FC<{ feature: typeof features[0] }> = ({ feature }) => 
         </div>
       )}
 
-      {! feature.isAvailable && (
+      {!feature.isAvailable && (
         <div className="mt-auto pt-4 border-t border-gray-200">
           <span className="text-gray-500 font-semibold text-sm flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +142,7 @@ const Features: React.FC = () => {
   return (
     <div className="bg-light-bg overflow-x-hidden min-h-screen">
       <Navbar />
-      
+
       <main className="pt-20">
         {/* Hero Section */}
         <section className="py-20 bg-gradient-to-br from-[#347EAD]/10 via-light-bg to-[#F09232]/10">
@@ -154,18 +152,18 @@ const Features: React.FC = () => {
                 ✨ {availableCount} of {totalCount} Features Live Now
               </span>
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl font-extrabold font-heading text-dark-text mb-6">
               Comprehensive Features for Family Wellness
             </h1>
-            
+
             <p className="text-lg md:text-xl text-dark-text/70 mb-8 max-w-3xl mx-auto">
               Everything you need to support your child's mental wellness journey, all in one place.
-              From AI-powered conversations to community support. 
+              From AI-powered conversations to community support.
             </p>
-            
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">    
-              <button 
+
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+              <button
                 onClick={() => navigate('/learnwell')}
                 className="bg-white text-teal border-2 border-teal font-bold py-3 px-8 rounded-full hover:bg-teal/10 transition-all transform hover:scale-105"
               >
@@ -217,7 +215,7 @@ const Features: React.FC = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-extrabold font-heading text-dark-text mb-4">
-                Why Choose Totoz Wellness?
+                Your wellness journey starts here.
               </h2>
             </div>
 
@@ -259,19 +257,19 @@ const Features: React.FC = () => {
               Start exploring today with our growing suite of family wellness tools.
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-              <button 
+              <button
                 onClick={() => navigate('/growtrack')}
                 className="bg-white text-teal font-bold py-4 px-8 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
               >
                 Try GrowTrack 🆕
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/talkeasy')}
                 className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105"
               >
                 Try TalkEasy AI
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/signup')}
                 className="bg-[#F09232] text-white font-bold py-4 px-8 rounded-full hover:bg-[#F09232]/90 transition-all transform hover:scale-105"
               >

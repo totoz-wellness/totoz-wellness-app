@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  BarChart3, 
-  Users, 
-  Shield, 
-  Target, 
-  Lock, 
+import {
+  BarChart3,
+  Users,
+  Shield,
+  Target,
+  Lock,
   Heart,
   Microscope,
   UserCircle,
@@ -105,9 +105,9 @@ const StatCard: React.FC<{
   index: number;
 }> = ({ stat, index }) => {
   const Icon = stat.icon;
-  
+
   return (
-    <div 
+    <div
       className="bg-white p-8 rounded-xl shadow-lg text-center group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
       style={{ animationDelay: `${index * 100}ms` }}
     >
@@ -125,9 +125,9 @@ const BenefitCard: React.FC<{
   index: number;
 }> = ({ benefit, index }) => {
   const Icon = benefit.icon;
-  
+
   return (
-    <div 
+    <div
       className="bg-white p-8 rounded-xl shadow-lg group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100"
       style={{ animationDelay: `${index * 100}ms` }}
     >
@@ -148,7 +148,7 @@ const WhyUs: React.FC = () => {
   return (
     <div className="bg-light-bg overflow-x-hidden min-h-screen">
       <Navbar />
-      
+
       <main className="pt-20">
         {/* Hero Section */}
         <section className="py-20 bg-gradient-to-br from-[#347EAD]/10 via-light-bg to-[#F09232]/10 relative overflow-hidden">
@@ -160,10 +160,10 @@ const WhyUs: React.FC = () => {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold font-heading text-dark-text mb-6">
-              Why Choose Totoz Wellness?
+              Your wellness journey starts here.
             </h1>
             <p className="text-lg md:text-xl text-dark-text/70 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Our approach is backed by research and a deep understanding of caregivers' needs. 
+              Our approach is backed by research and a deep understanding of caregivers' needs.
               Discover why families trust us with their mental wellness journey.
             </p>
             <div className="flex justify-center gap-3">
@@ -187,14 +187,14 @@ const WhyUs: React.FC = () => {
                   Research-Backed Solutions
                 </h2>
                 <p className="text-lg text-dark-text/70 mb-6 leading-relaxed">
-                  Our approach is backed by comprehensive research and surveys conducted with parents and caregivers.  
+                  Our approach is backed by comprehensive research and surveys conducted with parents and caregivers.
                   We found a strong desire for accessible, supportive tools like Totoz Wellness.
                 </p>
                 <p className="text-lg text-dark-text/70 mb-8 leading-relaxed">
-                  The data shows that caregivers are not only aware of the challenges in children's mental health 
+                  The data shows that caregivers are not only aware of the challenges in children's mental health
                   but are actively seeking solutions that fit into their busy lives.
                 </p>
-                <button 
+                <button
                   onClick={() => navigate('/learnwell')}
                   className="bg-teal text-white font-bold py-3 px-6 rounded-full hover:bg-teal/90 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 group"
                 >
@@ -206,20 +206,20 @@ const WhyUs: React.FC = () => {
                 <div className="bg-gradient-to-br from-teal/5 to-blue-50 p-8 rounded-2xl shadow-xl">
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={CHART_DATA} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <XAxis 
-                        type="number" 
-                        domain={[0, 100]} 
+                      <XAxis
+                        type="number"
+                        domain={[0, 100]}
                         tickFormatter={(tick) => `${tick}%`}
                         stroke="#17252A"
                       />
-                      <YAxis 
-                        dataKey="name" 
-                        type="category" 
-                        width={150} 
-                        tick={{ fill: '#17252A', fontSize: 14 }} 
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        width={150}
+                        tick={{ fill: '#17252A', fontSize: 14 }}
                       />
-                      <Tooltip 
-                        cursor={{ fill: 'rgba(249, 250, 251, 0.5)' }} 
+                      <Tooltip
+                        cursor={{ fill: 'rgba(249, 250, 251, 0.5)' }}
                         formatter={(value: number) => [`${value}%`, 'Percentage']}
                         contentStyle={{
                           backgroundColor: 'white',
@@ -249,7 +249,7 @@ const WhyUs: React.FC = () => {
                 The Numbers Tell the Story
               </h2>
               <p className="text-lg text-dark-text/70 max-w-2xl mx-auto leading-relaxed">
-                Our research reveals the urgent need for accessible mental health support tools for families. 
+                Our research reveals the urgent need for accessible mental health support tools for families.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -299,14 +299,14 @@ const WhyUs: React.FC = () => {
               Be part of the 81% who are ready to embrace digital wellness tools. Start your family's journey today.
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-              <button 
+              <button
                 onClick={() => navigate('/signup')}
                 className="bg-white text-teal font-bold py-4 px-8 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 group"
               >
                 Get Started Now
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/community')}
                 className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105 flex items-center gap-2 group"
               >
@@ -317,7 +317,7 @@ const WhyUs: React.FC = () => {
           </div>
         </section>
       </main>
-      
+
       <Footer />
     </div>
   );
