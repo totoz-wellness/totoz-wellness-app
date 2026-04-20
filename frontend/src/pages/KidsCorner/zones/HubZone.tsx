@@ -26,9 +26,11 @@ const DAILY_FACTS = [
 
 const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData, onNavigate }) => {
   const [dailyFact] = useState(DAILY_FACTS[Math.floor(Math.random() * DAILY_FACTS.length)]);
-  const [view, setView] = useState<'selector' | 'dashboard'>('selector');
-  const [isLogging, setIsLogging] = useState(false);
-  const [lastMood, setLastMood] = useState<Mood | null>(null);
+  
+  // LOGIC FIX: Determine initial view based on if data exists
+  const [view, setView] = useState<'selector' | 'dashboard'>(
+    kidsData.lastMood ? 'dashboard' : 'selector'
+  );
 
   // Helper: Time-based Greeting
   const getGreeting = () => {
@@ -38,82 +40,39 @@ const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData, onNavigate })
     return "Good Evening";
   };
 
-  const handleMoodSelect = async (mood: Mood) => {
-    if (!activeChild) {
-      toast.error('Please select a child first');
-      return;
-    }
-
-    setIsLogging(true);
-
-    try {
-      const result = await kidsCornerAPI.logMood(activeChild.id, mood);
-      
-      // Update local state
-      setLastMood(mood);
-      
-      // Refresh progress from backend
-      await refreshProgress();
-
-      // Show success message
-      const moodEmoji = MOODS.find(m => m.type === mood)?.emoji || '✨';
-      toast.success(`${moodEmoji} Mood logged! Streak: ${result.progress.streak} days!`, {
-        duration: 3000,
-        icon: '🎉'
-      });
-
-      // Switch to dashboard
-      setView('dashboard');
-
-    } catch (error: any) {
-      console.error('Failed to log mood:', error);
-      toast.error('Oops! Could not save your mood. Try again!');
-    } finally {
-      setIsLogging(false);
-    }
+  const handleMoodSelect = (mood: Mood) => {
+    onUpdateData({ lastMood: mood, streak: (kidsData.streak || 0) + 1 });
+    setView('dashboard'); // Switch to dashboard after selection
   };
 
   // --- VIEW 1: MOOD SELECTOR ---
   if (view === 'selector') {
     return (
       <div className="max-w-2xl mx-auto text-center mt-10 animate-fade-in">
-        {lastMood && (
-          <button 
-            onClick={() => setView('dashboard')}
-            className="mb-6 text-teal font-bold hover:underline"
-          >
-            ⬅ Back to Dashboard
-          </button>
+        {kidsData.lastMood && (
+             <button 
+               onClick={() => setView('dashboard')}
+               className="mb-6 text-teal font-bold hover:underline"
+             >
+               ⬅ Back to Dashboard
+             </button>
         )}
-        <h1 className="text-4xl md:text-5xl font-heading font-black text-gray-800 mb-4">
-          {getGreeting()}, {activeChild?.name}! 👋
+        <h1 className="text-4xl md:text-5xl font-heading font-black text-dark-text mb-4">
+            {getGreeting()}, Explorer! 👋
         </h1>
-        <p className="text-xl text-gray-600 mb-10">How are you feeling right now?</p>
-        
+        <p className="text-xl text-dark-text/70 mb-10">How are you feeling right now?</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           {MOODS.map(m => (
             <button 
               key={m.type}
               onClick={() => handleMoodSelect(m.type)}
-              disabled={isLogging}
-              className={`bg-white p-6 rounded-3xl shadow-lg hover:shadow-2xl transition-all transform hover:scale-110 border-4 border-transparent hover:border-teal-400 group ${
-                isLogging ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="bg-white p-6 rounded-3xl shadow-lg hover:shadow-2xl transition-all transform hover:scale-110 border-4 border-transparent hover:border-pastel-green group"
             >
               <div className="text-6xl mb-3 group-hover:animate-bounce transition-transform">{m.emoji}</div>
-              <div className="font-bold text-gray-800">{m.label}</div>
+              <div className="font-bold text-dark-text">{m.label}</div>
             </button>
           ))}
         </div>
-
-        {isLogging && (
-          <div className="mt-8 text-center">
-            <div className="inline-flex items-center gap-2 bg-purple-100 px-6 py-3 rounded-full">
-              <div className="animate-spin">⚙️</div>
-              <span className="font-bold text-purple-700">Saving your mood...</span>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -122,19 +81,17 @@ const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData, onNavigate })
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-teal-500 to-green-400 p-8 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-teal to-pastel-green p-8 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-3xl font-heading font-black mb-2">
-            Welcome Back, {activeChild?.name}! {activeChild?.avatarEmoji}
-          </h2>
+          <h2 className="text-3xl font-heading font-black mb-2">Welcome Back!</h2>
           <p className="text-white/90 text-lg italic mb-4">"{dailyFact}"</p>
           
-          {/* Update Mood Button */}
+          {/* NEW BUTTON: Allows re-selecting mood */}
           <button 
             onClick={() => setView('selector')}
             className="bg-white/20 hover:bg-white/30 text-white border border-white/50 px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2"
           >
-            <span>🔄</span> Update my Mood
+             <span>🔄</span> Update my Mood
           </button>
         </div>
         <div className="absolute top-[-20%] right-[-5%] text-9xl opacity-20 rotate-12">🌟</div>
@@ -188,37 +145,6 @@ const HubZone: React.FC<HubZoneProps> = ({ kidsData, onUpdateData, onNavigate })
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Total Activities */}
-        <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-6 border-2 border-purple-200 shadow-md">
-          <div className="text-4xl mb-2">⭐</div>
-          <div className="text-3xl font-black text-purple-700">
-            {activeChild?._count?.activityLogs || 0}
-          </div>
-          <div className="text-sm font-bold text-purple-600">Activities Done</div>
-        </div>
-
-        {/* Worries Locked */}
-        <div className="bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl p-6 border-2 border-blue-200 shadow-md">
-          <div className="text-4xl mb-2">🔒</div>
-          <div className="text-3xl font-black text-blue-700">
-            {activeChild?._count?.worries || 0}
-          </div>
-          <div className="text-sm font-bold text-blue-600">Worries Locked Away</div>
-        </div>
-
-        {/* Buddy Chats */}
-        <div className="bg-gradient-to-br from-green-100 to-teal-100 rounded-2xl p-6 border-2 border-green-200 shadow-md">
-          <div className="text-4xl mb-2">💬</div>
-          <div className="text-3xl font-black text-green-700">
-            {activeChild?._count?.buddyChats || 0}
-          </div>
-          <div className="text-sm font-bold text-green-600">Buddy Chats</div>
-        </div>
       </div>
     </div>
   );

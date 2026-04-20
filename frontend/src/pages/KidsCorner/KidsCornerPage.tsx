@@ -1,22 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useKidsCorner } from '../../contexts/KidsCornerContext';
-import ChildSelector from '../../components/KidsCorner/ChildSelector';
+import { KidsData } from '../../types/kidscorner.types';
 
 // --- IMPORT YOUR ZONES HERE ---
+// Make sure you create these files in a 'zones' subfolder!
 import HubZone from './zones/HubZone';
 import PlayZone from './zones/PlayZone';
 import LearnZone from './zones/LearnZone';
 import HelpZone from './zones/HelpZone';
 
-// Legacy type for backward compatibility with zones
-import { KidsData } from '../../types/kidscorner.types';
-
 const KidsCornerPage = () => {
   const navigate = useNavigate();
-  const { activeChild, progress, loading, error } = useKidsCorner();
 
-  // Active zone state
+  // 1. STATE: Manage Data (Persisted in LocalStorage)
+  const [kidsData, setKidsData] = useState<KidsData>(() => {
+    const saved = localStorage.getItem('totoz_kids_data');
+    return saved ? JSON.parse(saved) : {
+      stickers: [],
+      streak: 0,
+      worries: [],
+      lastMood: undefined
+    };
+  });
+
+  // 2. STATE: Manage Active Zone
   const [activeZone, setActiveZone] = useState<'hub' | 'play' | 'learn' | 'help'>('hub');
 
   // 3. EFFECT: Reset session check-ins when entering Kids Corner
@@ -40,89 +47,24 @@ const KidsCornerPage = () => {
 
   // 4. HANDLER: Navigation
   const handleBack = () => {
-    navigate('/');
+    navigate('/'); 
   };
 
-  // Zone configuration with beautiful colors
-  const zones = [
-    { 
-      id: 'hub', 
-      label: 'My Hub', 
-      icon: '🏠', 
-      gradient: 'from-purple-400 to-purple-600',
-      hoverGradient: 'from-purple-500 to-purple-700',
-      ringColor: 'ring-purple-400/50',
-      bgColor: 'bg-purple-500'
-    },
-    { 
-      id: 'play', 
-      label: 'Play Zone', 
-      icon: '🎮', 
-      gradient: 'from-blue-400 to-indigo-600',
-      hoverGradient: 'from-blue-500 to-indigo-700',
-      ringColor: 'ring-blue-400/50',
-      bgColor: 'bg-blue-500'
-    },
-    { 
-      id: 'learn', 
-      label: 'Learn Zone', 
-      icon: '📚', 
-      gradient: 'from-green-400 to-emerald-600',
-      hoverGradient: 'from-green-500 to-emerald-700',
-      ringColor: 'ring-green-400/50',
-      bgColor: 'bg-green-500'
-    },
-    { 
-      id: 'help', 
-      label: 'Help Zone', 
-      icon: '🛡️', 
-      gradient: 'from-pink-400 to-rose-600',
-      hoverGradient: 'from-pink-500 to-rose-700',
-      ringColor: 'ring-pink-400/50',
-      bgColor: 'bg-pink-500'
-    },
-  ];
-
-  const activeZoneConfig = zones.find(z => z.id === activeZone);
-
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* --- NAVIGATION BAR --- */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-purple-200/50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Back Button */}
-            <button 
-              onClick={handleBack} 
-              className="flex items-center gap-2 text-purple-600 font-bold hover:bg-purple-50 px-3 sm:px-4 py-2 rounded-xl transition-all transform hover:scale-105"
-            >
-              <span className="text-xl sm:text-2xl">🏠</span> 
-              <span className="hidden sm:inline">Home</span>
-            </button>
-
-            {/* Active Child Info */}
-            {activeChild && (
-              <div className="flex items-center gap-2 sm:gap-3">
-                {/* Child Avatar */}
-                <div className="flex items-center gap-2 bg-gradient-to-r from-purple-100 to-pink-100 px-3 sm:px-4 py-2 rounded-full border-2 border-purple-300/50 shadow-sm">
-                  <span className="text-xl sm:text-2xl">{activeChild.avatarEmoji}</span>
-                  <span className="font-bold text-purple-700 text-sm sm:text-base hidden xs:inline">{activeChild.name}</span>
-                </div>
-                
-                {/* Streak Badge */}
-                <div className="bg-gradient-to-r from-orange-100 to-yellow-100 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 sm:gap-2 border-2 border-orange-300/50 shadow-sm">
-                  <span className="text-base sm:text-xl">🔥</span>
-                  <span className="font-bold text-orange-700 text-xs sm:text-sm">{progress?.streak || 0}</span>
-                  <span className="hidden sm:inline font-bold text-orange-700 text-xs sm:text-sm">Day{progress?.streak !== 1 ? 's' : ''}</span>
-                </div>
-                
-                {/* Stickers Badge */}
-                <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 sm:gap-2 shadow-md font-bold text-xs sm:text-sm">
-                  <span className="text-base sm:text-lg">🎒</span> 
-                  <span>{progress?.stickers.length || 0}</span>
-                </div>
-              </div>
-            )}
+    <div className="flex flex-col h-screen overflow-hidden font-sans bg-light-bg">
+      {/* --- SHARED NAVIGATION BAR --- */}
+      <nav className="bg-white/80 backdrop-blur-md p-4 flex items-center justify-between border-b border-pastel-green/20">
+        <button onClick={handleBack} className="flex items-center gap-2 text-teal font-bold hover:bg-teal/10 px-4 py-2 rounded-xl transition-all">
+          <span className="text-xl">🏠</span> Home
+        </button>
+        <div className="flex items-center gap-3">
+          <div className="bg-yellow-100 px-3 py-1 rounded-full flex items-center gap-2 border border-yellow-200 shadow-sm animate-bounce-slow">
+            <span className="text-xl">⭐</span>
+            <span className="font-bold text-yellow-700">{kidsData.streak || 0} Streak</span>
+          </div>
+          <div className="bg-teal text-white px-3 py-1 rounded-full flex items-center gap-2 shadow-sm font-bold">
+             <span>🎒</span> 
+             <span>{kidsData.stickers.length} Stickers</span>
           </div>
         </div>
       </nav>
@@ -176,39 +118,6 @@ const KidsCornerPage = () => {
           
         </div>
       </main>
-
-      {/* Add custom CSS for animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-        
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        
-        @media (min-width: 375px) {
-          .xs\\:inline {
-            display: inline;
-          }
-        }
-      `}</style>
     </div>
   );
 };
