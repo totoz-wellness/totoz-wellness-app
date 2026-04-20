@@ -11,6 +11,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import ArticleCard from '../components/LearnWell/ArticleCard';
@@ -32,6 +33,7 @@ const LearnWell: React.FC = () => {
   const [page, setPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const { articles, totalPages, isLoading, error, prefetchNextPage } = useArticles({
     page,
@@ -93,22 +95,59 @@ const LearnWell: React.FC = () => {
             <SearchBar onSearch={handleSearch} />
           </motion.section>
 
+          {/* Mobile Filter Toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8 lg:hidden"
+          >
+            <button
+              onClick={() => setShowMobileFilters(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-bold text-gray-700 hover:border-teal transition-all shadow-sm"
+            >
+              <AdjustmentsHorizontalIcon className="w-5 h-5" />
+              Categories
+            </button>
+          </motion.div>
+
+          {/* Dimmed Overlay */}
+          {showMobileFilters && (
+            <div 
+              className="fixed inset-0 z-40 bg-black/50 lg:hidden transition-opacity"
+              onClick={() => setShowMobileFilters(false)}
+            />
+          )}
+
           {/* Category Filter */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-12"
+            className={`
+              ${showMobileFilters ? 'fixed inset-x-0 bottom-0 z-50 rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8 pt-6 px-6 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] bg-white mb-0' : 'hidden lg:block mb-12'}
+            `}
           >
-            <div className="flex flex-wrap justify-center gap-3">
+            {/* Mobile Header */}
+            <div className="lg:hidden flex justify-between items-center mb-6">
+              <h3 className="font-bold text-lg text-gray-900">Categories</h3>
+              <button onClick={() => setShowMobileFilters(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap lg:justify-center gap-3">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => handleCategoryChange(cat === 'All' ? '' : cat)}
-                  className={`px-5 py-2. 5 rounded-full text-sm font-semibold transition-all transform hover:scale-105 ${
-                    (cat === 'All' && ! selectedCategory) || cat === selectedCategory
+                  onClick={() => {
+                    handleCategoryChange(cat === 'All' ? '' : cat);
+                    setShowMobileFilters(false);
+                  }}
+                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all transform hover:scale-105 ${
+                    (cat === 'All' && !selectedCategory) || cat === selectedCategory
                       ? 'bg-teal text-white shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 lg:border-none shadow-sm lg:shadow-md'
                   }`}
                 >
                   {cat}

@@ -70,10 +70,10 @@ const Navbar: React.FC = () => {
 
   const navLinks = [
     { name: 'Features', path: '/features' },
-    { name: 'Community', path: '/community' },
-    { name: 'LearnWell', path: '/learnwell' },
-    { name: 'ConnectCare', path: '/connectcare' },
-    { name: 'ParentCircle', path: '/parentcircle' },
+    // { name: 'Community', path: '/community' },
+    // { name: 'LearnWell', path: '/learnwell' },
+    // { name: 'ConnectCare', path: '/connectcare' },
+    // { name: 'ParentCircle', path: '/parentcircle' },
   ];
 
   const handleNavClick = (path: string) => {
@@ -160,7 +160,7 @@ const Navbar: React.FC = () => {
               </button>
             ))}
 
-            {currentUser && (
+            {/* {currentUser && (
               <button
                 onClick={() => handleNavClick('/growtrack')}
                 className={`font-medium text-sm transition-colors ${
@@ -171,7 +171,7 @@ const Navbar: React.FC = () => {
               >
                 GrowTrack
               </button>
-            )}
+            )} */}
           </div>
 
           {/* Right Side */}
@@ -212,7 +212,7 @@ const Navbar: React.FC = () => {
 
                     {/* Menu Items */}
                     <ul className="py-2 text-sm text-gray-700">
-                      {currentUser && (
+                      {/* {currentUser && (
                         <li>
                           <button
                             onClick={() => {
@@ -227,7 +227,7 @@ const Navbar: React.FC = () => {
                             Dashboard
                           </button>
                         </li>
-                      )}
+                      )} */}
 
                       {['CONTENT_WRITER', 'CONTENT_LEAD', 'MODERATOR', 'SUPER_ADMIN'].includes(currentUser.role) && (
                         <li>
@@ -309,7 +309,7 @@ const Navbar: React.FC = () => {
               </button>
             ))}
 
-            {currentUser && (
+            {/* {currentUser && (
               <button
                 onClick={() => handleNavClick('/growtrack')}
                 className={`block w-full text-left px-4 py-2 rounded-lg font-medium transition-all ${
@@ -320,7 +320,7 @@ const Navbar: React.FC = () => {
               >
                 GrowTrack
               </button>
-            )}
+            )} */}
 
             {/* Mobile Auth */}
             <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">

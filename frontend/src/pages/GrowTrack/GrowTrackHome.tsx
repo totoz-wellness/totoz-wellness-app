@@ -112,20 +112,20 @@ const GrowTrackHome: React.FC = () => {
               label="Average Mood"
               value={stats.averageMoodIntensity. toFixed(1)}
               unit="/ 10"
-              color="bg-pink-500"
+              color="bg-amber-500"
             />
             <StatCard
               icon={<Activity className="w-6 h-6" />}
               label="Most Common"
               value={stats.predominantMood}
-              color="bg-teal"
+              color="bg-blue-500"
             />
             <StatCard
               icon={<Users className="w-6 h-6" />}
               label="Children"
               value={stats.trackedChildren}
               unit="tracked"
-              color="bg-purple-500"
+              color="bg-amber-500"
             />
           </div>
         )}
@@ -136,21 +136,21 @@ const GrowTrackHome: React.FC = () => {
             title="New Entry"
             description="Record mood and triggers"
             icon={<Plus className="w-7 h-7" />}
-            color="bg-teal"
+            color="bg-blue-500"
             onClick={() => navigate('/growtrack/create')}
           />
           <ActionCard
             title="View History"
             description="Browse past entries"
             icon={<Calendar className="w-7 h-7" />}
-            color="bg-blue-500"
+            color="bg-amber-500"
             onClick={() => navigate('/growtrack/entries')}
           />
           <ActionCard
             title="AI Insights"
             description="Get coping strategies"
             icon={<TrendingUp className="w-7 h-7" />}
-            color="bg-purple-500"
+            color="bg-blue-500"
             onClick={() => navigate('/growtrack/insights')}
           />
           <ActionCard

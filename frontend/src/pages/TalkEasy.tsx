@@ -264,7 +264,7 @@ const TalkEasy: React.FC = () => {
                       : 'U'}
                   </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#347EAD] via-black/50 to-[#F09232] flex items-center justify-center flex-shrink-0">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                 )}

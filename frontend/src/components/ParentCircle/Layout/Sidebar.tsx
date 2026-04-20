@@ -8,8 +8,9 @@
  * ============================================
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { Category } from '../../../types/parentcircle.types';
 
 interface SidebarProps {
@@ -29,6 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   sortBy,
   onSortChange
 }) => {
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
   // Filter categories based on active tab
   const filteredCategories = categories.filter(cat => 
     cat.type === 'BOTH' || 
@@ -50,7 +53,39 @@ const Sidebar: React.FC<SidebarProps> = ({
       ];
 
   return (
-    <div className="w-full md:w-64 bg-gradient-to-br from-teal/5 to-blue-500/5 p-6 rounded-2xl shadow-sm sticky top-4">
+    <>
+      {/* Mobile Toggle Button */}
+      <div className="lg:hidden mb-4">
+        <button
+          onClick={() => setShowMobileFilters(true)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-bold text-gray-700 hover:border-teal transition-all shadow-sm"
+        >
+          <AdjustmentsHorizontalIcon className="w-5 h-5" />
+          Filter & Sort
+        </button>
+      </div>
+
+      {/* Dimmed Overlay */}
+      {showMobileFilters && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden transition-opacity"
+          onClick={() => setShowMobileFilters(false)}
+        />
+      )}
+
+      {/* Sidebar Content rendered as bottom sheet on mobile, sidebar on desktop */}
+      <div className={`
+        ${showMobileFilters ? 'fixed inset-x-0 bottom-0 z-50 rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] bg-white' : 'hidden lg:block'}
+        lg:relative lg:w-full lg:max-h-none lg:overflow-visible lg:bg-gradient-to-br lg:from-teal/5 lg:to-blue-500/5 lg:rounded-2xl lg:shadow-sm lg:sticky lg:top-4 p-6
+      `}>
+        {/* Mobile Header with Close Button */}
+        <div className="lg:hidden flex justify-between items-center mb-6">
+          <h3 className="font-bold text-lg text-gray-900">Filters & Sorting</h3>
+          <button onClick={() => setShowMobileFilters(false)} className="text-gray-400 hover:text-gray-600">
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+
       {/* Sort By */}
       <div className="mb-6">
         <h3 className="font-heading font-bold text-dark-text mb-3 uppercase text-sm tracking-wider flex items-center gap-2">
@@ -131,7 +166,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           <span className="font-bold">💡 Tip:</span> Use categories to find relevant {activeTab === 'question' ? 'questions' : 'stories'} faster!
         </p>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

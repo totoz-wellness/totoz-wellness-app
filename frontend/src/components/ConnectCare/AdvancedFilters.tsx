@@ -6,8 +6,17 @@ export interface FilterState {
   featuredOnly: boolean;
   languages: string[];
   counties: string[];
+  religions: string[];
+  sessionTypes: string[];
+  ageGroups: string[];
+  areasOfSupport: string[];
   maxDistance?: number;
 }
+
+const AVAILABLE_RELIGIONS = ['Christian', 'Muslim', 'Hindu', 'Buddhist', 'Jewish', 'Non-religious', 'Other'];
+const AVAILABLE_SESSION_TYPES = ['Online', 'In-Person', 'Hybrid'];
+const AVAILABLE_AGE_GROUPS = ['Toddlers (1-3)', 'Children (4-11)', 'Adolescents (12-18)', 'Young Adults (19-25)', 'Adults', 'Seniors'];
+const AVAILABLE_AREAS_OF_SUPPORT = ['Anxiety', 'Depression', 'Trauma', 'Grief', 'ADHD', 'Autism Spectrum', 'Behavioral Issues', 'Family Conflict', 'Stress Management', 'Other'];
 
 interface AdvancedFiltersProps {
   filters: FilterState;
@@ -30,12 +39,12 @@ const AdvancedFilters: React. FC<AdvancedFiltersProps> = ({
     onFilterChange({ ...filters, [key]: value });
   };
 
-  const toggleArrayFilter = (key: 'languages' | 'counties', value: string) => {
-    const current = filters[key];
-    const updated = current.includes(value)
-      ? current.filter(v => v !== value)
+  const toggleArrayFilter = (key: 'languages' | 'counties' | 'religions' | 'sessionTypes' | 'ageGroups' | 'areasOfSupport', value: string) => {
+    const current = filters[key] || [];
+    const updated = current.includes(value as never)
+      ? current.filter((v: string) => v !== value)
       : [...current, value];
-    updateFilter(key, updated);
+    updateFilter(key, updated as any);
   };
 
   const clearAllFilters = () => {
@@ -44,6 +53,10 @@ const AdvancedFilters: React. FC<AdvancedFiltersProps> = ({
       featuredOnly: false,
       languages: [],
       counties: [],
+      religions: [],
+      sessionTypes: [],
+      ageGroups: [],
+      areasOfSupport: [],
       maxDistance: undefined
     });
   };
@@ -51,8 +64,12 @@ const AdvancedFilters: React. FC<AdvancedFiltersProps> = ({
   const activeFiltersCount = 
     (filters.verifiedOnly ? 1 : 0) +
     (filters.featuredOnly ? 1 : 0) +
-    filters.languages.length +
-    filters.counties.length +
+    (filters.languages?.length || 0) +
+    (filters.counties?.length || 0) +
+    (filters.religions?.length || 0) +
+    (filters.sessionTypes?.length || 0) +
+    (filters.ageGroups?.length || 0) +
+    (filters.areasOfSupport?.length || 0) +
     (filters.maxDistance ?  1 : 0);
 
   return (
@@ -73,10 +90,10 @@ const AdvancedFilters: React. FC<AdvancedFiltersProps> = ({
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 bg-black/50 md:bg-transparent transition-opacity"
             onClick={() => setShowFilters(false)}
           />
-          <div className="absolute top-full mt-2 right-0 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 z-50 max-h-[600px] overflow-y-auto">
+          <div className="fixed inset-x-0 bottom-0 md:absolute md:top-full md:bottom-auto md:mt-2 md:right-0 w-full md:w-96 bg-white rounded-t-3xl md:rounded-2xl shadow-[0_-8px_30px_rgb(0,0,0,0.12)] md:shadow-2xl border border-gray-200 p-6 z-50 max-h-[85vh] md:max-h-[600px] overflow-y-auto pb-8 md:pb-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-lg text-gray-900">Filter Resources</h3>
               <button
@@ -178,6 +195,86 @@ const AdvancedFilters: React. FC<AdvancedFiltersProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Religions */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm text-gray-700">Religion/Faith</h4>
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {AVAILABLE_RELIGIONS.map(religion => (
+                    <label key={religion} className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.religions?.includes(religion) || false}
+                        onChange={() => toggleArrayFilter('religions', religion)}
+                        className="w-4 h-4 rounded border-gray-300 text-teal focus:ring-teal"
+                      />
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        {religion}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Session Types */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm text-gray-700">Session Type</h4>
+                <div className="space-y-2">
+                  {AVAILABLE_SESSION_TYPES.map(type => (
+                    <label key={type} className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.sessionTypes?.includes(type) || false}
+                        onChange={() => toggleArrayFilter('sessionTypes', type)}
+                        className="w-4 h-4 rounded border-gray-300 text-teal focus:ring-teal"
+                      />
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        {type}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Age Groups */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm text-gray-700">Age Group</h4>
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {AVAILABLE_AGE_GROUPS.map(age => (
+                    <label key={age} className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.ageGroups?.includes(age) || false}
+                        onChange={() => toggleArrayFilter('ageGroups', age)}
+                        className="w-4 h-4 rounded border-gray-300 text-teal focus:ring-teal"
+                      />
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        {age}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Areas of Support */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm text-gray-700">Area of Support</h4>
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {AVAILABLE_AREAS_OF_SUPPORT.map(area => (
+                    <label key={area} className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.areasOfSupport?.includes(area) || false}
+                        onChange={() => toggleArrayFilter('areasOfSupport', area)}
+                        className="w-4 h-4 rounded border-gray-300 text-teal focus:ring-teal"
+                      />
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        {area}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Actions */}
