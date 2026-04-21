@@ -1,6 +1,6 @@
 name: Deploy Frontend to Vercel
 on:
-  pull_request:
+  push:
     branches: [main]
 jobs:
   deploy:
