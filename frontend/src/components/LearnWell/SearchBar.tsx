@@ -1,11 +1,13 @@
 /**
  * ============================================
- * SEARCH BAR COMPONENT
+ * SEARCH BAR — LEARNWELL
  * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
  */
 
 import React, { useState, useEffect } from 'react';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useDebounce } from '../../hooks/useDebounce';
 
 interface SearchBarProps {
@@ -20,16 +22,27 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
     onSearch(debouncedSearch);
   }, [debouncedSearch, onSearch]);
 
+  const clear = () => setSearchTerm('');
+
   return (
-    <div className="relative max-w-md mx-auto">
-      <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+    <div className="relative max-w-lg">
+      <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
       <input
         type="text"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         placeholder="Search articles..."
-        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-500 focus:outline-none transition-colors"
+        className="w-full pl-11 pr-10 py-3 bg-white/10 border border-white/15 rounded-xl text-white placeholder-white/35 text-sm focus:outline-none focus:border-[#e9924b]/60 focus:bg-white/15 transition-all"
       />
+      {searchTerm && (
+        <button
+          onClick={clear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+          aria-label="Clear search"
+        >
+          <XMarkIcon className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 };

@@ -1,11 +1,10 @@
 /**
  * ============================================
- * LOGIN PAGE
+ * LOGIN PAGE — TOTOZ WELLNESS
  * ============================================
- * @version     6.0.0
- * @author      ArogoClin
- * @updated     2025-01-02
- * @description Login with redirect to intended destination
+ * @version     7.0.0
+ * @updated     2025-04-23
+ * @description Brand-aligned login with split layout
  * ============================================
  */
 
@@ -19,26 +18,14 @@ import { setAuthTokens, setUser } from '../../utils/auth';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Get the redirect path from location state
   const from = (location.state as any)?.from?.pathname || '/';
 
-  // Debug logs (remove after testing)
-  console.log('🔍 Login Page Debug:');
-  console.log('location.state:', location.state);
-  console.log('from:', from);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
 
@@ -46,72 +33,109 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const response = await api.post('/auth/login', formData);
-
       if (response.data.success) {
-        // Store tokens and user data
         const { accessToken, refreshToken, expiresIn, user } = response.data.data;
-        
         setAuthTokens(accessToken, refreshToken, expiresIn);
         setUser(user);
-        
-        console.log('✅ Login successful, redirecting to:', from);
-        
         toast.success(`Welcome back, ${user.name}!`);
-        
-        // Redirect to intended destination or home
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 500);
+        setTimeout(() => navigate(from, { replace: true }), 500);
       }
     } catch (err: any) {
-      console.error('Login error:', err);
-      const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      const msg = err.response?.data?.message || 'Login failed. Please try again.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal/10 flex items-center justify-center px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full"
-      >
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <button 
-            onClick={() => navigate('/')}
-            className="inline-block mb-4 text-3xl font-heading font-bold hover:opacity-80 transition-opacity"
-          >
-            <span className="text-[#347EAD]">Totoz</span>
-            <span className="text-[#F09232]">&nbsp;Wellness</span>
+    <div className="min-h-screen flex">
+      {/* ── Left panel — brand ── */}
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-14 overflow-hidden bg-[#1e3a6e]">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-20"
+          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1529390079861-591de354faf5?w=1200&auto=format&fit=crop&q=70')` }}
+        />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a6e]/80 to-[#1e3a6e]/95" />
+
+        {/* Content */}
+        <div className="relative z-10">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <span className="font-heading font-extrabold text-white text-lg tracking-tight">Totoz Wellness</span>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back!</h1>
-          <p className="text-gray-600">Sign in to continue your wellness journey</p>
-          
-          {/* Show message if redirected from protected route */}
+        </div>
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px w-8 bg-[#e9924b]" />
+            <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">Welcome back</span>
+          </div>
+          <h2 className="font-heading font-extrabold text-white text-3xl xl:text-4xl leading-tight mb-4">
+            Supporting Caregivers,<br />
+            <span className="text-[#e9924b]">Nurturing Children's</span><br />
+            Mental Health
+          </h2>
+          <p className="text-white/50 text-sm leading-relaxed max-w-sm">
+            Sign in to access your tools, track your child's wellbeing, and connect with the community.
+          </p>
+        </div>
+
+        <div className="relative z-10">
+          <p className="text-white/25 text-xs">
+            &copy; {new Date().getFullYear()} Totoz Wellness
+          </p>
+        </div>
+      </div>
+
+      {/* ── Right panel — form ── */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-14 bg-[#fbfbfb]">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <button onClick={() => navigate('/')} className="font-heading font-extrabold text-[#1e3a6e] text-xl">
+              Totoz <span className="text-[#e9924b]">Wellness</span>
+            </button>
+          </div>
+
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="font-heading font-extrabold text-[#1e3a6e] text-3xl mb-1">Sign in</h1>
+            <p className="text-[#1e3a6e]/50 text-sm">
+              Don't have an account?{' '}
+              <button
+                onClick={() => navigate('/signup', { state: { from: location.state?.from } })}
+                className="text-[#e9924b] font-semibold hover:underline"
+              >
+                Create one
+              </button>
+            </p>
+          </div>
+
+          {/* Redirect notice */}
           {from !== '/' && (
-            <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-              <p className="text-sm text-blue-700">
-                Please login to access <span className="font-semibold">{from}</span>
+            <div className="mb-6 bg-[#659ec3]/10 border border-[#659ec3]/20 rounded-xl px-4 py-3">
+              <p className="text-sm text-[#1e3a6e]/70">
+                Please sign in to access <span className="font-semibold text-[#1e3a6e]">{from}</span>
               </p>
             </div>
           )}
-        </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="email" className="block text-sm font-semibold text-[#1e3a6e]/80 mb-2">
+                Email address
               </label>
               <input
                 type="email"
@@ -120,16 +144,18 @@ const LoginPage: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal focus:outline-none transition-colors"
                 placeholder="your.email@example.com"
+                className="w-full px-4 py-3 bg-white border border-[#1e3a6e]/15 rounded-xl text-[#1e3a6e] placeholder-[#1e3a6e]/30 text-sm focus:outline-none focus:border-[#e9924b] focus:ring-2 focus:ring-[#e9924b]/15 transition-all"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-sm font-semibold text-[#1e3a6e]/80">
+                  Password
+                </label>
+              </div>
               <input
                 type="password"
                 id="password"
@@ -137,27 +163,27 @@ const LoginPage: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal focus:outline-none transition-colors"
                 placeholder="••••••••"
+                className="w-full px-4 py-3 bg-white border border-[#1e3a6e]/15 rounded-xl text-[#1e3a6e] placeholder-[#1e3a6e]/30 text-sm focus:outline-none focus:border-[#e9924b] focus:ring-2 focus:ring-[#e9924b]/15 transition-all"
               />
             </div>
 
-            {/* Error Message */}
+            {/* Error */}
             {error && (
-              <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
                 {error}
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-teal text-white font-bold py-3 px-6 rounded-xl hover:bg-teal/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+              className="w-full bg-[#e9924b] hover:bg-[#d4762a] text-white font-bold py-3 px-6 rounded-xl transition-all hover:shadow-lg hover:shadow-[#e9924b]/25 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -170,34 +196,34 @@ const LoginPage: React.FC = () => {
           </form>
 
           {/* Divider */}
-          <div className="relative my-6">
+          <div className="relative my-7">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-[#1e3a6e]/10" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">New to Totoz Wellness?</span>
+            <div className="relative flex justify-center">
+              <span className="px-4 bg-[#fbfbfb] text-[#1e3a6e]/35 text-xs">or</span>
             </div>
           </div>
 
-          {/* Sign Up Link - Pass redirect state */}
+          {/* Secondary CTA */}
           <button
             onClick={() => navigate('/signup', { state: { from: location.state?.from } })}
-            className="w-full border-2 border-teal text-teal font-bold py-3 px-6 rounded-xl hover:bg-teal/5 transition-all"
+            className="w-full border border-[#1e3a6e]/20 text-[#1e3a6e] font-semibold py-3 px-6 rounded-xl hover:bg-[#1e3a6e]/5 transition-all text-sm"
           >
-            Create an Account
+            Create an account
           </button>
-        </div>
 
-        {/* Back to Home */}
-        <div className="text-center mt-6">
-          <button
-            onClick={() => navigate('/')}
-            className="text-gray-600 hover:text-teal font-semibold transition-colors"
-          >
-            ← Back to Home
-          </button>
-        </div>
-      </motion.div>
+          {/* Back */}
+          <div className="text-center mt-6">
+            <button
+              onClick={() => navigate('/')}
+              className="text-[#1e3a6e]/40 hover:text-[#1e3a6e] text-sm transition-colors"
+            >
+              Back to home
+            </button>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };

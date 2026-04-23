@@ -1,11 +1,10 @@
 /**
  * ============================================
- * LEARNWELL - MODERN ARTICLE LIBRARY
+ * LEARNWELL — ARTICLE LIBRARY
  * ============================================
- * @version     2. 0.0
- * @author      ArogoClin
- * @updated     2025-11-27
- * @description Production-grade article browsing with React Query
+ * @version     3.0.0
+ * @updated     2025-04-23
+ * @description Brand-aligned article library
  * ============================================
  */
 
@@ -26,7 +25,7 @@ const CATEGORIES = [
   'Self-Care',
   'Parenting',
   'Mental Health',
-  'Child Development'
+  'Child Development',
 ];
 
 const LearnWell: React.FC = () => {
@@ -38,11 +37,11 @@ const LearnWell: React.FC = () => {
   const { articles, totalPages, isLoading, error, prefetchNextPage } = useArticles({
     page,
     category: selectedCategory,
-    limit: 9
+    limit: 9,
   });
 
   const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
+    setSelectedCategory(category === 'All' ? '' : category);
     setPage(1);
   };
 
@@ -51,203 +50,184 @@ const LearnWell: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    // Implement search logic here
-  };
+  const handleSearch = (query: string) => setSearchQuery(query);
 
-  // Prefetch next page on hover
   const handlePaginationHover = () => {
-    if (page < totalPages) {
-      prefetchNextPage();
-    }
+    if (page < totalPages) prefetchNextPage();
   };
 
-  // Filter articles by search
   const filteredArticles = searchQuery
-    ? articles.filter(article =>
-        article.title.toLowerCase().includes(searchQuery. toLowerCase()) ||
-        article.content.toLowerCase().includes(searchQuery. toLowerCase())
+    ? articles.filter(
+        (a) =>
+          a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : articles;
 
+  const activeCategory = selectedCategory || 'All';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
+    <div className="min-h-screen bg-[#fbfbfb]">
       <Navbar />
-      
-      <main className="py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Hero Section */}
-          <motion.section
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-            aria-labelledby="learnwell-heading"
-          >
-            <h1 id="learnwell-heading" className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-              LearnWell Resources
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-              Explore our library of expert guides and practical tips for mental wellness. 
-            </p>
 
-            {/* Search Bar */}
-            <SearchBar onSearch={handleSearch} />
-          </motion.section>
+      <main className="pt-20">
+        {/* ── Hero ─────────────────────────────────────── */}
+        <section className="py-16 md:py-20 bg-[#1e3a6e] relative overflow-hidden">
+          {/* Subtle background texture */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a6e] via-[#1e3a6e] to-[#659ec3]/20 pointer-events-none" />
 
-          {/* Mobile Filter Toggle */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8 lg:hidden"
-          >
+          <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div className="h-px w-8 bg-[#e9924b]" />
+                <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">
+                  Resource Library
+                </span>
+              </div>
+              <h1 className="font-heading font-extrabold text-white text-3xl md:text-4xl lg:text-5xl leading-tight mb-4 max-w-xl">
+                LearnWell
+              </h1>
+              <p className="text-white/55 text-sm md:text-base leading-relaxed max-w-lg mb-10">
+                Expert guides, practical tips, and insights — curated for caregivers and educators navigating children's mental health.
+              </p>
+
+              {/* Search */}
+              <SearchBar onSearch={handleSearch} />
+            </motion.div>
+          </div>
+        </section>
+
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-10">
+
+          {/* ── Mobile filter toggle ──────────────────── */}
+          <div className="mb-6 lg:hidden">
             <button
               onClick={() => setShowMobileFilters(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-bold text-gray-700 hover:border-teal transition-all shadow-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#1e3a6e]/15 rounded-xl text-sm font-semibold text-[#1e3a6e]/70 hover:border-[#e9924b]/40 transition-all shadow-sm"
             >
-              <AdjustmentsHorizontalIcon className="w-5 h-5" />
-              Categories
+              <AdjustmentsHorizontalIcon className="w-4 h-4" />
+              Filter by category
             </button>
-          </motion.div>
+          </div>
 
-          {/* Dimmed Overlay */}
+          {/* Mobile overlay */}
           {showMobileFilters && (
-            <div 
-              className="fixed inset-0 z-40 bg-black/50 lg:hidden transition-opacity"
+            <div
+              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
               onClick={() => setShowMobileFilters(false)}
             />
           )}
 
-          {/* Category Filter */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+          {/* ── Category filter ───────────────────────── */}
+          <div
             className={`
-              ${showMobileFilters ? 'fixed inset-x-0 bottom-0 z-50 rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8 pt-6 px-6 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] bg-white mb-0' : 'hidden lg:block mb-12'}
+              ${showMobileFilters
+                ? 'fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl pt-6 pb-10 px-6 shadow-2xl max-h-[80vh] overflow-y-auto'
+                : 'hidden lg:block mb-10'}
             `}
           >
-            {/* Mobile Header */}
-            <div className="lg:hidden flex justify-between items-center mb-6">
-              <h3 className="font-bold text-lg text-gray-900">Categories</h3>
-              <button onClick={() => setShowMobileFilters(false)} className="text-gray-400 hover:text-gray-600">
-                <XMarkIcon className="w-6 h-6" />
+            {/* Mobile header */}
+            <div className="lg:hidden flex justify-between items-center mb-5">
+              <h3 className="font-heading font-bold text-[#1e3a6e] text-base">Categories</h3>
+              <button onClick={() => setShowMobileFilters(false)}>
+                <XMarkIcon className="w-5 h-5 text-[#1e3a6e]/50" />
               </button>
             </div>
 
-            <div className="flex flex-wrap lg:justify-center gap-3">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    handleCategoryChange(cat === 'All' ? '' : cat);
-                    setShowMobileFilters(false);
-                  }}
-                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all transform hover:scale-105 ${
-                    (cat === 'All' && !selectedCategory) || cat === selectedCategory
-                      ? 'bg-teal text-white shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 lg:border-none shadow-sm lg:shadow-md'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2.5">
+              {CATEGORIES.map((cat) => {
+                const isActive = cat === activeCategory;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      handleCategoryChange(cat);
+                      setShowMobileFilters(false);
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                      isActive
+                        ? 'bg-[#e9924b] text-white shadow-sm shadow-[#e9924b]/20'
+                        : 'bg-white border border-[#1e3a6e]/12 text-[#1e3a6e]/60 hover:border-[#e9924b]/30 hover:text-[#1e3a6e]'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
-          </motion.div>
+          </div>
 
-          {/* Error State */}
+          {/* ── Error ────────────────────────────────── */}
           {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center mb-12"
-            >
-              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 max-w-md mx-auto">
-                <svg className="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h. 01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-. 833-1.864-.833-2.634 0L3.732 16.5c-.77. 833. 192 2.5 1.732 2.5z" />
-                </svg>
-                <h3 className="text-lg font-bold text-red-800 mb-2">Failed to load articles</h3>
-                <p className="text-red-600 text-sm">{error.message}</p>
-              </div>
-            </motion.div>
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md mx-auto text-center mb-10">
+              <p className="text-sm font-semibold text-red-700 mb-1">Failed to load articles</p>
+              <p className="text-xs text-red-500">{(error as any).message}</p>
+            </div>
           )}
 
-          {/* Articles Grid */}
+          {/* ── Articles ─────────────────────────────── */}
           <section aria-label="Articles">
-            {isLoading ?  (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[...Array(9)].map((_, idx) => (
-                  <ArticleCardSkeleton key={idx} />
-                ))}
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(9)].map((_, i) => <ArticleCardSkeleton key={i} />)}
               </div>
             ) : filteredArticles.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-16"
-              >
-                <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No articles found</h3>
-                <p className="text-gray-600">
-                  {searchQuery ? 'Try adjusting your search' : 'Check back soon for new content! '}
+              <div className="text-center py-20">
+                <div className="w-12 h-12 rounded-2xl bg-[#1e3a6e]/6 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-6 h-6 text-[#1e3a6e]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p className="font-heading font-bold text-[#1e3a6e] text-base mb-1">No articles found</p>
+                <p className="text-[#1e3a6e]/45 text-sm">
+                  {searchQuery ? 'Try adjusting your search terms' : 'Check back soon for new content'}
                 </p>
-              </motion.div>
+              </div>
             ) : (
               <>
-                {/* Article Count */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center mb-8"
-                >
-                  <p className="text-gray-600 font-medium">
-                    {filteredArticles.length} {filteredArticles.length === 1 ? 'article' : 'articles'}
-                    {selectedCategory && ` in ${selectedCategory}`}
-                  </p>
-                </motion. div>
+                {/* Count */}
+                <p className="text-[#1e3a6e]/40 text-xs mb-6">
+                  {filteredArticles.length} {filteredArticles.length === 1 ? 'article' : 'articles'}
+                  {selectedCategory && ` in ${selectedCategory}`}
+                </p>
 
-                {/* Grid with Masonry Effect (CSS Columns) */}
-                <div className="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredArticles.map((article, index) => (
-                    <div key={article.id} className="break-inside-avoid">
-                      <ArticleCard article={article} index={index} />
-                    </div>
+                    <ArticleCard key={article.id} article={article} index={index} />
                   ))}
                 </div>
               </>
             )}
           </section>
 
-          {/* Pagination */}
-          {totalPages > 1 && ! isLoading && (
-            <motion.nav
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-16 flex justify-center items-center gap-3"
+          {/* ── Pagination ───────────────────────────── */}
+          {totalPages > 1 && !isLoading && (
+            <nav
+              className="mt-14 flex justify-center items-center gap-2"
               aria-label="Pagination"
               onMouseEnter={handlePaginationHover}
             >
               <button
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1}
-                className="px-5 py-2. 5 rounded-lg bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all hover:shadow-lg"
-                aria-label="Previous page"
+                className="px-4 py-2 rounded-xl bg-white border border-[#1e3a6e]/12 text-sm font-semibold text-[#1e3a6e]/60 hover:border-[#e9924b]/30 hover:text-[#1e3a6e] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 Previous
               </button>
-              
-              <div className="flex items-center gap-2">
+
+              <div className="flex items-center gap-1.5">
                 {[...Array(totalPages)].map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => handlePageChange(idx + 1)}
-                    className={`w-10 h-10 rounded-lg font-semibold transition-all ${
+                    className={`w-9 h-9 rounded-xl text-sm font-semibold transition-all ${
                       page === idx + 1
-                        ? 'bg-teal text-white shadow-lg'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+                        ? 'bg-[#e9924b] text-white shadow-sm'
+                        : 'bg-white border border-[#1e3a6e]/12 text-[#1e3a6e]/50 hover:border-[#e9924b]/30'
                     }`}
                     aria-label={`Page ${idx + 1}`}
                     aria-current={page === idx + 1 ? 'page' : undefined}
@@ -260,16 +240,15 @@ const LearnWell: React.FC = () => {
               <button
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page === totalPages}
-                className="px-5 py-2.5 rounded-lg bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all hover:shadow-lg"
-                aria-label="Next page"
+                className="px-4 py-2 rounded-xl bg-white border border-[#1e3a6e]/12 text-sm font-semibold text-[#1e3a6e]/60 hover:border-[#e9924b]/30 hover:text-[#1e3a6e] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 Next
               </button>
-            </motion.nav>
+            </nav>
           )}
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );
