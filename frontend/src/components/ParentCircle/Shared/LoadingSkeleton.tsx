@@ -1,11 +1,9 @@
 /**
  * ============================================
- * LOADING SKELETON COMPONENT
+ * LOADING SKELETON — PARENTCIRCLE SHARED
  * ============================================
- * @version     1.0.0
- * @author      ArogoClin
- * @updated     2025-11-23 06:41:53 UTC
- * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
  */
 
 import React from 'react';
@@ -15,52 +13,42 @@ interface LoadingSkeletonProps {
   count?: number;
 }
 
-const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ 
-  type = 'card',
-  count = 3 
-}) => {
-  const CardSkeleton = () => (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-pulse">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-20 h-6 bg-gray-200 rounded-full"></div>
-        <div className="w-32 h-4 bg-gray-200 rounded"></div>
-      </div>
-
-      {/* Title */}
-      <div className="w-3/4 h-6 bg-gray-200 rounded mb-3"></div>
-
-      {/* Content */}
-      <div className="space-y-2 mb-4">
-        <div className="w-full h-4 bg-gray-200 rounded"></div>
-        <div className="w-full h-4 bg-gray-200 rounded"></div>
-        <div className="w-2/3 h-4 bg-gray-200 rounded"></div>
-      </div>
-
-      {/* Tags */}
-      <div className="flex gap-2 mb-4">
-        <div className="w-16 h-6 bg-gray-200 rounded-full"></div>
-        <div className="w-20 h-6 bg-gray-200 rounded-full"></div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-        <div className="flex gap-4">
-          <div className="w-12 h-5 bg-gray-200 rounded"></div>
-          <div className="w-12 h-5 bg-gray-200 rounded"></div>
-        </div>
-        <div className="w-24 h-5 bg-gray-200 rounded"></div>
-      </div>
+const CardSkeleton: React.FC = () => (
+  <div className="bg-white rounded-2xl border border-[#1e3a6e]/8 shadow-sm p-6 animate-pulse">
+    {/* Category + meta row */}
+    <div className="flex items-center gap-3 mb-5">
+      <div className="h-5 bg-[#1e3a6e]/8 rounded-full w-20" />
+      <div className="h-3 bg-[#1e3a6e]/6 rounded-full w-28 ml-auto" />
     </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      {Array.from({ length: count }).map((_, index) => (
-        <CardSkeleton key={index} />
-      ))}
+    {/* Title */}
+    <div className="h-5 bg-[#1e3a6e]/8 rounded-full w-3/4 mb-2.5" />
+    <div className="h-5 bg-[#1e3a6e]/6 rounded-full w-1/2 mb-4" />
+    {/* Body lines */}
+    <div className="space-y-2 mb-4">
+      <div className="h-3.5 bg-[#1e3a6e]/6 rounded-full w-full" />
+      <div className="h-3.5 bg-[#1e3a6e]/6 rounded-full w-full" />
+      <div className="h-3.5 bg-[#1e3a6e]/6 rounded-full w-2/3" />
     </div>
-  );
-};
+    {/* Tags */}
+    <div className="flex gap-2 mb-5">
+      <div className="h-5 bg-[#1e3a6e]/6 rounded-full w-14" />
+      <div className="h-5 bg-[#1e3a6e]/6 rounded-full w-18" />
+    </div>
+    {/* Footer */}
+    <div className="flex items-center justify-between pt-4 border-t border-[#1e3a6e]/6">
+      <div className="flex gap-3">
+        <div className="h-4 bg-[#1e3a6e]/8 rounded-full w-12" />
+        <div className="h-4 bg-[#1e3a6e]/8 rounded-full w-12" />
+      </div>
+      <div className="h-4 bg-[#1e3a6e]/6 rounded-full w-20" />
+    </div>
+  </div>
+);
+
+const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ count = 3 }) => (
+  <div className="space-y-4">
+    {Array.from({ length: count }).map((_, i) => <CardSkeleton key={i} />)}
+  </div>
+);
 
 export default LoadingSkeleton;

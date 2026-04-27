@@ -1,11 +1,9 @@
 /**
  * ============================================
- * VOTE BUTTONS COMPONENT
+ * VOTE BUTTONS — PARENTCIRCLE SHARED
  * ============================================
- * @version     1.0.0
- * @author      ArogoClin
- * @updated     2025-11-23 06:41:53 UTC
- * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
  */
 
 import React, { useState } from 'react';
@@ -23,66 +21,58 @@ interface VoteButtonsProps {
   disabled?: boolean;
 }
 
-const VoteButtons: React.FC<VoteButtonsProps> = ({ 
+const VoteButtons: React.FC<VoteButtonsProps> = ({
   upvotes,
   downvotes,
   onVoteUp,
   onVoteDown,
   hasVotedUp = false,
   hasVotedDown = false,
-  disabled = false
+  disabled = false,
 }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [bumping, setBumping] = useState(false);
 
   const handleVoteUp = () => {
     if (disabled) return;
-    setIsAnimating(true);
+    setBumping(true);
     onVoteUp();
-    setTimeout(() => setIsAnimating(false), 300);
-  };
-
-  const handleVoteDown = () => {
-    if (disabled || !onVoteDown) return;
-    onVoteDown();
+    setTimeout(() => setBumping(false), 300);
   };
 
   return (
-    <div className="flex items-center gap-3">
-      {/* Upvote Button */}
+    <div className="flex items-center gap-4">
+      {/* Upvote */}
       <motion.button
         onClick={handleVoteUp}
         disabled={disabled}
-        className={`flex items-center gap-1.5 transition-all ${
-          hasVotedUp 
-            ? 'text-teal' 
-            : 'text-gray-500 hover:text-teal'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-        whileTap={{ scale: 0.9 }}
-        animate={isAnimating ? { scale: [1, 1.2, 1] } : {}}
+        animate={bumping ? { scale: [1, 1.25, 1] } : {}}
+        transition={{ duration: 0.25 }}
+        className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${
+          hasVotedUp
+            ? 'text-[#e9924b]'
+            : 'text-[#1e3a6e]/40 hover:text-[#e9924b]'
+        } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
       >
-        {hasVotedUp ? (
-          <HandThumbUpIconSolid className="w-5 h-5" />
-        ) : (
-          <HandThumbUpIcon className="w-5 h-5" />
-        )}
-        <span className="text-sm font-semibold">{upvotes}</span>
+        {hasVotedUp
+          ? <HandThumbUpIconSolid className="w-4 h-4" />
+          : <HandThumbUpIcon className="w-4 h-4" />
+        }
+        <span>{upvotes}</span>
       </motion.button>
 
-      {/* Downvote Button (optional) */}
+      {/* Downvote (optional) */}
       {onVoteDown && (
         <button
-          onClick={handleVoteDown}
+          onClick={disabled ? undefined : onVoteDown}
           disabled={disabled}
-          className={`flex items-center gap-1.5 transition-all ${
-            hasVotedDown 
-              ? 'text-red-500' 
-              : 'text-gray-500 hover:text-red-500'
-          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${
+            hasVotedDown
+              ? 'text-[#1e3a6e]'
+              : 'text-[#1e3a6e]/30 hover:text-[#1e3a6e]/60'
+          } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          <HandThumbDownIcon className="w-5 h-5" />
-          {downvotes !== undefined && downvotes > 0 && (
-            <span className="text-sm font-semibold">{downvotes}</span>
-          )}
+          <HandThumbDownIcon className="w-4 h-4" />
+          {downvotes !== undefined && downvotes > 0 && <span>{downvotes}</span>}
         </button>
       )}
     </div>

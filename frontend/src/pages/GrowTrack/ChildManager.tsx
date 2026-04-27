@@ -1,484 +1,234 @@
 /**
  * ============================================
- * GROWTRACK - AI INSIGHTS
+ * GROWTRACK — CHILD MANAGER
  * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
+ * @fix         Null safety guards to prevent white-screen crashes
  */
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Brain, TrendingUp, Lightbulb, Calendar, Users, Download, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Users } from 'lucide-react';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import api from '../../config/api';
 import toast from 'react-hot-toast';
 
-interface InsightsData {
-  period: string;
-  dateRange: { start: string; end: string };
-  totalEntries: number;
-  metrics: {
-    averageMoodIntensity: number;
-    predominantMood: string;
-    moodTrend: string;
-    moodVariety: number;
-    topBehaviors: Array<{ behavior: string; frequency: number }>;
-    topTriggers: Array<{ trigger: string; frequency: number }>;
-  };
-  insights: string;
-  trackedPerson: {
-    type: string;
-    name: string | null;
-  };
-  generatedAt: string;
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+function safe(val: unknown, fallback = '—'): string {
+  if (val === null || val === undefined) return fallback;
+  const s = String(val).trim();
+  return s === '' ? fallback : s;
 }
 
-const Insights: React.FC = () => {
+// ─── STYLES ───────────────────────────────────────────────────────────────────
+
+const inputClass =
+  'w-full px-4 py-3 bg-white border border-[#1e3a6e]/15 rounded-xl text-[#1e3a6e] placeholder-[#1e3a6e]/30 text-sm focus:outline-none focus:border-[#e9924b]/50 focus:ring-2 focus:ring-[#e9924b]/10 transition-all';
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
+const ChildManager: React.FC = () => {
   const navigate = useNavigate();
-  const [data, setData] = useState<InsightsData | null>(null);
   const [children, setChildren] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [newChildName, setNewChildName] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Filters
-  const [period, setPeriod] = useState<'week' | 'month' | 'year'>('week');
-  const [personType, setPersonType] = useState<'ALL' | 'SELF' | 'CHILD'>('ALL');
-  const [selectedChild, setSelectedChild] = useState<string>('');
-
-  useEffect(() => {
-    fetchChildren();
-  }, []);
-
-  useEffect(() => {
-    fetchInsights();
-  }, [period, personType, selectedChild]);
+  useEffect(() => { fetchChildren(); }, []);
 
   const fetchChildren = async () => {
-    try {
-      const response = await api.get('/growtrack/children');
-      setChildren(response.data.data. children || []);
-    } catch (error) {
-      console.error('Failed to fetch children:', error);
-    }
-  };
-
-  const fetchInsights = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.append('period', period);
-      
-      if (personType !== 'ALL') {
-        params.append('trackedPersonType', personType);
-      }
-      
-      if (selectedChild) {
-        params.append('trackedPersonName', selectedChild);
-      }
-
-      const response = await api.get(`/growtrack/insights?${params.toString()}`);
-      setData(response.data.data);
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Failed to load insights';
-      toast.error(errorMsg);
+      const r = await api.get('/growtrack/children');
+      // Handle both r.data.data.children and r.data.children
+      const raw = r.data?.data?.children ?? r.data?.children ?? r.data?.data ?? [];
+      setChildren(Array.isArray(raw) ? raw.filter(Boolean) : []);
+    } catch {
+      toast.error('Failed to load children');
+      setChildren([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExport = () => {
-    if (!data) return;
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newChildName.trim();
+    if (!name) { toast.error('Please enter a name'); return; }
+    if (children.includes(name)) { toast.error('This child is already added'); return; }
 
-    const exportText = `
-GROWTRACK INSIGHTS REPORT
-Generated: ${new Date(data.generatedAt).toLocaleString()}
-Period: ${period. toUpperCase()}
-Tracking: ${data.trackedPerson. type === 'SELF' ? 'Myself' : data.trackedPerson.name}
-
-======================================
-SUMMARY
-======================================
-Total Entries: ${data.totalEntries}
-Average Mood Intensity: ${data. metrics.averageMoodIntensity}/10
-Predominant Mood: ${data.metrics.predominantMood}
-Mood Trend: ${data.metrics.moodTrend}
-Mood Variety: ${data.metrics.moodVariety} different moods
-
-======================================
-TOP BEHAVIORS
-======================================
-${data.metrics.topBehaviors.map((b, i) => `${i + 1}. ${b.behavior} (${b.frequency} times)`).join('\n')}
-
-======================================
-TOP TRIGGERS
-======================================
-${data.metrics. topTriggers.map((t, i) => `${i + 1}. ${t.trigger} (${t.frequency} times)`).join('\n')}
-
-======================================
-AI INSIGHTS
-======================================
-${data.insights}
-
-======================================
-Generated by GrowTrack - Totoz Wellness
-    `.trim();
-
-    const blob = new Blob([exportText], { type: 'text/plain' });
-    const url = URL. createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `growtrack-insights-${period}-${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast.success('Insights exported! ');
+    setAdding(true);
+    try {
+      await api.post('/growtrack/children', { name });
+      toast.success(`${name} added`);
+      setNewChildName('');
+      fetchChildren();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to add child');
+    } finally {
+      setAdding(false);
+    }
   };
 
-  const getTrendConfig = (trend: string) => {
-    const config = {
-      IMPROVING: { 
-        icon: '📈', 
-        label: 'Improving', 
-        color: 'bg-green-100 text-green-700 border-green-300',
-        description: 'Mood intensity is trending upward'
-      },
-      STABLE: { 
-        icon: '➡️', 
-        label: 'Stable', 
-        color: 'bg-blue-100 text-blue-700 border-blue-300',
-        description: 'Mood remains consistent'
-      },
-      DECLINING: { 
-        icon: '📉', 
-        label: 'Declining', 
-        color: 'bg-red-100 text-red-700 border-red-300',
-        description: 'Mood intensity is trending downward'
-      },
-      INSUFFICIENT_DATA: { 
-        icon: 'ℹ️', 
-        label: 'Insufficient Data', 
-        color: 'bg-gray-100 text-gray-600 border-gray-300',
-        description: 'More entries needed for trend analysis'
-      }
-    };
-    return config[trend as keyof typeof config] || config.INSUFFICIENT_DATA;
+  const handleDelete = async (name: string) => {
+    setDeleting(true);
+    try {
+      await api.delete(`/growtrack/children/${encodeURIComponent(name)}`);
+      toast.success(`${name} removed`);
+      setDeleteTarget(null);
+      fetchChildren();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to remove child');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
+    <div className="min-h-screen bg-[#fbfbfb]">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-12 max-w-6xl">
-        {/* Header */}
-        <button
-          onClick={() => navigate('/growtrack')}
-          className="flex items-center gap-2 text-gray-600 hover:text-teal transition mb-6"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to GrowTrack
-        </button>
-
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-              <Brain className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">AI Insights</h1>
-              <p className="text-gray-600">Personalized analysis and coping strategies</p>
-            </div>
-          </div>
-
-          {data && (
-            <button
-              onClick={handleExport}
-              className="hidden md:flex items-center gap-2 px-4 py-2 bg-teal text-white rounded-xl hover:bg-teal/90 transition"
-            >
-              <Download className="w-5 h-5" />
-              Export Report
+      <main className="pt-20">
+        {/* Hero */}
+        <div className="bg-[#1e3a6e] py-12 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a6e] to-[#659ec3]/20 pointer-events-none" />
+          <div className="relative z-10 max-w-3xl mx-auto px-6 md:px-8">
+            <button onClick={() => navigate('/growtrack')}
+              className="flex items-center gap-2 text-white/50 hover:text-white text-sm mb-6 transition-colors group">
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back to GrowTrack
             </button>
-          )}
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Period */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                Time Period
-              </label>
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value as 'week' | 'month' | 'year')}
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-teal focus:outline-none"
-              >
-                <option value="week">Last 7 days</option>
-                <option value="month">Last 30 days</option>
-                <option value="year">Last year</option>
-              </select>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-px w-8 bg-[#e9924b]" />
+              <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">Child Profiles</span>
             </div>
-
-            {/* Person Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Users className="w-4 h-4 inline mr-1" />
-                Who to Analyze
-              </label>
-              <select
-                value={personType}
-                onChange={(e) => {
-                  setPersonType(e.target.value as 'ALL' | 'SELF' | 'CHILD');
-                  if (e.target.value !== 'CHILD') setSelectedChild('');
-                }}
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-teal focus:outline-none"
-              >
-                <option value="ALL">Everyone</option>
-                <option value="SELF">Myself</option>
-                <option value="CHILD">Children</option>
-              </select>
-            </div>
-
-            {/* Child Selection */}
-            {personType === 'CHILD' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Child
-                </label>
-                <select
-                  value={selectedChild}
-                  onChange={(e) => setSelectedChild(e. target.value)}
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-teal focus:outline-none"
-                >
-                  <option value="">All Children</option>
-                  {children.map((child) => (
-                    <option key={child} value={child}>{child}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={fetchInsights}
-            className="mt-4 w-full md:w-auto px-6 py-2 bg-teal text-white rounded-lg hover:bg-teal/90 transition flex items-center justify-center gap-2"
-            disabled={loading}
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh Insights
-          </button>
-        </div>
-
-        {/* Loading State */}
-        {loading ?  (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-teal border-t-transparent mb-4"></div>
-            <p className="text-gray-600 font-semibold">Generating AI insights...</p>
-            <p className="text-gray-500 text-sm mt-2">This may take a few moments</p>
-          </div>
-        ) : ! data || data.totalEntries === 0 ? (
-          <div className="bg-white rounded-xl shadow-md p-12 text-center">
-            <Brain className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Data Available</h3>
-            <p className="text-gray-600 mb-6">
-              No entries found for the selected period and filters. Create some entries to get AI insights!
+            <h1 className="font-heading font-extrabold text-white text-2xl md:text-3xl">Manage children</h1>
+            <p className="text-white/45 text-sm mt-2">
+              Add children here so you can track their moods and behaviors separately.
             </p>
-            <button
-              onClick={() => navigate('/growtrack/create')}
-              className="px-6 py-3 bg-teal text-white rounded-xl hover:bg-teal/90 transition font-semibold"
-            >
-              Create Entry
-            </button>
           </div>
-        ) : (
-          <>
-            {/* Metrics Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <MetricCard
-                label="Total Entries"
-                value={data.totalEntries.toString()}
-                color="bg-blue-500"
-                icon={<Calendar className="w-5 h-5" />}
+        </div>
+
+        <div className="max-w-3xl mx-auto px-6 md:px-8 py-10 space-y-6">
+
+          {/* Add child form */}
+          <div className="bg-white rounded-2xl border border-[#1e3a6e]/8 shadow-sm p-6">
+            <p className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1e3a6e]/40 mb-4">Add a child</p>
+            <form onSubmit={handleAdd} className="flex gap-3">
+              <input
+                type="text"
+                value={newChildName}
+                onChange={e => setNewChildName(e.target.value)}
+                placeholder="Child's name"
+                className={inputClass}
+                disabled={adding}
               />
-              <MetricCard
-                label="Avg Mood"
-                value={`${data.metrics.averageMoodIntensity}/10`}
-                color="bg-pink-500"
-                icon={<TrendingUp className="w-5 h-5" />}
-              />
-              <MetricCard
-                label="Most Common"
-                value={data.metrics. predominantMood}
-                color="bg-purple-500"
-                icon={<Brain className="w-5 h-5" />}
-              />
-              <MetricCard
-                label="Mood Variety"
-                value={`${data.metrics.moodVariety} moods`}
-                color="bg-teal"
-                icon={<Lightbulb className="w-5 h-5" />}
-              />
-            </div>
+              <button
+                type="submit"
+                disabled={adding || !newChildName.trim()}
+                className="flex items-center gap-2 px-5 py-3 bg-[#e9924b] text-white text-sm font-semibold rounded-xl hover:bg-[#d4762a] transition-all disabled:opacity-40 flex-shrink-0"
+              >
+                {adding ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                Add
+              </button>
+            </form>
+          </div>
 
-            {/* Mood Trend */}
-            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-teal" />
-                Mood Trend Analysis
-              </h2>
-              <div className={`border-2 rounded-xl p-6 ${getTrendConfig(data. metrics.moodTrend). color}`}>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-3xl">{getTrendConfig(data.metrics.moodTrend).icon}</span>
-                  <div>
-                    <p className="text-xl font-bold">{getTrendConfig(data.metrics.moodTrend).label}</p>
-                    <p className="text-sm opacity-80">{getTrendConfig(data. metrics.moodTrend). description}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Children list */}
+          <div className="bg-white rounded-2xl border border-[#1e3a6e]/8 shadow-sm p-6">
+            <p className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1e3a6e]/40 mb-5">
+              Children ({loading ? '…' : children.length})
+            </p>
 
-            {/* Top Behaviors */}
-            {data.metrics.topBehaviors.length > 0 && (
-              <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Top Behaviors</h2>
-                <div className="space-y-3">
-                  {data.metrics.topBehaviors.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 bg-teal/10 text-teal rounded-full flex items-center justify-center font-bold text-sm">
-                          {index + 1}
-                        </span>
-                        <span className="font-medium text-gray-900">{item.behavior}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-3 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-teal rounded-full transition-all"
-                            style={{ 
-                              width: `${(item.frequency / data.metrics.topBehaviors[0].frequency) * 100}%` 
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-600 w-12 text-right">
-                          {item.frequency}x
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Top Triggers */}
-            {data.metrics.topTriggers.length > 0 && (
-              <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Top Triggers</h2>
-                <div className="space-y-3">
-                  {data. metrics.topTriggers.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center font-bold text-sm">
-                          {index + 1}
-                        </span>
-                        <span className="font-medium text-gray-900">{item.trigger}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-3 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-purple-500 rounded-full transition-all"
-                            style={{ 
-                              width: `${(item.frequency / data.metrics. topTriggers[0].frequency) * 100}%` 
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-600 w-12 text-right">
-                          {item.frequency}x
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* AI Insights */}
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-md p-8 mb-8 border-2 border-purple-200">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-                  <Brain className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">AI-Generated Insights</h2>
-                  <p className="text-sm text-gray-600">
-                    Personalized analysis for {data.trackedPerson.type === 'SELF' ? 'you' : data.trackedPerson.name}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 prose prose-sm max-w-none">
-                {data.insights. split('\n').map((paragraph, index) => (
-                  paragraph.trim() && (
-                    <p key={index} className="mb-4 text-gray-700 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  )
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-14 bg-[#1e3a6e]/6 rounded-xl animate-pulse" />
                 ))}
               </div>
-
-              <div className="mt-6 p-4 bg-white/50 rounded-lg border border-purple-200">
-                <p className="text-xs text-gray-600 flex items-start gap-2">
-                  <span className="text-purple-500 font-bold">ℹ️</span>
-                  <span>
-                    These insights are generated by AI based on your tracking data. They are meant to 
-                    provide helpful suggestions and should not replace professional medical or mental 
-                    health advice.  If you have serious concerns, please consult a healthcare provider.
-                  </span>
-                </p>
+            ) : children.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="w-12 h-12 rounded-2xl bg-[#1e3a6e]/6 flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-6 h-6 text-[#1e3a6e]/30" />
+                </div>
+                <p className="text-[#1e3a6e]/45 text-sm">No children added yet.</p>
+                <p className="text-[#1e3a6e]/30 text-xs mt-1">Add a child above to start tracking them separately.</p>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-2.5">
+                {children.map((child) => (
+                  <div
+                    key={child}
+                    className="flex items-center justify-between px-4 py-3.5 bg-[#fbfbfb] border border-[#1e3a6e]/8 rounded-xl"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-[#659ec3]/15 flex items-center justify-center flex-shrink-0">
+                        <span className="font-heading font-bold text-[#659ec3] text-sm">
+                          {safe(child, '?').charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="font-medium text-[#1e3a6e] text-sm">{safe(child)}</span>
+                    </div>
+                    <button
+                      onClick={() => setDeleteTarget(child)}
+                      className="p-2 text-[#1e3a6e]/20 hover:text-red-400 hover:bg-red-50 rounded-xl transition-all"
+                      aria-label={`Remove ${child}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Report Info */}
-            <div className="bg-white rounded-xl shadow-md p-6 text-center text-sm text-gray-600">
-              <p>
-                Report generated on {new Date(data. generatedAt).toLocaleString()}
-              </p>
-              <p className="mt-1">
-                Period: {data.dateRange.start} to {data.dateRange.end}
-              </p>
-            </div>
-
-            {/* Mobile Export Button */}
-            <button
-              onClick={handleExport}
-              className="md:hidden w-full mt-6 px-6 py-3 bg-teal text-white rounded-xl hover:bg-teal/90 transition flex items-center justify-center gap-2"
-            >
-              <Download className="w-5 h-5" />
-              Export Report
-            </button>
-          </>
-        )}
+          {/* Info note */}
+          <p className="text-[#1e3a6e]/35 text-xs text-center leading-relaxed px-4">
+            Removing a child does not delete their past entries — it only removes them from the selection list.
+          </p>
+        </div>
       </main>
+
+      {/* Delete confirmation modal */}
+      {deleteTarget !== null && (
+        <div className="fixed inset-0 bg-[#1e3a6e]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl">
+            <h3 className="font-heading font-bold text-[#1e3a6e] text-lg mb-2">Remove {safe(deleteTarget)}?</h3>
+            <p className="text-[#1e3a6e]/55 text-sm mb-7 leading-relaxed">
+              They will be removed from the child list, but existing entries will be kept.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 border border-[#1e3a6e]/20 text-[#1e3a6e]/60 rounded-xl text-sm font-semibold hover:bg-[#1e3a6e]/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteTarget)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all disabled:opacity-50"
+              >
+                {deleting ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
   );
 };
 
-// Helper Component
-const MetricCard: React. FC<{
-  label: string;
-  value: string;
-  color: string;
-  icon: React.ReactNode;
-}> = ({ label, value, color, icon }) => (
-  <div className="bg-white rounded-xl shadow-md p-4">
-    <div className={`${color} w-10 h-10 rounded-lg flex items-center justify-center text-white mb-3`}>
-      {icon}
-    </div>
-    <p className="text-xs text-gray-600 mb-1">{label}</p>
-    <p className="text-lg font-bold text-gray-900">{value}</p>
-  </div>
-);
-
-export default Insights;
+export default ChildManager;

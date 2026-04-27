@@ -1,88 +1,85 @@
 /**
  * ============================================
- * TRENDING SIDEBAR
+ * TRENDING SIDEBAR — PARENTCIRCLE
  * ============================================
- * @version     1.0.0
- * @author      ArogoClin
- * @updated     2025-11-23 06:47:13 UTC
- * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
  */
 
 import React, { useEffect, useState } from 'react';
-import { FireIcon, TrophyIcon } from '@heroicons/react/24/solid';
 import { motion } from 'framer-motion';
 import * as API from '../../../services/parentcircle.service';
 
 const TrendingSidebar: React.FC = () => {
-  const [trendingStories, setTrendingStories] = useState<any[]>([]);
+  const [trending, setTrending] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadTrending = async () => {
-      try {
-        const response = await API.getTrendingStories(5, 7);
-        if (response.success) {
-          setTrendingStories(response.data.stories);
-        }
-      } catch (error) {
-        console.error('Failed to load trending:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTrending();
+    API.getTrendingStories(5, 7)
+      .then(r => { if (r.success) setTrending(r.data.stories); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-12 bg-gray-200 rounded"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Trending This Week */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+    <div className="space-y-5">
+
+      {/* Trending */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-2xl shadow-sm border border-orange-100"
+        className="bg-white rounded-2xl border border-[#1e3a6e]/8 shadow-sm p-6"
       >
-        <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-          <FireIcon className="w-5 h-5 text-orange-500" />
-          Trending This Week
-        </h3>
-        
-        {trendingStories.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">No trending stories yet</p>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="h-px w-6 bg-[#e9924b]" />
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#e9924b]">Trending this week</p>
+        </div>
+
+        {loading ? (
+          <div className="space-y-3 animate-pulse">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <div className="w-5 h-5 bg-[#1e3a6e]/8 rounded flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 bg-[#1e3a6e]/8 rounded-full w-full" />
+                  <div className="h-3 bg-[#1e3a6e]/6 rounded-full w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : trending.length === 0 ? (
+          <p className="text-[#1e3a6e]/40 text-sm italic">Nothing trending yet — be the first to share.</p>
         ) : (
-          <div className="space-y-3">
-            {trendingStories.map((story, index) => (
+          <div className="space-y-4">
+            {trending.map((story, i) => (
               <motion.div
                 key={story.id}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white p-3 rounded-lg hover:shadow-md transition-all cursor-pointer group"
+                transition={{ delay: i * 0.06 }}
+                className="flex items-start gap-3 group cursor-pointer"
               >
-                <div className="flex items-start gap-3">
-                  <span className="text-orange-500 font-bold text-lg">#{index + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-gray-900 group-hover:text-teal transition-colors line-clamp-2">
-                      {story.title || story.content.substring(0, 60) + '...'}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                      <span>❤️ {story.likesCount}</span>
-                      <span>•</span>
-                      <span>👁️ {story.views}</span>
-                    </div>
+                <span className="font-heading font-extrabold text-[#e9924b]/40 text-sm w-5 flex-shrink-0 leading-snug">
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[#1e3a6e]/75 text-sm font-medium leading-snug line-clamp-2 group-hover:text-[#1e3a6e] transition-colors">
+                    {story.title || story.content?.substring(0, 60) + '...'}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1.5 text-[#1e3a6e]/30 text-xs">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"/>
+                      </svg>
+                      {story.likesCount ?? 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      {story.views ?? 0}
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -91,58 +88,50 @@ const TrendingSidebar: React.FC = () => {
         )}
       </motion.div>
 
-      {/* Community Stats */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+      {/* Community stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+        transition={{ delay: 0.15 }}
+        className="bg-[#1e3a6e] rounded-2xl p-6"
       >
-        <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-          <TrophyIcon className="w-5 h-5 text-teal" />
-          Community Stats
-        </h3>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">🙋 Questions</span>
-            <span className="text-lg font-bold text-teal">1,234</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">📖 Stories</span>
-            <span className="text-lg font-bold text-teal">2,456</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">💬 Answers</span>
-            <span className="text-lg font-bold text-teal">8,901</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">👥 Members</span>
-            <span className="text-lg font-bold text-teal">10,234</span>
-          </div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="h-px w-6 bg-[#e9924b]" />
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#e9924b]">Community</p>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-500 text-center">
-            Growing stronger together! 💚
-          </p>
+        <div className="space-y-3">
+          {[
+            { label: 'Questions asked', value: '1,234' },
+            { label: 'Stories shared',  value: '2,456' },
+            { label: 'Answers given',   value: '8,901' },
+            { label: 'Members',         value: '10,234' },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between">
+              <span className="text-white/45 text-xs">{label}</span>
+              <span className="font-heading font-extrabold text-[#e9924b] text-sm">{value}</span>
+            </div>
+          ))}
         </div>
-      </motion.div>
 
-      {/* Quick Tips */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="bg-gradient-to-br from-teal/10 to-blue-500/10 p-6 rounded-2xl shadow-sm border border-teal/20"
-      >
-        <h3 className="font-bold text-sm text-gray-900 mb-3 flex items-center gap-2">
-          💡 Daily Tip
-        </h3>
-        <p className="text-sm text-gray-700 leading-relaxed">
-          "<em>Take time to read other parents' experiences. You're not alone in your journey!</em>"
+        <p className="text-white/20 text-xs mt-5 leading-relaxed">
+          Every post matters. This community grows because of people like you.
         </p>
       </motion.div>
+
+      {/* Daily reflection */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="bg-[#659ec3]/8 border border-[#659ec3]/15 rounded-2xl p-5"
+      >
+        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#659ec3] mb-3">Reflection</p>
+        <p className="text-[#1e3a6e]/65 text-sm leading-relaxed italic">
+          "Every parent has moments of doubt. Sharing them is not weakness — it's how we grow together."
+        </p>
+      </motion.div>
+
     </div>
   );
 };

@@ -1,345 +1,237 @@
-import React, { useState, useRef, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import { 
-  IoArrowBack, 
-  IoBrush, 
-  IoColorPalette, 
-  IoTrash, 
-  IoSave, 
-  IoCheckmarkCircle,
-  IoSparkles
-} from 'react-icons/io5';
-import { 
-  BsPencil, 
-  BsPencilFill, 
-  BsBrush, 
-  BsBrushFill 
-} from 'react-icons/bs';
+/**
+ * ============================================
+ * FREE DRAW CANVAS — CREATIVE CORNER
+ * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
+ * @description Touch + mouse canvas drawing. Brand colours.
+ *              Large colour swatches and brush buttons for small fingers.
+ *              15 strokes → sticker earned.
+ * ============================================
+ */
+
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
-  onComplete: () => void;
+  onComplete: (icon?: string) => void;
   onBack: () => void;
 }
 
-const COLORS = [
-  { hex: '#3AAFA9', name: 'Teal' },
-  { hex: '#FF6B6B', name: 'Coral' },
-  { hex: '#4ECDC4', name: 'Turquoise' },
-  { hex: '#FFE66D', name: 'Sunshine' },
-  { hex: '#A8E6CF', name: 'Mint' },
-  { hex: '#FF8B94', name: 'Pink' },
-  { hex: '#C7CEEA', name: 'Lavender' },
-  { hex: '#FFA07A', name: 'Orange' },
+const spring = { type: 'spring' as const, stiffness: 360, damping: 26 };
+
+// ─── PALETTE ─────────────────────────────────────────────────────────────────
+
+const COLOURS = [
+  { hex: '#e9924b', name: 'Orange'    },
+  { hex: '#7c5cbf', name: 'Purple'    },
+  { hex: '#659ec3', name: 'Blue'      },
+  { hex: '#3a9e7e', name: 'Green'     },
+  { hex: '#fbbf24', name: 'Yellow'    },
+  { hex: '#ef4444', name: 'Red'       },
+  { hex: '#ec4899', name: 'Pink'      },
+  { hex: '#1e3a6e', name: 'Navy'      },
+  { hex: '#a3a3a3', name: 'Grey'      },
+  { hex: '#ffffff', name: 'White'     },
 ];
 
-const BRUSH_SIZES = [
-  { size: 3, label: 'Thin', icon: BsPencil },
-  { size: 8, label: 'Medium', icon: BsPencilFill },
-  { size: 15, label: 'Thick', icon: BsBrush },
-  { size: 25, label: 'Bold', icon: BsBrushFill },
+const SIZES = [
+  { px: 4,  label: 'Tiny'   },
+  { px: 9,  label: 'Small'  },
+  { px: 16, label: 'Medium' },
+  { px: 28, label: 'Big'    },
 ];
+
+const NEEDED = 15;
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 const FreeDrawCanvas: React.FC<Props> = ({ onComplete, onBack }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [strokeCount, setStrokeCount] = useState(0);
-  const [currentColor, setCurrentColor] = useState(COLORS[0]);
-  const [brushSize, setBrushSize] = useState(BRUSH_SIZES[1]);
-  const [hasCompletedOnce, setHasCompletedOnce] = useState(false);
+  const [drawing, setDrawing]       = useState(false);
+  const [colour, setColour]         = useState(COLOURS[0]);
+  const [size, setSize]             = useState(SIZES[2]);
+  const [strokes, setStrokes]       = useState(0);
+  const [done, setDone]             = useState(false);
 
-  // Initialize canvas context
+  // Set canvas background once
   useEffect(() => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) {
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = brushSize.size;
-      ctx.strokeStyle = currentColor.hex;
-    }
-  }, [currentColor, brushSize]);
-
-  // FIX: Proper coordinate calculation accounting for canvas scaling
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
-    if (!canvas) return null;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#fffdf8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }, []);
 
+  const getPos = useCallback((e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
-    
-    // Get raw coordinates
-    let clientX: number;
-    let clientY: number;
-
+    const sx = canvas.width  / rect.width;
+    const sy = canvas.height / rect.height;
     if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
+      return { x: (e.touches[0].clientX - rect.left) * sx, y: (e.touches[0].clientY - rect.top) * sy };
     }
+    return { x: ((e as React.MouseEvent).clientX - rect.left) * sx, y: ((e as React.MouseEvent).clientY - rect.top) * sy };
+  }, []);
 
-    // Calculate position relative to canvas
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    // FIX: Scale coordinates to match canvas internal resolution
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    return {
-      x: x * scaleX,
-      y: y * scaleY,
-    };
-  };
-
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault(); // Prevent scrolling on touch
-    const ctx = canvasRef.current?.getContext('2d');
-    const coords = getCoordinates(e);
-    if (!ctx || !coords) return;
-
-    ctx.beginPath();
-    ctx.moveTo(coords.x, coords.y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+  const startDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    if (!isDrawing) return;
-    
-    const ctx = canvasRef.current?.getContext('2d');
-    const coords = getCoordinates(e);
-    if (!ctx || !coords) return;
+    const canvas = canvasRef.current;
+    if (!canvas || done) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getPos(e, canvas);
+    ctx.strokeStyle  = colour.hex;
+    ctx.lineWidth    = size.px;
+    ctx.lineCap      = 'round';
+    ctx.lineJoin     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setDrawing(true);
+  }, [colour, size, done, getPos]);
 
-    ctx.lineTo(coords.x, coords.y);
+  const doDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (!drawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getPos(e, canvas);
+    ctx.lineTo(x, y);
     ctx.stroke();
-  };
+  }, [drawing, getPos]);
 
-  const stopDrawing = () => {
-    if (isDrawing) {
-      const newCount = strokeCount + 1;
-      setStrokeCount(newCount);
-      
-      if (newCount >= 15 && !hasCompletedOnce) {
-        setHasCompletedOnce(true);
-        toast.success('Amazing artwork! Sticker earned!', {
-          duration: 3000,
-          icon: '✨',
-        });
-        setTimeout(() => {
-          onComplete();
-        }, 500);
+  const stopDraw = useCallback(() => {
+    if (!drawing || done) return;
+    setDrawing(false);
+    setStrokes(prev => {
+      const next = prev + 1;
+      if (next >= NEEDED) {
+        setDone(true);
+        setTimeout(() => onComplete('🖌️'), 600);
       }
-    }
-    setIsDrawing(false);
-  };
+      return next;
+    });
+  }, [drawing, done, onComplete]);
 
   const clearCanvas = () => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx && canvasRef.current) {
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      setStrokeCount(0);
-      setHasCompletedOnce(false);
-      toast('Canvas cleared! Start fresh!', { icon: '🗑️' });
-    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#fffdf8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setStrokes(0);
+    setDone(false);
   };
 
-  const progress = Math.min((strokeCount / 15) * 100, 100);
+  const progress = Math.min((strokes / NEEDED) * 100, 100);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between bg-white rounded-2xl p-4 shadow-lg">
-          <button 
-            onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-all"
-          >
-            <IoArrowBack className="text-xl" />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-          
-          <div className="flex items-center gap-3">
-            <IoBrush className="text-3xl text-purple-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Free Draw Canvas
-            </h1>
+    <div className="space-y-5">
+      {/* Back */}
+      <motion.button whileTap={{ scale: 0.93 }} onClick={onBack}
+        className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-base"
+        style={{ background: '#f3eeff', color: '#7c5cbf', border: '2.5px solid #7c5cbf20', fontFamily: "'Nunito', sans-serif" }}>
+        ← Back to create
+      </motion.button>
+
+      {/* Title + progress */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h3 className="font-black text-2xl" style={{ fontFamily: "'Nunito', sans-serif", color: '#7c5cbf' }}>
+          Free Draw 🖌️
+        </h3>
+        <div className="flex items-center gap-3">
+          <div className="rounded-full overflow-hidden" style={{ background: '#7c5cbf18', height: '10px', width: '160px' }}>
+            <motion.div className="h-full rounded-full" animate={{ width: `${progress}%` }} style={{ background: '#7c5cbf' }} transition={spring} />
+          </div>
+          <span className="font-black text-xs" style={{ color: '#7c5cbf' }}>{strokes}/{NEEDED} strokes</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+
+        {/* Tools sidebar */}
+        <div className="lg:col-span-1 space-y-4">
+
+          {/* Colour picker */}
+          <div className="rounded-[2rem] p-5" style={{ background: '#f3eeff', border: '3px solid #7c5cbf15' }}>
+            <p className="font-black text-sm mb-3" style={{ color: '#7c5cbf', fontFamily: "'Nunito', sans-serif" }}>Colour</p>
+            <div className="grid grid-cols-5 gap-2">
+              {COLOURS.map(c => (
+                <motion.button key={c.hex} whileTap={{ scale: 0.82 }} onClick={() => setColour(c)}
+                  className="aspect-square rounded-xl"
+                  style={{
+                    background: c.hex,
+                    border: colour.hex === c.hex ? '3px solid #7c5cbf' : '2px solid rgba(0,0,0,0.1)',
+                    boxShadow: colour.hex === c.hex ? '0 0 0 2px #fff, 0 0 0 4px #7c5cbf' : 'none',
+                  }}
+                  aria-label={c.name}
+                />
+              ))}
+            </div>
+            <p className="font-bold text-xs mt-2 text-center" style={{ color: '#7c5cbf80' }}>{colour.name}</p>
           </div>
 
-          <div className="w-20"></div>
+          {/* Brush size */}
+          <div className="rounded-[2rem] p-5" style={{ background: '#f3eeff', border: '3px solid #7c5cbf15' }}>
+            <p className="font-black text-sm mb-3" style={{ color: '#7c5cbf', fontFamily: "'Nunito', sans-serif" }}>Brush size</p>
+            <div className="space-y-2">
+              {SIZES.map(s => (
+                <motion.button key={s.px} whileTap={{ scale: 0.95 }} onClick={() => setSize(s)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-black text-sm"
+                  style={{
+                    background: size.px === s.px ? '#7c5cbf' : '#fff',
+                    color: size.px === s.px ? '#fff' : '#7c5cbf',
+                    border: `2px solid ${size.px === s.px ? '#7c5cbf' : '#7c5cbf20'}`,
+                  }}>
+                  <div className="rounded-full flex-shrink-0"
+                    style={{ width: Math.min(s.px, 22), height: Math.min(s.px, 22), background: size.px === s.px ? '#fff' : '#7c5cbf', minWidth: 8, minHeight: 8 }} />
+                  {s.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          
-          {/* Left Sidebar - Tools */}
-          <div className="lg:col-span-1 space-y-6">
-            
-            {/* Progress Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-purple-500">
-              <div className="flex items-center gap-3 mb-4">
-                <IoSparkles className="text-3xl text-purple-600" />
-                <div>
-                  <h3 className="font-bold text-gray-800">Progress</h3>
-                  <p className="text-sm text-gray-600">{strokeCount}/15 strokes</p>
-                </div>
-              </div>
-              
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-3">
-                <div 
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-
-              {strokeCount >= 15 ? (
-                <div className="flex items-center gap-2 text-green-600 font-semibold">
-                  <IoCheckmarkCircle className="text-xl" />
-                  <span>Completed!</span>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-600">
-                  {15 - strokeCount} more strokes to earn a sticker!
-                </p>
-              )}
-            </div>
-
-            {/* Color Palette */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <div className="flex items-center gap-2 mb-4">
-                <IoColorPalette className="text-2xl text-gray-700" />
-                <h3 className="font-bold text-gray-800">Colors</h3>
-              </div>
-              
-              <div className="grid grid-cols-4 gap-3">
-                {COLORS.map((color) => (
-                  <button
-                    key={color.hex}
-                    onClick={() => setCurrentColor(color)}
-                    className={`group relative aspect-square rounded-xl transition-all transform hover:scale-110 ${
-                      currentColor.hex === color.hex 
-                        ? 'ring-4 ring-purple-500 scale-110' 
-                        : 'ring-2 ring-gray-200 hover:ring-gray-300'
-                    }`}
-                    style={{ backgroundColor: color.hex }}
-                    title={color.name}
-                  >
-                    {currentColor.hex === color.hex && (
-                      <IoCheckmarkCircle className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-2xl drop-shadow-lg" />
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {currentColor && (
-                <div className="mt-4 text-center">
-                  <span className="text-sm font-semibold text-gray-700">{currentColor.name}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Brush Size */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <div className="flex items-center gap-2 mb-4">
-                <IoBrush className="text-2xl text-gray-700" />
-                <h3 className="font-bold text-gray-800">Brush Size</h3>
-              </div>
-              
-              <div className="space-y-3">
-                {BRUSH_SIZES.map((brush) => {
-                  const Icon = brush.icon;
-                  return (
-                    <button
-                      key={brush.size}
-                      onClick={() => setBrushSize(brush)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                        brushSize.size === brush.size
-                          ? 'border-purple-500 bg-purple-50 shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Icon className="text-2xl text-gray-700" />
-                      <div className="flex-1 text-left">
-                        <div className="font-semibold text-gray-800">{brush.label}</div>
-                        <div className="text-xs text-gray-500">{brush.size}px</div>
-                      </div>
-                      {brushSize.size === brush.size && (
-                        <IoCheckmarkCircle className="text-xl text-purple-600" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        {/* Canvas */}
+        <div className="lg:col-span-3">
+          <div className="rounded-[2rem] overflow-hidden" style={{ background: '#fff', border: '3px solid #7c5cbf15', boxShadow: '0 12px 40px #7c5cbf12' }}>
+            <canvas
+              ref={canvasRef}
+              width={1000} height={580}
+              className="w-full touch-none block"
+              style={{ cursor: done ? 'default' : 'crosshair', touchAction: 'none', userSelect: 'none', display: 'block' }}
+              onMouseDown={startDraw} onMouseMove={doDraw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+              onTouchStart={startDraw} onTouchMove={doDraw} onTouchEnd={stopDraw}
+              aria-label="Drawing canvas"
+            />
           </div>
 
-          {/* Main Canvas Area */}
-          <div className="lg:col-span-3 space-y-4">
-            
-            {/* Canvas Container */}
-            <div className="bg-white rounded-2xl p-6 shadow-2xl">
-              <div ref={containerRef} className="relative">
-                <canvas 
-                  ref={canvasRef} 
-                  width={1200} 
-                  height={700} 
-                  className="w-full border-2 border-gray-200 rounded-xl cursor-crosshair touch-none bg-white shadow-inner"
-                  style={{ 
-                    touchAction: 'none', // Prevent default touch behavior
-                    userSelect: 'none'   // Prevent text selection
-                  }}
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onTouchEnd={stopDrawing}
-                />
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <button 
-                  onClick={clearCanvas}
-                  className="flex items-center justify-center gap-2 px-6 py-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition-all border-2 border-red-200 hover:border-red-300"
-                >
-                  <IoTrash className="text-xl" />
-                  Clear Canvas
-                </button>
-                <button 
-                  onClick={() => toast.success('Drawing saved! (Feature coming soon)', { icon: '💾' })}
-                  className="flex items-center justify-center gap-2 px-6 py-4 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl font-semibold transition-all border-2 border-green-200 hover:border-green-300"
-                >
-                  <IoSave className="text-xl" />
-                  Save Drawing
-                </button>
-              </div>
-            </div>
-
-            {/* Tips Card */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
-              <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                <IoSparkles className="text-xl" />
-                Drawing Tips
-              </h4>
-              <ul className="space-y-2 text-sm text-blue-800">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
-                  <span>Experiment with different colors to create unique art</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
-                  <span>Use thin brushes for details and thick brushes for filling</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
-                  <span>There's no wrong way to draw - express yourself freely!</span>
-                </li>
-              </ul>
-            </div>
+          {/* Actions */}
+          <div className="flex gap-3 mt-4">
+            <motion.button whileTap={{ scale: 0.95 }} onClick={clearCanvas}
+              className="flex-1 py-4 rounded-2xl font-black text-base"
+              style={{ background: '#fff', color: '#7c5cbf', border: '2.5px solid #7c5cbf20' }}>
+              Clear
+            </motion.button>
+            <AnimatePresence>
+              {done && (
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring}
+                  className="flex-1 py-4 rounded-2xl font-black text-base text-white text-center flex items-center justify-center gap-2"
+                  style={{ background: '#3a9e7e', boxShadow: '0 8px 24px #3a9e7e30' }}>
+                  🌟 Sticker earned!
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          {!done && (
+            <p className="text-center font-bold text-sm mt-3" style={{ color: '#7c5cbf60' }}>
+              Draw {NEEDED - strokes} more stroke{NEEDED - strokes !== 1 ? 's' : ''} to earn your sticker!
+            </p>
+          )}
         </div>
       </div>
     </div>

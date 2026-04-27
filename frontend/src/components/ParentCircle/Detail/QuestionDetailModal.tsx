@@ -1,60 +1,128 @@
 /**
  * ============================================
- * QUESTION DETAIL MODAL (TWITTER-STYLE)
+ * QUESTION DETAIL MODAL — PARENTCIRCLE
  * ============================================
- * @version     1.0.0
- * @author      ArogoClin
- * @updated     2025-11-23 09:38:24 UTC
- * @description Hybrid modal: Side panel (desktop) + Full screen (mobile)
+ * @version     2.0.0
+ * @updated     2025-04-23
+ * @description Slide-in panel: full-screen mobile, 600px side panel desktop
  * ============================================
  */
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { formatDistanceToNow } from 'date-fns';
+import { HandThumbUpIcon } from '@heroicons/react/24/outline';
+import { HandThumbUpIcon as HandThumbUpIconSolid } from '@heroicons/react/24/solid';
 import { useQuestion } from '../../../hooks/useParentCircle';
 import * as API from '../../../services/parentcircle.service';
 import toast from 'react-hot-toast';
-import type { Question, Answer } from '../../../types/parentcircle.types';
+import UserAvatar from '../Shared/UserAvatar';
+import TimeAgo from '../Shared/TimeAgo';
+import CategoryBadge from '../Shared/CategoryBadge';
+import type { Answer } from '../../../types/parentcircle.types';
 
 interface QuestionDetailModalProps {
   questionId: number;
   onClose: () => void;
 }
 
+// ─── INLINE ANSWER ITEM ───────────────────────────────────────────────────────
+
+const AnswerItem: React.FC<{
+  answer: Answer;
+  onVote: (id: number) => void;
+}> = ({ answer, onVote }) => {
+  const [voted, setVoted] = useState(false);
+  const [count, setCount] = useState(answer.helpfulCount ?? 0);
+
+  const handleVote = () => {
+    setVoted(prev => !prev);
+    setCount(prev => voted ? prev - 1 : prev + 1);
+    onVote(answer.id);
+  };
+
+  return (
+    <div
+      className={`rounded-2xl border overflow-hidden ${
+        answer.isAccepted
+          ? 'border-[#659ec3]/35'
+          : answer.isVerified
+          ? 'border-[#659ec3]/18'
+          : 'border-[#1e3a6e]/8'
+      }`}
+    >
+      {answer.isAccepted && (
+        <div className="h-0.5 bg-gradient-to-r from-[#659ec3] to-[#659ec3]/30" />
+      )}
+      <div className="p-5 bg-white">
+        {answer.isAccepted && (
+          <p className="text-[#659ec3] text-[10px] font-bold uppercase tracking-widest mb-3">
+            Best answer
+          </p>
+        )}
+        <div className="flex items-center gap-3 mb-3">
+          <UserAvatar name={answer.author?.name ?? answer.authorName} size="sm" isVerified={answer.isVerified} />
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-[#1e3a6e] text-sm">
+                {answer.author?.name ?? answer.authorName}
+              </span>
+              {answer.isVerified && (
+                <span className="px-2 py-0.5 bg-[#659ec3]/10 text-[#659ec3] text-[10px] font-bold uppercase tracking-widest rounded-full">
+                  Verified
+                </span>
+              )}
+            </div>
+            <TimeAgo date={answer.createdAt} className="text-[10px] text-[#1e3a6e]/35" />
+          </div>
+        </div>
+        <p className="text-[#1e3a6e]/70 text-sm leading-[1.85] whitespace-pre-wrap mb-4">
+          {answer.content}
+        </p>
+        <div className="pt-3 border-t border-[#1e3a6e]/6">
+          <button
+            onClick={handleVote}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              voted
+                ? 'bg-[#659ec3]/10 text-[#659ec3] border border-[#659ec3]/20'
+                : 'text-[#1e3a6e]/40 hover:text-[#659ec3] hover:bg-[#659ec3]/8 border border-transparent'
+            }`}
+          >
+            {voted ? <HandThumbUpIconSolid className="w-3.5 h-3.5" /> : <HandThumbUpIcon className="w-3.5 h-3.5" />}
+            Helpful{count > 0 ? ` (${count})` : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
 const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ questionId, onClose }) => {
-  const { question, answers, loading, error, refresh } = useQuestion(questionId);
+  const { question, answers, loading, error, refresh } = useQuestion(questionId.toString());
   const [answerText, setAnswerText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState<'best' | 'newest' | 'oldest'>('best');
-  const modalRef = useRef<HTMLDivElement>(null);
 
-  // Close on ESC key
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Prevent body scroll when modal open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
   const handleSubmitAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!answerText.trim() || submitting) return;
-
     try {
       setSubmitting(true);
       await API.createAnswer(questionId, answerText.trim());
-      toast.success('✅ Answer submitted successfully!');
+      toast.success('Your answer has been submitted for review — thank you.');
       setAnswerText('');
       refresh();
     } catch (err: any) {
@@ -64,55 +132,46 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ questionId, o
     }
   };
 
-  const handleVote = async (answerId: number, isHelpful: boolean) => {
-    try {
-      await API.markAnswerHelpful(answerId);
-      toast.success(isHelpful ? '👍 Marked as helpful!' : 'Thanks for feedback');
-      refresh();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to vote');
-    }
+  const handleVote = async (answerId: number) => {
+    try { await API.markAnswerHelpful(answerId); refresh(); }
+    catch (err: any) { toast.error(err.message || 'Failed'); }
   };
 
-  const sortedAnswers = [...(answers || [])].sort((a, b) => {
+  const sortedAnswers = [...(answers ?? [])].sort((a, b) => {
     if (sortBy === 'best') {
       if (a.isAccepted && !b.isAccepted) return -1;
       if (!a.isAccepted && b.isAccepted) return 1;
       if (a.isVerified && !b.isVerified) return -1;
       if (!a.isVerified && b.isVerified) return 1;
-      return b.helpfulCount - a.helpfulCount;
+      return (b.helpfulCount ?? 0) - (a.helpfulCount ?? 0);
     }
-    if (sortBy === 'newest') {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
+    if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
 
+  // ── Loading ──
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal border-t-transparent mx-auto"></div>
-          <p className="text-gray-600 mt-4">Loading question...</p>
+      <div className="fixed inset-0 bg-[#1e3a6e]/40 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-3 shadow-xl">
+          <div className="w-8 h-8 border-2 border-[#e9924b]/30 border-t-[#e9924b] rounded-full animate-spin" />
+          <p className="text-[#1e3a6e]/55 text-sm">Loading question...</p>
         </div>
       </div>
     );
   }
 
+  // ── Error ──
   if (error || !question) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-[#1e3a6e]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-xl p-8 max-w-md"
+          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-xl text-center"
         >
-          <h3 className="text-xl font-bold text-red-600 mb-4">Error Loading Question</h3>
-          <p className="text-gray-600 mb-6">{error || 'Question not found'}</p>
-          <button
-            onClick={onClose}
-            className="w-full bg-teal text-white px-6 py-3 rounded-lg font-semibold hover:bg-teal/90"
-          >
+          <p className="font-heading font-bold text-[#1e3a6e] text-base mb-2">Question not found</p>
+          <p className="text-[#1e3a6e]/50 text-sm mb-7">{error || 'This question may have been removed.'}</p>
+          <button onClick={onClose} className="w-full px-6 py-2.5 bg-[#e9924b] text-white text-sm font-semibold rounded-xl hover:bg-[#d4762a] transition-all">
             Close
           </button>
         </motion.div>
@@ -125,216 +184,133 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ questionId, o
       <div className="fixed inset-0 z-50 overflow-hidden">
         {/* Backdrop */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-[#1e3a6e]/40 backdrop-blur-sm"
         />
 
-        {/* Modal Container - Responsive */}
+        {/* Panel */}
         <motion.div
-          ref={modalRef}
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
+          initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="absolute right-0 top-0 h-full w-full lg:w-[600px] bg-white shadow-2xl overflow-hidden flex flex-col"
+          className="absolute right-0 top-0 h-full w-full lg:w-[600px] bg-white shadow-2xl flex flex-col"
         >
           {/* Header */}
-          <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
-            >
-              <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
+          <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#1e3a6e]/8 bg-white">
+            <div className="flex items-center gap-2">
+              {/* mobile: back arrow */}
+              <button onClick={onClose} className="lg:hidden p-1.5 text-[#1e3a6e]/40 hover:text-[#1e3a6e] rounded-xl transition-colors">
+                <ArrowLeftIcon className="w-5 h-5" />
+              </button>
+              <div>
+                <p className="font-heading font-extrabold text-[#1e3a6e] text-base">Question</p>
+                <p className="text-[#1e3a6e]/35 text-xs">{sortedAnswers.length} {sortedAnswers.length === 1 ? 'answer' : 'answers'}</p>
+              </div>
+            </div>
+            {/* desktop: X */}
+            <button onClick={onClose} className="hidden lg:flex p-1.5 text-[#1e3a6e]/40 hover:text-[#1e3a6e] hover:bg-[#1e3a6e]/5 rounded-xl transition-all">
+              <XMarkIcon className="w-5 h-5" />
             </button>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors hidden lg:block"
-            >
-              <XMarkIcon className="w-5 h-5 text-gray-700" />
-            </button>
-            <h2 className="text-lg font-bold text-gray-900 flex-1 mx-4">Question Details</h2>
-            <div className="w-9"></div>
           </div>
 
-          {/* Scrollable Content */}
+          {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
-            {/* Question Content */}
-            <div className="p-6 border-b border-gray-200">
-              {/* Author & Metadata */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                    {question.authorName.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900">{question.authorName}</p>
-                    <p className="text-sm text-gray-500">
-                      {formatDistanceToNow(new Date(question.createdAt), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-                {question.category && (
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                    {question.category.name}
-                  </span>
-                )}
-              </div>
+            <div className="p-5 space-y-6">
 
-              {/* Title */}
-              {question.title && (
-                <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                  {question.title}
-                </h1>
-              )}
-
-              {/* Content */}
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-4">
-                {question.content}
-              </p>
-
-              {/* Tags */}
-              {question.tags && question.tags.length > 0 && (
+              {/* Question body */}
+              <div className="bg-[#fbfbfb] rounded-2xl border border-[#1e3a6e]/8 p-5">
+                {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {question.tags.map((tag, index) => (
-                    <span key={index} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">
-                      #{tag}
-                    </span>
-                  ))}
+                  {question.category && (
+                    <CategoryBadge name={question.category?.name} color={question.category?.color} icon={question.category?.icon} size="sm" />
+                  )}
+                  {question.isFeatured && (
+                    <span className="px-2.5 py-1 bg-[#e9924b]/10 text-[#e9924b] text-[10px] font-bold uppercase tracking-widest rounded-full">Featured</span>
+                  )}
                 </div>
-              )}
 
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-sm text-gray-500 pt-4 border-t border-gray-100">
-                <span className="flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                  {answers?.length || 0} answers
-                </span>
-                <span className="flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  {question.viewCount || 0} views
-                </span>
-              </div>
-            </div>
+                {question.title && (
+                  <h1 className="font-heading font-extrabold text-[#1e3a6e] text-lg leading-snug mb-3">{question.title}</h1>
+                )}
+                <p className="text-[#1e3a6e]/70 text-sm leading-[1.85] whitespace-pre-wrap mb-4">{question.content}</p>
 
-            {/* Answer Form */}
-            <div className="p-6 bg-gray-50 border-b border-gray-200">
-              <h3 className="font-bold text-gray-900 mb-3">Your Answer</h3>
-              <form onSubmit={handleSubmitAnswer}>
-                <textarea
-                  value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
-                  placeholder="Share your knowledge and experience..."
-                  className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-teal focus:outline-none resize-none"
-                  rows={4}
-                  disabled={submitting}
-                />
-                <div className="flex justify-between items-center mt-3">
-                  <p className="text-xs text-gray-500">
-                    {answerText.length}/1000 characters
-                  </p>
-                  <button
-                    type="submit"
-                    disabled={!answerText.trim() || submitting}
-                    className="bg-teal text-white px-6 py-2 rounded-lg font-semibold hover:bg-teal/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    {submitting ? 'Posting...' : 'Post Answer'}
-                  </button>
+                {question.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {question.tags.map((tag: string, i: number) => (
+                      <span key={i} className="px-2 py-0.5 bg-[#1e3a6e]/5 text-[#1e3a6e]/45 rounded-full text-xs">{tag}</span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 pt-4 border-t border-[#1e3a6e]/8">
+                  <UserAvatar name={question.authorName} size="sm" isAnonymous={!question.author} />
+                  <div>
+                    <p className="font-semibold text-[#1e3a6e] text-xs">{question.authorName}</p>
+                    <TimeAgo date={question.createdAt} className="text-[10px] text-[#1e3a6e]/35" />
+                  </div>
+                  <div className="ml-auto flex items-center gap-3 text-[#1e3a6e]/30 text-xs">
+                    <span>{answers?.length ?? 0} answers</span>
+                    <span>{question.viewCount ?? question.views ?? 0} views</span>
+                  </div>
                 </div>
-              </form>
-            </div>
-
-            {/* Answers Section */}
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {answers?.length || 0} Answers
-                </h3>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-2 border-2 border-gray-200 rounded-lg text-sm font-semibold focus:border-teal focus:outline-none"
-                >
-                  <option value="best">Best Answers</option>
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                </select>
               </div>
 
-              {/* Answers List */}
-              <div className="space-y-4">
-                {sortedAnswers.length > 0 ? (
-                  sortedAnswers.map((answer) => (
-                    <div
-                      key={answer.id}
-                      className={`border-2 rounded-xl p-4 ${
-                        answer.isAccepted
-                          ? 'border-green-500 bg-green-50'
-                          : answer.isVerified
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 bg-white'
-                      }`}
+              {/* Answer form */}
+              <div>
+                <p className="font-heading font-bold text-[#1e3a6e] text-sm mb-1">Share your answer</p>
+                <p className="text-[#1e3a6e]/40 text-xs mb-3 leading-relaxed">
+                  Your experience matters. Answers are reviewed before appearing.
+                </p>
+                <form onSubmit={handleSubmitAnswer}>
+                  <textarea
+                    value={answerText}
+                    onChange={e => setAnswerText(e.target.value)}
+                    placeholder="Share what has worked for you, or what you wish someone had told you..."
+                    className="w-full p-4 bg-[#fbfbfb] border border-[#1e3a6e]/12 rounded-xl text-[#1e3a6e] placeholder-[#1e3a6e]/30 text-sm leading-relaxed min-h-[130px] resize-none focus:outline-none focus:border-[#e9924b]/40 transition-all"
+                    disabled={submitting}
+                    required
+                  />
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-[#1e3a6e]/25 text-xs">{answerText.length} characters</span>
+                    <button
+                      type="submit"
+                      disabled={!answerText.trim() || submitting}
+                      className="px-5 py-2.5 bg-[#e9924b] hover:bg-[#d4762a] text-white text-sm font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#e9924b]/20 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      {/* Answer Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal to-blue-500 flex items-center justify-center text-white font-bold">
-                            {answer.author.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-900 flex items-center gap-2">
-                              {answer.author.name}
-                              {answer.isVerified && (
-                                <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-semibold">
-                                  ✓ Verified
-                                </span>
-                              )}
-                              {answer.isAccepted && (
-                                <span className="px-2 py-0.5 bg-green-600 text-white rounded text-xs font-semibold">
-                                  ✓ Best Answer
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDistanceToNow(new Date(answer.createdAt), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      {submitting ? 'Submitting...' : 'Submit answer'}
+                    </button>
+                  </div>
+                </form>
+              </div>
 
-                      {/* Answer Content */}
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-3">
-                        {answer.content}
-                      </p>
+              {/* Answers list */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="font-heading font-bold text-[#1e3a6e] text-sm">
+                    {sortedAnswers.length} {sortedAnswers.length === 1 ? 'Answer' : 'Answers'}
+                  </p>
+                  {sortedAnswers.length > 1 && (
+                    <select
+                      value={sortBy}
+                      onChange={e => setSortBy(e.target.value as any)}
+                      className="px-3 py-1.5 text-xs bg-white border border-[#1e3a6e]/15 rounded-xl text-[#1e3a6e] font-semibold focus:outline-none focus:border-[#e9924b]/40 transition-all"
+                    >
+                      <option value="best">Most helpful</option>
+                      <option value="newest">Newest first</option>
+                      <option value="oldest">Oldest first</option>
+                    </select>
+                  )}
+                </div>
 
-                      {/* Answer Actions */}
-                      <div className="flex items-center gap-4 pt-3 border-t border-gray-200">
-                        <button
-                          onClick={() => handleVote(answer.id, true)}
-                          className="flex items-center gap-1 text-sm text-gray-600 hover:text-teal transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                          </svg>
-                          Helpful ({answer.helpfulCount})
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                {sortedAnswers.length === 0 ? (
+                  <div className="bg-[#fbfbfb] rounded-2xl border border-[#1e3a6e]/8 p-8 text-center">
+                    <p className="text-[#1e3a6e]/45 text-sm">No answers yet. If you have experience with this, your perspective could really help.</p>
+                  </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No answers yet</h3>
-                    <p className="text-gray-600">Be the first to share your knowledge!</p>
+                  <div className="space-y-3">
+                    {sortedAnswers.map(a => (
+                      <AnswerItem key={a.id} answer={a} onVote={handleVote} />
+                    ))}
                   </div>
                 )}
               </div>
