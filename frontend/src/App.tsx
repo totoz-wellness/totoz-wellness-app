@@ -23,6 +23,9 @@ import LearnWell from './pages/LearnWell';
 import ArticleReader from './pages/ArticleReader';
 import ConnectCare from './pages/ConnectCare';
 import ParentCircleHub from './pages/ParentCircle/ParentCircleHub';
+import About from './pages/About';
+import Team  from './pages/Team';
+import Privacy from './pages/Privacy';
 
 
 // ========== AUTH PAGES ==========
@@ -80,6 +83,9 @@ function App() {
         <Route path="/features" element={<Features />} />
         <Route path="/whyus" element={<WhyUs />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/team" element={<Team />} />
+        <Route path="/privacy" element={<Privacy />} />
         
         {/* LearnWell */}
         <Route path="/learnwell" element={<LearnWell />} />

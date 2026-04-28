@@ -123,14 +123,16 @@ const Footer: React.FC = () => {
             <ul className="space-y-2.5">
               <li>
                 <a
-                  href="mailto:contact@totoz.com"
+                  href="mailto:contact@totozwellness.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-white/50 hover:text-white transition-colors duration-200"
                 >
-                  contact@totoz.com
+                  contact@totozwellness.org
                 </a>
               </li>
               <li>
-                <span className="text-sm text-white/50">Kenya</span>
+                <span className="text-sm text-white/50">0797641690</span>
               </li>
             </ul>
 

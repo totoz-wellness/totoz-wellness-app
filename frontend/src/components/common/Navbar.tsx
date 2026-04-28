@@ -78,6 +78,7 @@ const Navbar: React.FC = () => {
     { name: 'Programs',    path: '/programs' },
     { name: 'Get Involved',path: '/get-involved' },
     { name: 'About',       path: '/about' },
+    { name: 'Team',        path: '/team' },
   ];
 
   const handleNavClick = (path: string) => {
