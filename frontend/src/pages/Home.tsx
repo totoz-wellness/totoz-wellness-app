@@ -86,7 +86,7 @@ const Hero: React.FC = () => {
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="hidden sm:block absolute left-2 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white p-2 sm:p-3 md:p-4 rounded-full transition-all hover:scale-110"
+        className="absolute left-2 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white p-2 sm:p-3 md:p-4 rounded-full transition-all hover:scale-110"
         aria-label="Previous slide"
       >
         <ChevronLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
@@ -94,7 +94,7 @@ const Hero: React.FC = () => {
 
       <button
         onClick={nextSlide}
-        className="hidden sm:block absolute right-2 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white p-2 sm:p-3 md:p-4 rounded-full transition-all hover:scale-110"
+        className="absolute right-2 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white p-2 sm:p-3 md:p-4 rounded-full transition-all hover:scale-110"
         aria-label="Next slide"
       >
         <ChevronRightIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />

@@ -25,3 +25,5 @@ dist-ssr
 
 # Local environment files
 .env.local
+.env
+.env.local:Zone.Identifier
