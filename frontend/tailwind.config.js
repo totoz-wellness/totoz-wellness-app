@@ -12,37 +12,44 @@ module.exports = {
       // CUSTOM COLORS
       // ========================================
       colors: {
-        // Main App Colors
-        teal: '#3AAFA9',
-        'light-bg': '#F8F9FA',
-        'dark-text': '#2B2D42',
-        'pastel-green': '#DEF2F1',
+        // Main App Colors — Totoz Wellness Brand
+        teal: '#659ec3',              // Steel Blue (secondary brand color)
+        'light-bg': '#fbfbfb',        // Brand light background
+        'dark-text': '#1e3a6e',       // Brand navy (from color palette)
+        'pastel-green': '#fde9d4',    // Light tint of Tan Hide for soft backgrounds
         'light-text': '#FEFFFF',
-        
-        // KidsCorner Gradient Colors
+
+        // Totoz Wellness Brand Colors
+        'brand-orange': '#e9924b',    // Tan Hide — primary brand color
+        'brand-blue': '#659ec3',      // Steel Blue — secondary brand color
+        'brand-navy': '#1e3a6e',      // Deep Navy — accent/dark color
+        'brand-light': '#fbfbfb',     // Off-white background
+
+        // Orange (Tan Hide) scale
         'kid-purple': {
-          50: '#f3f0ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
+          50: '#fef6ee',
+          100: '#fdecd8',
+          200: '#fbd5af',
+          300: '#f8b87d',
+          400: '#f3954a',
+          500: '#e9924b',
+          600: '#d4762a',
+          700: '#b05d22',
+          800: '#8c4a21',
+          900: '#713e1f',
         },
+        // Steel Blue scale
         'kid-pink': {
-          50: '#fff0f6',
-          100: '#ffe4f1',
-          200: '#ffc9e3',
-          300: '#ffa3d5',
-          400: '#ff7ac7',
-          500: '#f72585',
-          600: '#d11d6f',
-          700: '#ab1559',
-          800: '#850d43',
-          900: '#5f052d',
+          50: '#f0f6fb',
+          100: '#ddeaf5',
+          200: '#c2d8ed',
+          300: '#99bfe0',
+          400: '#659ec3',
+          500: '#4d87b2',
+          600: '#3b6d96',
+          700: '#31587a',
+          800: '#2c4a66',
+          900: '#293f56',
         },
       },
       
@@ -132,10 +139,10 @@ module.exports = {
         },
         'pulse-glow': {
           '0%, 100%': {
-            boxShadow: '0 0 20px rgba(147, 51, 234, 0.4)',
+            boxShadow: '0 0 20px rgba(233, 146, 75, 0.4)',
           },
           '50%': {
-            boxShadow: '0 0 40px rgba(147, 51, 234, 0.8)',
+            boxShadow: '0 0 40px rgba(233, 146, 75, 0.8)',
           },
         },
         shimmer: {
@@ -177,9 +184,9 @@ module.exports = {
       
       // Box Shadows
       boxShadow: {
-        'glow-purple': '0 0 30px rgba(139, 92, 246, 0.5)',
-        'glow-pink': '0 0 30px rgba(236, 72, 153, 0.5)',
-        'glow-blue': '0 0 30px rgba(59, 130, 246, 0.5)',
+        'glow-purple': '0 0 30px rgba(233, 146, 75, 0.5)',   // orange glow
+        'glow-pink': '0 0 30px rgba(101, 158, 195, 0.5)',    // steel blue glow
+        'glow-blue': '0 0 30px rgba(30, 58, 110, 0.5)',      // navy glow
       },
     },
   },

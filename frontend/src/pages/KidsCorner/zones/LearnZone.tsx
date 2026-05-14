@@ -1,299 +1,474 @@
+/**
+ * ============================================
+ * LEARN ZONE — KIDS CORNER
+ * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
+ * @description Mood-matched story recommendations + full library.
+ *              Large text, page-turn animation, sticker reward on completion.
+ *              No typing required. Big tap targets throughout.
+ * ============================================
+ */
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, ChevronLeft, PartyPopper } from 'lucide-react';
 import { KidsData } from '../../../types/kidscorner.types';
+
+// ─── TYPES ───────────────────────────────────────────────────────────────────
+
+interface Story {
+  title: string;
+  emoji: string;
+  tag: string;
+  moodMatch: string[];
+  color: string;
+  bg: string;
+  pages: string[];
+}
 
 interface LearnZoneProps {
   kidsData: KidsData;
   onUpdateData?: (newData: Partial<KidsData>) => void;
 }
 
-interface Story {
-  title: string;
-  icon: string;
-  tag: string;
-  moodMatch: string[];
-  pages: string[];
-}
+// ─── STORY DATA ───────────────────────────────────────────────────────────────
 
 const STORIES: Story[] = [
-  { 
-    title: "The Brave Little Bear", 
-    icon: "🐻", 
-    tag: "anxiety", 
+  {
+    title: 'The Brave Little Bear',
+    emoji: '🐻',
+    tag: 'being brave',
     moodMatch: ['worried', 'sad'],
+    color: '#e9924b',
+    bg: '#fff4ec',
     pages: [
-      "Once upon a time, there was a little bear named Benny. Benny was often worried about trying new things.",
-      "One day, his friends invited him to cross the wobbly log bridge over the river.",
-      "Benny's tummy felt fluttery. He took a deep breath, just like his mom taught him.",
-      "He took one step, then another. His friends cheered! Benny learned that being brave means trying even when you're scared."
-    ]
+      'Benny the Bear was worried about crossing the wobbly log bridge with his friends.',
+      "His tummy felt fluttery. He took a big, slow breath — in through his nose, out through his mouth.",
+      'He took one step. Then another. His friends cheered every single step!',
+      'Benny made it! Being brave just means trying, even when you feel a little scared. 🐾',
+    ],
   },
-  { 
-    title: "The Angry Volcano", 
-    icon: "🌋", 
-    tag: "anger", 
+  {
+    title: 'The Angry Volcano',
+    emoji: '🌋',
+    tag: 'calming down',
     moodMatch: ['angry'],
+    color: '#d4762a',
+    bg: '#fff0e6',
     pages: [
-      "Victor the Volcano was rumbling. His lava was getting hot, and he felt like exploding!",
-      "When someone took his favorite rock without asking, he wanted to yell.",
-      "Instead, Victor remembered his cooling trick. He counted to 10 and let out a big breezy sigh.",
-      "The rumble stopped, and his lava cooled down. Victor smiled, happy he kept his calm."
-    ]
+      "Victor the Volcano felt the hot lava bubbling up. Someone took his favourite rock — without asking!",
+      'He wanted to ROAR and explode. But he remembered his cooling trick.',
+      'Victor counted slowly to ten: 1… 2… 3… and breathed out a big, breezy sigh.',
+      'The lava cooled right down. Victor felt calm and proud. He kept his cool! 🌬️',
+    ],
   },
-  { 
-    title: "The Happy Cloud", 
-    icon: "☁️", 
-    tag: "joy", 
+  {
+    title: 'The Happy Cloud',
+    emoji: '☁️',
+    tag: 'sharing joy',
     moodMatch: ['happy', 'calm', 'silly'],
+    color: '#659ec3',
+    bg: '#edf5fb',
     pages: [
-      "Chloe the Cloud loved floating in the bright blue sky. She felt light and silly.",
-      "She saw a sad little flower drooping in the sun.",
-      "Chloe decided to share her happiness. She sprinkled a tiny, gentle rain shower over the flower.",
-      "The flower perked up, and Chloe beamed with joy. Sharing happiness makes it grow!"
-    ]
+      'Chloe the Cloud floated through a bright blue sky, feeling light and happy.',
+      'Far below, she spotted a sad little flower drooping in the hot sun.',
+      'Chloe floated over and sprinkled a gentle, cool rain shower — just a little one.',
+      'The flower perked right up! Chloe learned that sharing happiness makes it grow even bigger. ☀️',
+    ],
   },
-  { 
-    title: "Turtle Takes a Break", 
-    icon: "🐢", 
-    tag: "calm", 
-    moodMatch: ['calm', 'worried'],
+  {
+    title: 'Turtle Takes a Break',
+    emoji: '🐢',
+    tag: 'feeling overwhelmed',
+    moodMatch: ['worried', 'calm'],
+    color: '#3a9e7e',
+    bg: '#ecfaf5',
     pages: [
-      "Timmy the Turtle was in a very noisy forest. The birds were loud, and the squirrels were running fast.",
-      "Timmy felt overwhelmed. Everything was too much!",
-      "He pulled his head into his shell. Inside, it was quiet, dark, and safe.",
-      "He took three slow breaths. When he popped his head back out, everything seemed manageable again."
-    ]
+      'The forest was SO noisy. Birds, squirrels, wind — Timmy the Turtle felt totally overwhelmed.',
+      "Everything was too much! So Timmy did something smart — he pulled into his shell.",
+      'Inside, it was quiet and cosy. He took three slow breaths. In… out. In… out. In… out.',
+      "When Timmy popped back out, the world felt okay again. Taking a break is always allowed. 🌿",
+    ],
   },
-  { 
-    title: "Super Snail", 
-    icon: "🐌", 
-    tag: "patience", 
+  {
+    title: 'Super Snail',
+    emoji: '🐌',
+    tag: 'being patient',
     moodMatch: ['silly', 'angry'],
+    color: '#7c5cbf',
+    bg: '#f3eeff',
     pages: [
-      "Sammy Snail wanted to reach the juicy strawberry at the top of the hill, but everyone was passing him by.",
-      "The rabbit zoomed past, and the mouse scurried by. Sammy felt frustrated.",
-      "But Sammy kept gliding, slow and steady. He enjoyed the beautiful sparkly trail he left behind.",
-      "Finally, he reached the berry! Taking his time meant he got there exactly when he needed to."
-    ]
+      'Sammy the Snail wanted to reach the juicy red strawberry, but everyone was zooming past him!',
+      'The rabbit leaped by. The mouse scurried. Sammy felt frustrated.',
+      'But Sammy kept gliding — slow and steady — and noticed the sparkly silver trail he was leaving behind.',
+      'He reached the strawberry! Slow and steady wins every time, and the journey is beautiful. 🍓',
+    ],
   },
 ];
 
-const LearnZone: React.FC<LearnZoneProps> = ({ kidsData, onUpdateData }) => {
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [hasAwardedSticker, setHasAwardedSticker] = useState(false);
+// ─── MOOD LABEL MAP ───────────────────────────────────────────────────────────
 
-  const handleOpenStory = (story: Story) => {
-    setSelectedStory(story);
-    setCurrentPage(0);
-    setHasAwardedSticker(false);
-  };
+const MOOD_LABELS: Record<string, string> = {
+  happy: 'happy 😊',
+  calm: 'calm 😌',
+  sad: 'sad 😢',
+  angry: 'angry 😡',
+  silly: 'silly 🤪',
+  worried: 'worried 😟',
+};
 
-  const handleCloseStory = () => {
-    setSelectedStory(null);
-  };
+// ─── SPRING ──────────────────────────────────────────────────────────────────
 
-  const handleNextPage = () => {
-    if (selectedStory && currentPage < selectedStory.pages.length) {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
-      
-      if (nextPage === selectedStory.pages.length && !hasAwardedSticker && onUpdateData) {
-        onUpdateData({ stickers: [...kidsData.stickers, selectedStory.icon], hasReadBook: true });
-        setHasAwardedSticker(true);
+const spring = { type: 'spring' as const, stiffness: 340, damping: 26 };
+
+// ─── STORY CARD ───────────────────────────────────────────────────────────────
+
+const StoryCard: React.FC<{
+  story: Story;
+  onClick: () => void;
+  index: number;
+  isRecommended?: boolean;
+}> = ({ story, onClick, index, isRecommended }) => (
+  <motion.button
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ ...spring, delay: index * 0.06 }}
+    whileHover={{ y: -5, scale: 1.02 }}
+    whileTap={{ scale: 0.96 }}
+    onClick={onClick}
+    className="text-left flex flex-col items-center rounded-[2rem] p-7 relative overflow-hidden w-full"
+    style={{
+      background: story.bg,
+      border: `3px solid ${story.color}22`,
+      boxShadow: `0 8px 28px ${story.color}14`,
+    }}
+    aria-label={`Read "${story.title}" — about ${story.tag}`}
+  >
+    {isRecommended && (
+      <div
+        className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-black text-white"
+        style={{ background: story.color }}
+      >
+        For you ✨
+      </div>
+    )}
+
+    {/* Decorative circle */}
+    <div
+      className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full opacity-15"
+      style={{ background: story.color }}
+      aria-hidden="true"
+    />
+
+    <div className="text-6xl mb-4 select-none" aria-hidden="true">{story.emoji}</div>
+    <h3
+      className="font-black text-xl text-center mb-1 leading-tight"
+      style={{ fontFamily: "'Nunito', sans-serif", color: story.color }}
+    >
+      {story.title}
+    </h3>
+    <p className="text-sm font-bold text-center mb-5" style={{ color: `${story.color}80` }}>
+      A story about {story.tag}
+    </p>
+
+    <div
+      className="w-full py-3.5 rounded-2xl font-black text-base text-white text-center"
+      style={{ background: story.color, boxShadow: `0 6px 18px ${story.color}35` }}
+    >
+      Read this story
+    </div>
+  </motion.button>
+);
+
+// ─── STORY READER ─────────────────────────────────────────────────────────────
+
+const StoryReader: React.FC<{
+  story: Story;
+  onClose: () => void;
+  onFinish: () => void;
+}> = ({ story, onClose, onFinish }) => {
+  const [page, setPage] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [stickerShown, setStickerShown] = useState(false);
+
+  const total = story.pages.length;
+  const isLast = page === total - 1;
+
+  const handleNext = () => {
+    if (isLast) {
+      setFinished(true);
+      if (!stickerShown) {
+        onFinish();
+        setStickerShown(true);
       }
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(prev => prev - 1);
+    } else {
+      setPage(p => p + 1);
     }
   };
 
   return (
-    <div className="space-y-6 animate-fade-in relative">
-      {/* 1. Adaptive Recommendation */}
-      {kidsData.lastMood && (
-          <div className="bg-gradient-to-r from-teal/10 to-blue-100 p-6 rounded-3xl border border-teal/20 mb-4">
-              <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl">💡</span>
-                  <h4 className="font-black text-teal text-lg">Because you're feeling {kidsData.lastMood}...</h4>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {STORIES.filter(s => s.moodMatch.includes(kidsData.lastMood!)).length > 0 ? (
-                   STORIES.filter(s => s.moodMatch.includes(kidsData.lastMood!)).map(s => (
-                      <motion.button 
-                        key={s.title} 
-                        onClick={() => handleOpenStory(s)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        animate={{ y: [0, -5, 0] }}
-                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                        className="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-4 hover:shadow-md transition-all text-left border-2 border-transparent hover:border-teal/30"
-                      >
-                          <span className="text-4xl">{s.icon}</span>
-                          <div>
-                              <span className="font-bold text-dark-text block">{s.title}</span>
-                              <span className="text-xs text-teal uppercase font-bold tracking-wider">Recommended</span>
-                          </div>
-                      </motion.button>
-                  ))
-              ) : (
-                  <p className="text-gray-500 italic">We have lots of stories for you below!</p>
-              )}
-              </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(30,58,110,0.5)', backdropFilter: 'blur(10px)' }}
+    >
+      <motion.div
+        initial={{ scale: 0.85, y: 40, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={spring}
+        className="w-full max-w-2xl rounded-[2.5rem] overflow-hidden flex flex-col"
+        style={{
+          background: '#fff',
+          maxHeight: '90vh',
+          boxShadow: '0 32px 80px rgba(30,58,110,0.22)',
+        }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-7 py-5"
+          style={{ background: story.bg, borderBottom: `3px solid ${story.color}18` }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-4xl select-none" aria-hidden="true">{story.emoji}</span>
+            <h2
+              className="font-black text-xl leading-tight"
+              style={{ fontFamily: "'Nunito', sans-serif", color: story.color }}
+            >
+              {story.title}
+            </h2>
           </div>
-      )}
+          <button
+            onClick={onClose}
+            className="w-11 h-11 rounded-full flex items-center justify-center font-black text-xl transition-all hover:scale-110"
+            style={{ background: `${story.color}18`, color: story.color }}
+            aria-label="Close story"
+          >
+            ✕
+          </button>
+        </div>
 
-      {/* 2. Full Library */}
-      <h3 className="font-black text-2xl text-dark-text mb-4">Explore Library 📚</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {STORIES.map((s, idx) => (
-               <motion.div 
-                 key={idx} 
-                 onClick={() => handleOpenStory(s)}
-                 whileHover={{ y: -8, scale: 1.02 }}
-                 className="bg-white p-6 rounded-3xl shadow-lg border-b-4 border-gray-100 flex flex-col items-center text-center transition-all cursor-pointer"
-               >
-                  <div className="text-6xl mb-4 drop-shadow-md">{s.icon}</div>
-                  <h3 className="font-black text-xl mb-2 text-gray-800">{s.title}</h3>
-                  <p className="text-gray-500 text-sm font-medium mb-4 flex-grow">A fun story about feeling {s.tag}!</p>
-                  <motion.button 
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="mt-auto bg-teal text-white w-full py-3 rounded-2xl font-bold hover:bg-teal/90 shadow-md transition-all active:shadow-sm"
-                  >
-                      Read Story
-                  </motion.button>
-               </motion.div>
-          ))}
+        {/* Story content */}
+        <div
+          className="flex-1 flex items-center justify-center px-8 py-10 overflow-y-auto"
+          style={{ background: `radial-gradient(ellipse at center, ${story.bg} 0%, #fff 100%)` }}
+        >
+          <AnimatePresence mode="wait">
+            {!finished ? (
+              <motion.p
+                key={page}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ ...spring, stiffness: 300 }}
+                className="font-bold text-center leading-relaxed"
+                style={{
+                  fontFamily: "'Nunito', sans-serif",
+                  fontSize: 'clamp(20px, 4vw, 28px)',
+                  color: '#1e3a6e',
+                  lineHeight: 1.65,
+                }}
+              >
+                {story.pages[page]}
+              </motion.p>
+            ) : (
+              <motion.div
+                key="done"
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ ...spring, bounce: 0.5 }}
+                className="flex flex-col items-center text-center"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.15, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                  className="text-8xl mb-5 select-none"
+                  aria-hidden="true"
+                >
+                  {story.emoji}
+                </motion.div>
+                <h3
+                  className="font-black text-4xl mb-2"
+                  style={{ fontFamily: "'Nunito', sans-serif", color: story.color }}
+                >
+                  The End!
+                </h3>
+                <p className="font-bold text-lg mb-6" style={{ color: '#1e3a6e80' }}>
+                  You finished the whole story!
+                </p>
+                <div
+                  className="flex items-center gap-3 px-6 py-3 rounded-2xl"
+                  style={{ background: story.bg, border: `2px solid ${story.color}25` }}
+                >
+                  <span className="text-3xl" aria-hidden="true">{story.emoji}</span>
+                  <span className="font-black text-base" style={{ color: story.color }}>
+                    Sticker added to your book!
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Footer controls */}
+        <div
+          className="flex items-center justify-between px-7 py-5"
+          style={{ borderTop: `2px solid ${story.color}15`, background: '#fff' }}
+        >
+          {/* Back page */}
+          <div className="w-28">
+            {page > 0 && !finished && (
+              <motion.button
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setPage(p => p - 1)}
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-base"
+                style={{ background: `${story.color}12`, color: story.color, border: `2px solid ${story.color}20` }}
+              >
+                ← Back
+              </motion.button>
+            )}
+          </div>
+
+          {/* Page dots */}
+          {!finished && (
+            <div className="flex items-center gap-2">
+              {story.pages.map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-full transition-all"
+                  style={{
+                    width: i === page ? '28px' : '10px',
+                    height: '10px',
+                    background: i === page ? story.color : `${story.color}30`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Next / Done */}
+          <div className="w-28 flex justify-end">
+            {!finished ? (
+              <motion.button
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.94 }}
+                onClick={handleNext}
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-base text-white"
+                style={{ background: story.color, boxShadow: `0 6px 18px ${story.color}35` }}
+              >
+                {isLast ? 'Finish' : 'Next →'}
+              </motion.button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.94 }}
+                onClick={onClose}
+                className="px-5 py-3 rounded-2xl font-black text-base text-white"
+                style={{ background: story.color, boxShadow: `0 6px 18px ${story.color}35` }}
+              >
+                Done! 🎉
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
+const LearnZone: React.FC<LearnZoneProps> = ({ kidsData, onUpdateData }) => {
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [awardedStories, setAwardedStories] = useState<Set<string>>(new Set());
+
+  const handleFinish = (story: Story) => {
+    if (awardedStories.has(story.title)) return;
+    setAwardedStories(prev => new Set([...prev, story.title]));
+    onUpdateData?.({
+      stickers: [...(kidsData.stickers ?? []), story.emoji],
+      hasReadBook: true,
+    });
+  };
+
+  const recommended = kidsData.lastMood
+    ? STORIES.filter(s => s.moodMatch.includes(kidsData.lastMood!))
+    : [];
+
+  const moodLabel = kidsData.lastMood ? MOOD_LABELS[kidsData.lastMood] ?? kidsData.lastMood : '';
+
+  return (
+    <div className="pt-3 space-y-10">
+      {/* Zone heading */}
+      <div>
+        <h2
+          className="font-black text-3xl md:text-4xl mb-1"
+          style={{ fontFamily: "'Nunito', sans-serif", color: '#1e3a6e' }}
+        >
+          Story Time 📖
+        </h2>
+        <p className="font-bold text-base" style={{ color: '#1e3a6e60' }}>
+          Pick a story and earn a sticker!
+        </p>
       </div>
 
-      {/* 3. Story Reader Modal */}
+      {/* Mood-matched recommendations */}
+      {recommended.length > 0 && (
+        <section>
+          <div
+            className="flex items-center gap-3 px-5 py-4 rounded-2xl mb-5"
+            style={{ background: '#fff9f0', border: '2.5px solid #e9924b22' }}
+          >
+            <span className="text-2xl" aria-hidden="true">💡</span>
+            <p className="font-black text-lg" style={{ color: '#e9924b' }}>
+              Because you're feeling {moodLabel}…
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {recommended.map((s, i) => (
+              <StoryCard
+                key={s.title}
+                story={s}
+                onClick={() => setSelectedStory(s)}
+                index={i}
+                isRecommended
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Full library */}
+      <section>
+        <h3
+          className="font-black text-xl mb-5"
+          style={{ fontFamily: "'Nunito', sans-serif", color: '#1e3a6e' }}
+        >
+          All Stories
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {STORIES.map((s, i) => (
+            <StoryCard
+              key={s.title}
+              story={s}
+              onClick={() => setSelectedStory(s)}
+              index={i}
+              isRecommended={false}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Story reader modal */}
       <AnimatePresence>
         {selectedStory && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal/80 backdrop-blur-md"
-          >
-            <motion.div 
-              initial={{ scale: 0.8, y: 50, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="bg-white rounded-3xl w-full max-w-3xl h-[85vh] sm:h-[75vh] overflow-hidden shadow-2xl flex flex-col border-4 border-white/50"
-            >
-              {/* Header */}
-              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-100 bg-teal/5">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl sm:text-4xl drop-shadow-sm">{selectedStory.icon}</span>
-                  <h2 className="font-black text-xl sm:text-2xl text-gray-800">{selectedStory.title}</h2>
-                </div>
-                <button 
-                  onClick={handleCloseStory}
-                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
-                >
-                  <X size={24} strokeWidth={3} />
-                </button>
-              </div>
-
-              {/* Story Content */}
-              <div className="flex-1 p-8 sm:p-12 overflow-y-auto bg-yellow-50 flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-50 to-white">
-                <AnimatePresence mode="wait">
-                  {currentPage < selectedStory.pages.length ? (
-                    <motion.p 
-                      key={currentPage}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="text-2xl sm:text-4xl font-bold text-gray-700 leading-relaxed text-center"
-                    >
-                      {selectedStory.pages[currentPage]}
-                    </motion.p>
-                  ) : (
-                    <motion.div 
-                      key="finished"
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ type: "spring", bounce: 0.5 }}
-                      className="flex flex-col items-center text-center"
-                    >
-                      <PartyPopper size={100} className="text-yellow-400 mb-6 animate-bounce" />
-                      <h3 className="text-5xl font-black text-teal mb-4">Great Job!</h3>
-                      <p className="text-2xl font-bold text-gray-600 mb-6">You finished the story!</p>
-                      
-                      {hasAwardedSticker && (
-                        <motion.div 
-                          initial={{ y: 20, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.5 }}
-                          className="bg-pastel-green/20 px-6 py-4 rounded-3xl flex items-center gap-4 border-2 border-pastel-green/50 shadow-sm"
-                        >
-                          <span className="text-4xl drop-shadow-sm">{selectedStory.icon}</span>
-                          <span className="font-bold text-teal text-lg">Sticker Awarded! Check your Hub.</span>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Footer Controls */}
-              <div className="p-4 sm:p-6 bg-white border-t border-gray-100 flex justify-between items-center">
-                <div className="flex-1">
-                  {currentPage > 0 && currentPage < selectedStory.pages.length && (
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handlePrevPage}
-                      className="flex items-center gap-2 font-bold text-gray-500 hover:text-teal transition-colors px-4 py-3 rounded-xl hover:bg-gray-50 bg-white border-2 border-gray-100"
-                    >
-                      <ChevronLeft size={24} /> Back
-                    </motion.button>
-                  )}
-                </div>
-
-                {currentPage < selectedStory.pages.length ? (
-                  <div className="flex gap-2 mx-4">
-                    {selectedStory.pages.map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`h-3 rounded-full transition-all ${
-                          i === currentPage ? 'bg-teal w-8' : 'bg-gray-200 w-3'
-                        }`} 
-                      />
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="flex-1 flex justify-end">
-                  {currentPage < selectedStory.pages.length ? (
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleNextPage}
-                      className="flex items-center gap-2 font-black text-white bg-teal px-6 sm:px-8 py-3 sm:py-4 rounded-2xl hover:bg-teal/90 shadow-md transition-all active:shadow-sm text-lg"
-                    >
-                      Next <ChevronRight size={24} />
-                    </motion.button>
-                  ) : (
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleCloseStory}
-                      className="font-black text-white bg-blue-500 px-8 py-4 rounded-2xl shadow-md transition-all active:shadow-sm text-lg hover:bg-blue-600"
-                    >
-                      Done reading
-                    </motion.button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <StoryReader
+            story={selectedStory}
+            onClose={() => setSelectedStory(null)}
+            onFinish={() => handleFinish(selectedStory)}
+          />
         )}
       </AnimatePresence>
     </div>

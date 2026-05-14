@@ -1,17 +1,16 @@
 /**
  * ============================================
- * CREATE STORY MODAL
+ * CREATE STORY MODAL — PARENTCIRCLE
  * ============================================
- * @version     2.0.0
- * @author      ArogoClin
- * @updated     2025-12-05
- * @description Clean, professional story creation form
+ * @version     3.0.0
+ * @updated     2025-04-23
+ * @description Headless UI Dialog version with brand styling
  * ============================================
  */
 
 import React, { useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import type { Category } from '../../../types/parentcircle.types';
@@ -24,329 +23,273 @@ interface CreateStoryModalProps {
   onSuccess: () => void;
 }
 
+// ─── SHARED FIELD STYLES ─────────────────────────────────────────────────────
+
+const fieldClass = (hasError?: boolean) =>
+  `w-full px-4 py-3 bg-[#fbfbfb] border rounded-xl text-[#1e3a6e] placeholder-[#1e3a6e]/30 text-sm focus:outline-none focus:ring-2 transition-all ${
+    hasError
+      ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+      : 'border-[#1e3a6e]/12 focus:border-[#e9924b]/50 focus:ring-[#e9924b]/8'
+  }`;
+
+const labelClass = 'block text-xs font-semibold text-[#1e3a6e]/60 mb-2';
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
 const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
-  isOpen,
-  onClose,
-  categories,
-  onSuccess
+  isOpen, onClose, categories, onSuccess,
 }) => {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     categoryId: 0,
     tags: '',
-    isAnonymous: false,
-    authorName: ''
+    isAnonymous: true,
+    authorName: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Filter categories for stories
-  const storyCategories = categories.filter(
-    cat => cat.type === 'STORY' || cat.type === 'BOTH'
-  );
+  const storyCategories = categories.filter(c => c.type === 'STORY' || c.type === 'BOTH');
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+  const set = (key: string, value: any) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+    setErrors(prev => ({ ...prev, [key]: '' }));
+  };
 
-    if (!formData.content.trim() || formData.content.trim().length < 50) {
-      newErrors.content = 'Story must be at least 50 characters';
-    }
-
-    if (formData.isAnonymous && !formData. authorName. trim()) {
-      newErrors. authorName = 'Please provide a display name';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!formData.content.trim() || formData.content.trim().length < 50)
+      e.content = 'Please write at least 50 characters';
+    if (formData.isAnonymous && !formData.authorName.trim())
+      e.authorName = 'Please provide a display name';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
-      return;
-    }
-
+    if (!validate()) { toast.error('Please fix the errors above'); return; }
     try {
       setSubmitting(true);
-
-      const payload = {
+      await API.createStory({
         ...(formData.title.trim() && { title: formData.title.trim() }),
         content: formData.content.trim(),
         ...(formData.categoryId && { categoryId: formData.categoryId }),
-        tags: formData.tags
-          .split(',')
-          .map(tag => tag.trim())
-          .filter(Boolean),
+        tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
         isAnonymous: formData.isAnonymous,
-        ...(formData.isAnonymous && 
-          formData.authorName.trim() && 
-          { authorName: formData.authorName.trim() })
-      };
-
-      await API.createStory(payload);
-
-      toast.success('Story submitted successfully!  It will appear after moderation.');
-
-      // Reset form
-      setFormData({
-        title: '',
-        content: '',
-        categoryId: 0,
-        tags: '',
-        isAnonymous: false,
-        authorName: ''
+        ...(formData.isAnonymous && formData.authorName.trim() && { authorName: formData.authorName.trim() }),
       });
-      setErrors({});
-
+      toast.success('Your story has been submitted for review. Thank you for sharing.');
+      reset();
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit story');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit story');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    if (! submitting) {
-      setFormData({
-        title: '',
-        content: '',
-        categoryId: 0,
-        tags: '',
-        isAnonymous: false,
-        authorName: ''
-      });
-      setErrors({});
-      onClose();
-    }
+  const reset = () => {
+    setFormData({ title: '', content: '', categoryId: 0, tags: '', isAnonymous: true, authorName: '' });
+    setErrors({});
   };
+
+  const handleClose = () => { if (!submitting) { reset(); onClose(); } };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={handleClose}>
+
         {/* Backdrop */}
         <Transition.Child
           as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
+          enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100"
+          leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-[#1e3a6e]/40 backdrop-blur-sm" />
         </Transition.Child>
 
-        {/* Modal Container */}
+        {/* Container */}
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
               as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+              enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
+              leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
+              <Dialog.Panel className="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+
                 {/* Header */}
-                <div className="bg-white border-b border-gray-200 p-6">
+                <div className="px-6 py-5 border-b border-[#1e3a6e]/8">
                   <div className="flex items-center justify-between">
-                    <Dialog. Title className="text-2xl font-bold text-gray-900">
-                      Share Your Story
-                    </Dialog. Title>
+                    <div>
+                      <Dialog.Title className="font-heading font-extrabold text-[#1e3a6e] text-lg">
+                        Share your story
+                      </Dialog.Title>
+                      <p className="text-[#1e3a6e]/40 text-xs mt-0.5">Your experience might be exactly what another parent needs.</p>
+                    </div>
                     <button
                       onClick={handleClose}
                       disabled={submitting}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-1.5 text-[#1e3a6e]/40 hover:text-[#1e3a6e] hover:bg-[#1e3a6e]/5 rounded-xl transition-all disabled:opacity-30"
                     >
                       <XMarkIcon className="w-5 h-5" />
                     </button>
                   </div>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Inspire others with your journey and experiences
-                  </p>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
-                  {/* Category Selection (Optional) */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Category <span className="text-gray-500 font-normal">(Optional)</span>
-                    </label>
-                    <select
-                      value={formData. categoryId}
-                      onChange={(e) => setFormData({ ... formData, categoryId: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2. 5 rounded-lg border border-gray-300 focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all"
-                    >
-                      <option value={0}>General / Uncategorized</option>
-                      {storyCategories.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Form body */}
+                <form onSubmit={handleSubmit}>
+                  <div className="px-6 py-5 space-y-5 max-h-[calc(100vh-220px)] overflow-y-auto">
 
-                  {/* Title (Optional) */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Story Title <span className="text-gray-500 font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Brief summary of your story"
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all"
-                      maxLength={200}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formData.title.length}/200
-                    </p>
-                  </div>
-
-                  {/* Content */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Your Story <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      placeholder="Share your journey, what you learned, and how it might help others. Be authentic and speak from the heart..."
-                      className={`w-full px-4 py-3 rounded-lg border ${
-                        errors.content ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      } focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all min-h-[160px] resize-none`}
-                      required
-                    />
-                    {errors.content && (
-                      <p className="text-red-600 text-xs mt-1">{errors.content}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formData. content.length} characters (min. 50)
-                    </p>
-                  </div>
-
-                  {/* Tags */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Tags <span className="text-gray-500 font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.tags}
-                      onChange={(e) => setFormData({ ...formData, tags: e. target.value })}
-                      placeholder="hope, recovery, resilience"
-                      className="w-full px-4 py-2. 5 rounded-lg border border-gray-300 focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Separate with commas
-                    </p>
-                  </div>
-
-                  {/* Anonymous Option */}
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData. isAnonymous}
-                        onChange={(e) => setFormData({ ...formData, isAnonymous: e.target.checked })}
-                        className="mt-1 w-4 h-4 rounded text-teal focus:ring-2 focus:ring-teal/20"
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm font-semibold text-gray-900">
-                          Post anonymously
-                        </span>
-                        <p className="text-xs text-gray-600 mt-0.5">
-                          Share your story without revealing your identity
-                        </p>
-                      </div>
-                    </label>
-
-                    {formData.isAnonymous && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-3 pl-7"
+                    {/* Category */}
+                    <div>
+                      <label className={labelClass}>
+                        Category <span className="text-[#1e3a6e]/30 font-normal">(optional)</span>
+                      </label>
+                      <select
+                        value={formData.categoryId}
+                        onChange={e => set('categoryId', parseInt(e.target.value))}
+                        className={fieldClass()}
                       >
-                        <input
-                          type="text"
-                          value={formData. authorName}
-                          onChange={(e) => setFormData({ ... formData, authorName: e. target.value })}
-                          placeholder="Display name (e.g., Hopeful Parent)"
-                          className={`w-full px-3 py-2 rounded-lg border ${
-                            errors.authorName ?  'border-red-300 bg-red-50' : 'border-gray-300'
-                          } focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-all text-sm`}
-                          maxLength={50}
-                        />
-                        {errors. authorName && (
-                          <p className="text-red-600 text-xs mt-1">{errors.authorName}</p>
-                        )}
-                      </motion.div>
-                    )}
+                        <option value={0}>General / uncategorized</option>
+                        {storyCategories.map(c => (
+                          <option key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                      <label className={labelClass}>
+                        Title <span className="text-[#1e3a6e]/30 font-normal">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.title}
+                        onChange={e => set('title', e.target.value)}
+                        placeholder="Give your story a title..."
+                        className={fieldClass()}
+                        maxLength={200}
+                      />
+                      <p className="text-[#1e3a6e]/25 text-xs mt-1 text-right">{formData.title.length}/200</p>
+                    </div>
+
+                    {/* Content */}
+                    <div>
+                      <label className={labelClass}>
+                        Your story <span className="text-[#e9924b]">*</span>
+                      </label>
+                      <textarea
+                        value={formData.content}
+                        onChange={e => set('content', e.target.value)}
+                        placeholder="Write as much or as little as feels right. Share your journey, what you learned, and how it might help others..."
+                        className={`${fieldClass(!!errors.content)} min-h-[170px] resize-none leading-[1.85]`}
+                        required
+                      />
+                      {errors.content && <p className="text-red-500 text-xs mt-1.5">{errors.content}</p>}
+                      <p className="text-[#1e3a6e]/25 text-xs mt-1 text-right">{formData.content.length} characters (min. 50)</p>
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <label className={labelClass}>
+                        Tags <span className="text-[#1e3a6e]/30 font-normal">(comma separated)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.tags}
+                        onChange={e => set('tags', e.target.value)}
+                        placeholder="hope, recovery, resilience"
+                        className={fieldClass()}
+                      />
+                    </div>
+
+                    {/* Anonymity */}
+                    <div className="rounded-xl border border-[#1e3a6e]/8 bg-[#fbfbfb] p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-[#1e3a6e] text-sm">Post anonymously</p>
+                          <p className="text-[#1e3a6e]/40 text-xs mt-0.5">Share your story without revealing your identity</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => set('isAnonymous', !formData.isAnonymous)}
+                          className="relative rounded-full transition-colors flex-shrink-0"
+                          style={{ height: '22px', width: '40px', backgroundColor: formData.isAnonymous ? '#e9924b' : 'rgba(30,58,110,0.15)' }}
+                        >
+                          <span
+                            className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform"
+                            style={{ transform: formData.isAnonymous ? 'translateX(18px)' : 'translateX(0)' }}
+                          />
+                        </button>
+                      </div>
+
+                      {formData.isAnonymous && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                          className="mt-3"
+                        >
+                          <input
+                            type="text"
+                            value={formData.authorName}
+                            onChange={e => set('authorName', e.target.value)}
+                            placeholder="Display name (e.g., Hopeful Parent)"
+                            className={fieldClass(!!errors.authorName)}
+                            maxLength={50}
+                          />
+                          {errors.authorName && <p className="text-red-500 text-xs mt-1.5">{errors.authorName}</p>}
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Guidelines */}
+                    <div className="rounded-xl border border-[#659ec3]/15 bg-[#659ec3]/5 p-4">
+                      <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#659ec3] mb-3">Story guidelines</p>
+                      <ul className="space-y-2">
+                        {[
+                          'Share authentic experiences and emotions',
+                          'Focus on what you learned and how it might help others',
+                          'Be respectful and supportive of the community',
+                          'All stories are reviewed before appearing',
+                        ].map((g, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-[#1e3a6e]/60 leading-relaxed">
+                            <span className="w-1 h-1 rounded-full bg-[#659ec3] flex-shrink-0 mt-1.5" />
+                            {g}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
 
-                  {/* Guidelines */}
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <h4 className="font-semibold text-sm text-gray-900 mb-2">
-                      Story Guidelines
-                    </h4>
-                    <ul className="text-xs text-gray-700 space-y-1. 5">
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400 mt-0.5">•</span>
-                        <span>Share authentic experiences and emotions</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400 mt-0.5">•</span>
-                        <span>Focus on hope, growth, and lessons learned</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400 mt-0.5">•</span>
-                        <span>Be respectful and supportive of others</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-gray-400 mt-0.5">•</span>
-                        <span>All stories are reviewed before posting</span>
-                      </li>
-                    </ul>
+                  {/* Footer */}
+                  <div className="px-6 py-4 border-t border-[#1e3a6e]/8 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      disabled={submitting}
+                      className="flex-1 px-4 py-2.5 border border-[#1e3a6e]/20 text-[#1e3a6e]/60 text-sm font-semibold rounded-xl hover:bg-[#1e3a6e]/5 transition-all disabled:opacity-40"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex-1 px-4 py-2.5 bg-[#e9924b] hover:bg-[#d4762a] text-white text-sm font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#e9924b]/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {submitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Sharing...
+                        </>
+                      ) : (
+                        'Share story'
+                      )}
+                    </button>
                   </div>
                 </form>
-
-                {/* Footer Actions */}
-                <div className="bg-gray-50 px-6 py-4 flex gap-3 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    disabled={submitting}
-                    className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-white transition-all disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-teal text-white font-semibold hover:bg-teal/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Sharing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <PlusIcon className="w-4 h-4" />
-                        <span>Share Story</span>
-                      </>
-                    )}
-                  </button>
-                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

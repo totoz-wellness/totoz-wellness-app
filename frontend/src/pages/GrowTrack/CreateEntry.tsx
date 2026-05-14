@@ -1,7 +1,9 @@
 /**
  * ============================================
- * GROWTRACK - CREATE ENTRY
+ * GROWTRACK — CREATE ENTRY
  * ============================================
+ * @version     3.0.0
+ * @updated     2025-04-23
  */
 
 import React, { useState, useEffect } from 'react';
@@ -22,13 +24,38 @@ interface Options {
   };
 }
 
+// ─── SHARED INPUT STYLES ──────────────────────────────────────────────────────
+
+const inputClass =
+  'w-full px-4 py-3 bg-white border border-[#1e3a6e]/15 rounded-xl text-[#1e3a6e] placeholder-[#1e3a6e]/30 text-sm focus:outline-none focus:border-[#e9924b]/50 focus:ring-2 focus:ring-[#e9924b]/10 transition-all';
+
+const selectClass =
+  'w-full px-4 py-3 bg-white border border-[#1e3a6e]/15 rounded-xl text-[#1e3a6e] text-sm focus:outline-none focus:border-[#e9924b]/50 focus:ring-2 focus:ring-[#e9924b]/10 transition-all';
+
+const labelClass = 'block text-sm font-semibold text-[#1e3a6e]/80 mb-2';
+
+// ─── SECTION WRAPPER ─────────────────────────────────────────────────────────
+
+const Section: React.FC<{ title: string; required?: boolean; children: React.ReactNode }> = ({
+  title, required, children,
+}) => (
+  <div>
+    <p className={labelClass}>
+      {title}
+      {required && <span className="text-[#e9924b] ml-0.5">*</span>}
+    </p>
+    {children}
+  </div>
+);
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
 const CreateEntry: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<Options | null>(null);
   const [children, setChildren] = useState<string[]>([]);
 
-  // Form state
   const [trackedPersonType, setTrackedPersonType] = useState<'SELF' | 'CHILD'>('SELF');
   const [trackedPersonName, setTrackedPersonName] = useState('');
   const [newChildName, setNewChildName] = useState('');
@@ -42,455 +69,366 @@ const CreateEntry: React.FC = () => {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    fetchOptions();
-    fetchChildren();
+    const init = async () => {
+      try {
+        const [optRes, childRes] = await Promise.all([
+          api.get('/growtrack/options'),
+          api.get('/growtrack/children'),
+        ]);
+        setOptions(optRes.data.data);
+        setChildren(childRes.data.data.children || []);
+      } catch {
+        toast.error('Failed to load options');
+      }
+    };
+    init();
   }, []);
 
-  const fetchOptions = async () => {
-    try {
-      const response = await api.get('/growtrack/options');
-      setOptions(response.data. data);
-    } catch (error) {
-      toast.error('Failed to load options');
-    }
-  };
-
-  const fetchChildren = async () => {
-    try {
-      const response = await api.get('/growtrack/children');
-      setChildren(response.data.data. children || []);
-    } catch (error) {
-      console.error('Failed to fetch children:', error);
-    }
-  };
-
-  const handleAddBehavior = (behavior: string) => {
-    if (behavior && !behaviors.includes(behavior) && behaviors.length < 10) {
-      setBehaviors([...behaviors, behavior]);
+  const addBehavior = (b: string) => {
+    if (b.trim() && !behaviors.includes(b) && behaviors.length < 10) {
+      setBehaviors([...behaviors, b.trim()]);
       setCustomBehavior('');
     }
   };
 
-  const handleRemoveBehavior = (behavior: string) => {
-    setBehaviors(behaviors.filter(b => b !== behavior));
-  };
-
-  const handleAddTrigger = (trigger: string) => {
-    if (trigger && !triggers.includes(trigger) && triggers. length < 10) {
-      setTriggers([...triggers, trigger]);
+  const addTrigger = (t: string) => {
+    if (t.trim() && !triggers.includes(t) && triggers.length < 10) {
+      setTriggers([...triggers, t.trim()]);
       setCustomTrigger('');
     }
   };
 
-  const handleRemoveTrigger = (trigger: string) => {
-    setTriggers(triggers.filter(t => t !== trigger));
-  };
-
-  const handleSubmit = async (e: React. FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validation
-    const selectedMood = mood === 'custom' ? customMood : mood;
-    
-    if (!selectedMood) {
-      toast.error('Please select a mood');
-      return;
-    }
-
-    if (behaviors.length === 0) {
-      toast.error('Please add at least one behavior');
-      return;
-    }
-
-    if (triggers.length === 0) {
-      toast.error('Please add at least one trigger');
-      return;
-    }
-
+    const selectedMood = mood === 'custom' ? customMood.trim() : mood;
+    if (!selectedMood) { toast.error('Please select a mood'); return; }
+    if (behaviors.length === 0) { toast.error('Please add at least one behavior'); return; }
+    if (triggers.length === 0) { toast.error('Please add at least one trigger'); return; }
     if (trackedPersonType === 'CHILD') {
-      const childName = trackedPersonName === 'new' ?  newChildName : trackedPersonName;
-      if (!childName) {
-        toast.error('Please enter child name');
-        return;
-      }
+      const name = trackedPersonName === 'new' ? newChildName : trackedPersonName;
+      if (!name) { toast.error('Please enter a child name'); return; }
     }
 
     setLoading(true);
-
     try {
-      const payload = {
+      await api.post('/growtrack/entries', {
         mood: selectedMood,
         moodIntensity,
         behaviors,
         triggers,
-        notes: notes. trim() || undefined,
+        notes: notes.trim() || undefined,
         trackedPersonType,
-        trackedPersonName: trackedPersonType === 'CHILD' 
+        trackedPersonName: trackedPersonType === 'CHILD'
           ? (trackedPersonName === 'new' ? newChildName : trackedPersonName)
-          : undefined
-      };
-
-      await api.post('/growtrack/entries', payload);
-
-      toast.success('Entry recorded successfully!  🎉');
+          : undefined,
+      });
+      toast.success('Entry recorded');
       navigate('/growtrack');
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Failed to create entry';
-      toast.error(errorMsg);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to create entry');
     } finally {
       setLoading(false);
     }
   };
 
-  if (! options) {
+  if (!options) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-teal border-t-transparent"></div>
+      <div className="min-h-screen bg-[#fbfbfb] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#e9924b]/30 border-t-[#e9924b] rounded-full animate-spin" />
       </div>
     );
   }
 
+  const intensityColor =
+    moodIntensity <= 3 ? '#e9924b' : moodIntensity <= 6 ? '#659ec3' : '#1e3a6e';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
+    <div className="min-h-screen bg-[#fbfbfb]">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
-        {/* Header */}
-        <button
-          onClick={() => navigate('/growtrack')}
-          className="flex items-center gap-2 text-gray-600 hover:text-teal transition mb-6"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to GrowTrack
-        </button>
-
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            New Entry
-          </h1>
-          <p className="text-gray-600 mb-8">
-            Track mood, behavior, and triggers to understand patterns over time
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Who is this for? */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Who is this entry for?
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setTrackedPersonType('SELF')}
-                  className={`p-4 rounded-xl border-2 transition ${
-                    trackedPersonType === 'SELF'
-                      ? 'border-teal bg-teal/10 text-teal font-semibold'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  Myself
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTrackedPersonType('CHILD')}
-                  className={`p-4 rounded-xl border-2 transition ${
-                    trackedPersonType === 'CHILD'
-                      ? 'border-teal bg-teal/10 text-teal font-semibold'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  My Child
-                </button>
-              </div>
+      <main className="pt-20">
+        {/* ── Header ───────────────────────────────── */}
+        <div className="bg-[#1e3a6e] py-12 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a6e] to-[#659ec3]/20 pointer-events-none" />
+          <div className="relative z-10 max-w-3xl mx-auto px-6 md:px-8">
+            <button
+              onClick={() => navigate('/growtrack')}
+              className="flex items-center gap-2 text-white/50 hover:text-white text-sm mb-6 transition-colors group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back to GrowTrack
+            </button>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-px w-8 bg-[#e9924b]" />
+              <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">New Entry</span>
             </div>
+            <h1 className="font-heading font-extrabold text-white text-2xl md:text-3xl">
+              Record a mood entry
+            </h1>
+            <p className="text-white/45 text-sm mt-2">
+              Track mood, behaviors, and triggers to build a clearer picture over time.
+            </p>
+          </div>
+        </div>
 
-            {/* Child Selection */}
+        {/* ── Form ─────────────────────────────────── */}
+        <div className="max-w-3xl mx-auto px-6 md:px-8 py-10">
+          <form onSubmit={handleSubmit} className="space-y-8">
+
+            {/* Who is this for? */}
+            <Section title="Who is this entry for?" required>
+              <div className="grid grid-cols-2 gap-3">
+                {(['SELF', 'CHILD'] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setTrackedPersonType(type)}
+                    className={`p-4 rounded-xl border text-sm font-semibold transition-all ${
+                      trackedPersonType === type
+                        ? 'border-[#e9924b] bg-[#e9924b]/8 text-[#e9924b]'
+                        : 'border-[#1e3a6e]/15 text-[#1e3a6e]/60 hover:border-[#1e3a6e]/30'
+                    }`}
+                  >
+                    {type === 'SELF' ? 'Myself' : 'My Child'}
+                  </button>
+                ))}
+              </div>
+            </Section>
+
+            {/* Child selection */}
             {trackedPersonType === 'CHILD' && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Select Child
-                </label>
+              <Section title="Select child" required>
                 <select
                   value={trackedPersonName}
                   onChange={(e) => setTrackedPersonName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none"
+                  className={selectClass}
                   required
                 >
-                  <option value="">-- Select a child --</option>
-                  {children.map((child) => (
-                    <option key={child} value={child}>{child}</option>
-                  ))}
-                  <option value="new">+ Add New Child</option>
+                  <option value="">Select a child</option>
+                  {children.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="new">Add new child...</option>
                 </select>
-
                 {trackedPersonName === 'new' && (
                   <input
                     type="text"
                     value={newChildName}
                     onChange={(e) => setNewChildName(e.target.value)}
-                    placeholder="Enter child's name"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none mt-3"
+                    placeholder="Child's name"
+                    className={`${inputClass} mt-3`}
                     required
                   />
                 )}
-              </div>
+              </Section>
             )}
 
-            {/* Mood Selection */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Mood *
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {options.moodTypes.map((moodType) => (
+            {/* Mood */}
+            <Section title="Mood" required>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {options.moodTypes.map((m) => (
                   <button
-                    key={moodType}
+                    key={m}
                     type="button"
-                    onClick={() => setMood(moodType)}
-                    className={`p-3 rounded-xl border-2 transition text-sm ${
-                      mood === moodType
-                        ? 'border-teal bg-teal/10 text-teal font-semibold'
-                        : 'border-gray-200 hover:border-gray-300'
+                    onClick={() => setMood(m)}
+                    className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      mood === m
+                        ? 'border-[#e9924b] bg-[#e9924b]/8 text-[#e9924b]'
+                        : 'border-[#1e3a6e]/12 text-[#1e3a6e]/60 hover:border-[#1e3a6e]/25 hover:text-[#1e3a6e]'
                     }`}
                   >
-                    {moodType}
+                    {m}
                   </button>
                 ))}
                 <button
                   type="button"
                   onClick={() => setMood('custom')}
-                  className={`p-3 rounded-xl border-2 transition text-sm ${
+                  className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                     mood === 'custom'
-                      ? 'border-teal bg-teal/10 text-teal font-semibold'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-[#e9924b] bg-[#e9924b]/8 text-[#e9924b]'
+                      : 'border-dashed border-[#1e3a6e]/20 text-[#1e3a6e]/40 hover:border-[#e9924b]/30'
                   }`}
                 >
-                  + Custom
+                  Custom...
                 </button>
               </div>
-
               {mood === 'custom' && (
                 <input
                   type="text"
                   value={customMood}
                   onChange={(e) => setCustomMood(e.target.value)}
-                  placeholder="Enter custom mood"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none mt-3"
+                  placeholder="Describe the mood"
+                  className={`${inputClass} mt-3`}
                   required
                 />
               )}
-            </div>
+            </Section>
 
-            {/* Mood Intensity */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Mood Intensity: {moodIntensity}/10
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={moodIntensity}
-                onChange={(e) => setMoodIntensity(parseInt(e.target. value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>Low</span>
-                <span>High</span>
+            {/* Intensity */}
+            <Section title={`Mood intensity — ${moodIntensity} / 10`} required>
+              <div className="bg-white border border-[#1e3a6e]/12 rounded-xl px-5 py-5">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={moodIntensity}
+                  onChange={(e) => setMoodIntensity(parseInt(e.target.value))}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                  style={{ accentColor: intensityColor }}
+                />
+                <div className="flex justify-between text-xs text-[#1e3a6e]/30 mt-3">
+                  <span>Low</span>
+                  <span>High</span>
+                </div>
               </div>
-            </div>
+            </Section>
 
             {/* Behaviors */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Behaviors Observed *
-              </label>
-              
-              {/* Selected behaviors */}
+            <Section title="Behaviors observed" required>
               {behaviors.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {behaviors.map((behavior) => (
+                  {behaviors.map((b) => (
                     <span
-                      key={behavior}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-teal/10 text-teal rounded-full text-sm font-medium"
+                      key={b}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#659ec3]/10 text-[#659ec3] rounded-full text-xs font-medium"
                     >
-                      {behavior}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBehavior(behavior)}
-                        className="hover:text-red-500"
-                      >
-                        <X className="w-4 h-4" />
+                      {b}
+                      <button type="button" onClick={() => setBehaviors(behaviors.filter(x => x !== b))} className="hover:text-red-400 transition-colors">
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </span>
                   ))}
                 </div>
               )}
-
-              {/* Behavior suggestions */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                 {options.behaviorExamples
-                  .filter(b => ! behaviors.includes(b))
+                  .filter(b => !behaviors.includes(b))
                   .slice(0, 6)
-                  .map((behavior) => (
+                  .map((b) => (
                     <button
-                      key={behavior}
+                      key={b}
                       type="button"
-                      onClick={() => handleAddBehavior(behavior)}
-                      className="p-2 rounded-lg border border-gray-200 hover:border-teal hover:bg-teal/5 transition text-sm"
+                      onClick={() => addBehavior(b)}
                       disabled={behaviors.length >= 10}
+                      className="px-3 py-2 text-left rounded-xl border border-dashed border-[#1e3a6e]/15 text-[#1e3a6e]/50 text-xs hover:border-[#659ec3]/40 hover:text-[#659ec3] transition-all disabled:opacity-30"
                     >
-                      + {behavior}
+                      + {b}
                     </button>
                   ))}
               </div>
-
-              {/* Custom behavior */}
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={customBehavior}
                   onChange={(e) => setCustomBehavior(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddBehavior(customBehavior);
-                    }
-                  }}
+                  onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addBehavior(customBehavior); } }}
                   placeholder="Add custom behavior..."
-                  className="flex-1 px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none"
+                  className={inputClass}
                   disabled={behaviors.length >= 10}
                 />
                 <button
                   type="button"
-                  onClick={() => handleAddBehavior(customBehavior)}
-                  className="px-4 py-2 bg-teal text-white rounded-xl hover:bg-teal/90 transition"
+                  onClick={() => addBehavior(customBehavior)}
                   disabled={behaviors.length >= 10}
+                  className="w-10 h-10 flex-shrink-0 bg-[#659ec3] text-white rounded-xl flex items-center justify-center hover:bg-[#4d87b2] transition-colors disabled:opacity-30 self-center"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {behaviors.length}/10 behaviors added
-              </p>
-            </div>
+              <p className="text-xs text-[#1e3a6e]/30 mt-1.5">{behaviors.length}/10 added</p>
+            </Section>
 
             {/* Triggers */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Triggers/Stressors *
-              </label>
-              
-              {/* Selected triggers */}
+            <Section title="Triggers / stressors" required>
               {triggers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {triggers.map((trigger) => (
+                  {triggers.map((t) => (
                     <span
-                      key={trigger}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
+                      key={t}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#e9924b]/10 text-[#e9924b] rounded-full text-xs font-medium"
                     >
-                      {trigger}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTrigger(trigger)}
-                        className="hover:text-red-500"
-                      >
-                        <X className="w-4 h-4" />
+                      {t}
+                      <button type="button" onClick={() => setTriggers(triggers.filter(x => x !== t))} className="hover:text-red-400 transition-colors">
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </span>
                   ))}
                 </div>
               )}
-
-              {/* Trigger suggestions */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                 {options.triggerExamples
                   .filter(t => !triggers.includes(t))
                   .slice(0, 6)
-                  . map((trigger) => (
+                  .map((t) => (
                     <button
-                      key={trigger}
+                      key={t}
                       type="button"
-                      onClick={() => handleAddTrigger(trigger)}
-                      className="p-2 rounded-lg border border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition text-sm"
+                      onClick={() => addTrigger(t)}
                       disabled={triggers.length >= 10}
+                      className="px-3 py-2 text-left rounded-xl border border-dashed border-[#1e3a6e]/15 text-[#1e3a6e]/50 text-xs hover:border-[#e9924b]/40 hover:text-[#e9924b] transition-all disabled:opacity-30"
                     >
-                      + {trigger}
+                      + {t}
                     </button>
                   ))}
               </div>
-
-              {/* Custom trigger */}
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={customTrigger}
                   onChange={(e) => setCustomTrigger(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTrigger(customTrigger);
-                    }
-                  }}
+                  onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTrigger(customTrigger); } }}
                   placeholder="Add custom trigger..."
-                  className="flex-1 px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none"
+                  className={inputClass}
                   disabled={triggers.length >= 10}
                 />
                 <button
                   type="button"
-                  onClick={() => handleAddTrigger(customTrigger)}
-                  className="px-4 py-2 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition"
-                  disabled={triggers. length >= 10}
+                  onClick={() => addTrigger(customTrigger)}
+                  disabled={triggers.length >= 10}
+                  className="w-10 h-10 flex-shrink-0 bg-[#e9924b] text-white rounded-xl flex items-center justify-center hover:bg-[#d4762a] transition-colors disabled:opacity-30 self-center"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {triggers.length}/10 triggers added
-              </p>
-            </div>
+              <p className="text-xs text-[#1e3a6e]/30 mt-1.5">{triggers.length}/10 added</p>
+            </Section>
 
             {/* Notes */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Additional Notes (Optional)
-              </label>
+            <Section title="Additional notes (optional)">
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any additional observations or context..."
+                placeholder="Any context or observations worth noting..."
                 rows={4}
                 maxLength={options.validation.maxNotesLength}
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal focus:outline-none resize-none"
+                className={`${inputClass} resize-none`}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {notes.length}/{options.validation.maxNotesLength} characters
+              <p className="text-xs text-[#1e3a6e]/30 mt-1.5 text-right">
+                {notes.length}/{options.validation.maxNotesLength}
               </p>
-            </div>
+            </Section>
 
-            {/* Submit Button */}
-            <div className="flex gap-4">
+            {/* Submit */}
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => navigate('/growtrack')}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold"
                 disabled={loading}
+                className="flex-1 px-6 py-3 border border-[#1e3a6e]/20 text-[#1e3a6e]/60 rounded-xl text-sm font-semibold hover:bg-[#1e3a6e]/5 transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-teal text-white rounded-xl hover:bg-teal/90 transition font-semibold flex items-center justify-center gap-2"
                 disabled={loading}
+                className="flex-1 px-6 py-3 bg-[#e9924b] hover:bg-[#d4762a] text-white rounded-xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-[#e9924b]/20 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="w-5 h-5" />
+                    <Save className="w-4 h-4" />
                     Save Entry
                   </>
                 )}

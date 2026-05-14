@@ -1,285 +1,497 @@
 /**
  * ============================================
- * FEATURES PAGE
+ * FEATURES PAGE — TOTOZ WELLNESS
  * ============================================
- * @version     5.0.0
- * @author      ArogoClin
- * @updated     2025-11-27
- * @description Showcase of all Totoz Wellness features with React Router
+ * @version     6.0.0
+ * @updated     2025-04-23
+ * @description Section-based product experience page
  * ============================================
  */
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
-import { ChatIcon } from '../components/icons/ChatIcon';
-import { HeartIcon } from '../components/icons/HeartIcon';
-import { ChartBarIcon } from '../components/icons/ChartBarIcon';
-import { UsersIcon } from '../components/icons/UsersIcon';
-import { BookOpenIcon } from '../components/icons/BookOpenIcon';
 
-const features = [
+// ─── INLINE SVG ICONS ────────────────────────────────────────────────────────
+// Using inline SVGs so we have full control over sizing & colour
+
+const IconTalkEasy = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <path d="M8 10h.01M12 10h.01M16 10h.01" />
+  </svg>
+);
+
+const IconGrowTrack = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
+
+const IconLearnWell = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </svg>
+);
+
+const IconConnectCare = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const IconParentCircle = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32" />
+  </svg>
+);
+
+const IconKidsCorner = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z" />
+    <path d="M6.5 17.5C7.5 15 9.5 13.5 12 13.5s4.5 1.5 5.5 4M3 21h18" />
+  </svg>
+);
+
+const IconArrow = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+
+const coreTools = [
   {
-    icon: <ChatIcon />,
-    title: 'TalkEasy',
-    description: 'Instant AI-powered chat support to navigate difficult conversations and build stronger connections with your child.',
-    status: 'Available Now',
-    color: 'bg-blue-50 border-blue-200',
-    isAvailable: true,
-    action: '/talkeasy'
+    icon: <IconTalkEasy />,
+    name: 'TalkEasy',
+    tagline: 'AI-powered caregiver support',
+    description: 'Navigate difficult emotional conversations with real-time, empathetic AI guidance. Available whenever you need it.',
+    action: '/talkeasy',
+    accent: '#e9924b',
+    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900&auto=format&fit=crop&q=70',
   },
   {
-    icon: <HeartIcon />,
-    title: 'ConnectCare',
-    description: 'Access to a curated network of professional counselors, therapists, and valuable mental health resources.',
-    status: 'Available Now',
-    color: 'bg-pink-50 border-pink-200',
-    isAvailable: true,
-    action: '/connectcare'
+    icon: <IconGrowTrack />,
+    name: 'GrowTrack',
+    tagline: 'Mood and behaviour tracking',
+    description: 'Log moods, observe patterns, and understand your child\'s emotional landscape with clarity over time.',
+    action: '/growtrack',
+    accent: '#659ec3',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&auto=format&fit=crop&q=70',
   },
   {
-    icon: <BookOpenIcon />,
-    title: 'LearnWell',
-    description: 'A rich library of expert-led articles, guides, and practical parenting tips for mental wellness.',
-    status: 'Available Now',
-    color: 'bg-teal-50 border-teal-200',
-    isAvailable: true,
-    action: '/learnwell'
+    icon: <IconLearnWell />,
+    name: 'LearnWell',
+    tagline: 'Curated resource library',
+    description: 'Articles, guides, and expert-backed insights organized for caregivers and educators — practical, not overwhelming.',
+    action: '/learnwell',
+    accent: '#1e3a6e',
+    image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=900&auto=format&fit=crop&q=70',
   },
-  {
-    icon: <UsersIcon />,
-    title: 'ParentCircle',
-    description: 'Join a supportive peer community to share experiences, ask questions, and get advice from other parents.  🆕',
-    status: 'Available Now',
-    color: 'bg-green-50 border-green-200',
-    isAvailable: true,
-    action: '/parentcircle'
-  },
-  {
-    icon: <ChartBarIcon />,
-    title: 'GrowTrack',
-    description: 'Track moods, behaviors, and triggers for yourself and your children with AI-powered insights.  🆕',
-    status: 'Available Now', // ✅ UPDATED
-    color: 'bg-purple-50 border-purple-200',
-    isAvailable: true, // ✅ NOW AVAILABLE
-    action: '/growtrack' // ✅ WORKING ROUTE
-  },
-  {
-    icon: <div className="text-3xl">🧸</div>,
-    title: 'Kids Corner',
-    description: 'Engaging activities and resources designed for children to learn about emotions in a fun, interactive way.',
-    status: 'Available Now',
-    color: 'bg-yellow-50 border-yellow-200',
-    isAvailable: true,
-    action: '/kids-corner'
-  }
 ];
 
-const FeatureCard: React.FC<{ feature: typeof features[0] }> = ({ feature }) => {
-  const navigate = useNavigate();
+const supportingTools = [
+  {
+    icon: <IconConnectCare />,
+    name: 'ConnectCare',
+    tagline: 'Professional referrals',
+    description: 'When families need deeper support, ConnectCare connects them to verified mental health professionals.',
+    action: '/connectcare',
+    accent: '#e9924b',
+  },
+  {
+    icon: <IconParentCircle />,
+    name: 'ParentCircle',
+    tagline: 'Peer community',
+    description: 'A space for caregivers to share experiences, ask questions, and find support from people who understand.',
+    action: '/parentcircle',
+    accent: '#659ec3',
+  },
+  {
+    icon: <IconKidsCorner />,
+    name: 'Kids Corner',
+    tagline: 'For children',
+    description: 'Gentle, age-appropriate activities that help children understand and name their emotions through play.',
+    action: '/kids-corner',
+    accent: '#1e3a6e',
+  },
+];
 
-  const handleClick = () => {
-    if (feature.isAvailable && feature.action) {
-      navigate(feature.action);
-    }
-  };
+const systemValues = [
+  {
+    number: '01',
+    title: 'Guided conversations',
+    body: 'TalkEasy helps caregivers navigate real, difficult moments — not hypothetical ones.',
+  },
+  {
+    number: '02',
+    title: 'Visible patterns',
+    body: 'GrowTrack turns scattered observations into a clear picture of a child\'s emotional world.',
+  },
+  {
+    number: '03',
+    title: 'Contextual knowledge',
+    body: 'LearnWell surfaces the right information at the right moment, without the noise.',
+  },
+  {
+    number: '04',
+    title: 'Human connection',
+    body: 'ConnectCare and ParentCircle ensure no family has to figure this out alone.',
+  },
+];
 
+// ─── FADE-IN HOOK ─────────────────────────────────────────────────────────────
+
+function useFadeIn() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { threshold: 0.12 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, visible };
+}
+
+// ─── SECTION WRAPPER ─────────────────────────────────────────────────────────
+
+const Reveal: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => {
+  const { ref, visible } = useFadeIn();
   return (
     <div
-      className={`${feature.color} border-2 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group h-full flex flex-col ${feature.isAvailable ? 'cursor-pointer' : 'opacity-75'
-        }`}
-      onClick={handleClick}
+      ref={ref}
+      className={`transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${className}`}
     >
-      <div className="bg-white text-teal rounded-full w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-md">
-        {feature.icon}
-      </div>
-
-      <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <h3 className="text-2xl font-bold font-heading text-dark-text">{feature.title}</h3>
-        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${feature.isAvailable
-            ? 'bg-green-100 text-green-800'
-            : 'bg-gray-100 text-gray-600'
-          }`}>
-          {feature.status}
-        </span>
-      </div>
-
-      <p className="text-dark-text/70 flex-grow mb-4">{feature.description}</p>
-
-      {feature.isAvailable && (
-        <div className="mt-auto pt-4 border-t border-gray-200">
-          <span className="text-teal font-semibold text-sm group-hover:text-teal/80 transition-colors flex items-center gap-2">
-            Explore Now
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </span>
-        </div>
-      )}
-
-      {!feature.isAvailable && (
-        <div className="mt-auto pt-4 border-t border-gray-200">
-          <span className="text-gray-500 font-semibold text-sm flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Stay Tuned
-          </span>
-        </div>
-      )}
+      {children}
     </div>
   );
 };
 
-const Features: React.FC = () => {
-  const navigate = useNavigate();
+// ─── HERO ─────────────────────────────────────────────────────────────────────
 
-  // Count available features
-  const availableCount = features.filter(f => f.isAvailable).length;
-  const totalCount = features.length;
+const Hero: React.FC = () => {
+  const navigate = useNavigate();
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setLoaded(true), 80); return () => clearTimeout(t); }, []);
 
   return (
-    <div className="bg-light-bg overflow-x-hidden min-h-screen">
-      <Navbar />
+    <section className="relative pt-32 pb-24 overflow-hidden bg-[#fbfbfb]">
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-[#659ec3]/8 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-[#e9924b]/6 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-      <main className="pt-20">
-        {/* Hero Section */}
-        <section className="py-20 bg-gradient-to-br from-[#347EAD]/10 via-light-bg to-[#F09232]/10">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="inline-block mb-4">
-              <span className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold">
-                ✨ {availableCount} of {totalCount} Features Live Now
-              </span>
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+        <div
+          className="max-w-2xl transition-all duration-900"
+          style={{ opacity: loaded ? 1 : 0, transform: loaded ? 'none' : 'translateY(24px)' }}
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-px w-8 bg-[#e9924b]" />
+            <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">Digital Tools</span>
+          </div>
+
+          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#1e3a6e] leading-[1.06] mb-6">
+            One ecosystem.<br />
+            <span className="text-[#e9924b]">Every layer of support.</span>
+          </h1>
+
+          <p className="text-[#1e3a6e]/60 text-base md:text-lg leading-relaxed mb-10 max-w-lg">
+            Six interconnected tools built for the people raising and educating children — from AI conversations to community spaces to professional referrals.
+          </p>
+
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => navigate('/talkeasy')}
+              className="bg-[#e9924b] text-white font-semibold py-3 px-7 rounded-full text-sm hover:bg-[#d4762a] transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-[#e9924b]/25"
+            >
+              Try TalkEasy
+            </button>
+            <button
+              onClick={() => navigate('/learnwell')}
+              className="border border-[#1e3a6e]/20 text-[#1e3a6e] font-semibold py-3 px-7 rounded-full text-sm hover:bg-[#1e3a6e]/5 transition-all"
+            >
+              Browse LearnWell
+            </button>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div
+          className="mt-16 flex flex-wrap gap-8 transition-all duration-700 delay-300"
+          style={{ opacity: loaded ? 1 : 0 }}
+        >
+          {[
+            { value: '6', label: 'Integrated tools' },
+            { value: 'AI', label: 'Powered conversations' },
+            { value: '24/7', label: 'Always available' },
+          ].map((s) => (
+            <div key={s.label} className="flex items-center gap-3">
+              <span className="font-heading font-extrabold text-[#e9924b] text-2xl">{s.value}</span>
+              <span className="text-[#1e3a6e]/50 text-sm">{s.label}</span>
             </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
-            <h1 className="text-4xl md:text-5xl font-extrabold font-heading text-dark-text mb-6">
-              Comprehensive Features for Family Wellness
-            </h1>
+// ─── CORE TOOLS ───────────────────────────────────────────────────────────────
 
-            <p className="text-lg md:text-xl text-dark-text/70 mb-8 max-w-3xl mx-auto">
-              Everything you need to support your child's mental wellness journey, all in one place.
-              From AI-powered conversations to community support.
-            </p>
+const CoreTools: React.FC = () => {
+  const navigate = useNavigate();
 
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-              <button
-                onClick={() => navigate('/learnwell')}
-                className="bg-white text-teal border-2 border-teal font-bold py-3 px-8 rounded-full hover:bg-teal/10 transition-all transform hover:scale-105"
+  return (
+    <section className="py-20 md:py-28 bg-[#fbfbfb]">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+        <Reveal>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px w-8 bg-[#e9924b]" />
+            <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">Core Tools</span>
+          </div>
+          <h2 className="font-heading text-3xl md:text-4xl font-extrabold text-[#1e3a6e] mb-14 max-w-lg leading-tight">
+            The tools caregivers reach for first.
+          </h2>
+        </Reveal>
+
+        <div className="space-y-6">
+          {coreTools.map((tool, i) => (
+            <Reveal key={tool.name}>
+              <div
+                className={`group grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer ${i % 2 === 1 ? 'lg:direction-rtl' : ''}`}
+                onClick={() => navigate(tool.action)}
               >
-                Explore LearnWell
-              </button>
-            </div>
-          </div>
-        </section>
+                {/* Text side */}
+                <div
+                  className={`p-8 md:p-12 flex flex-col justify-center bg-white ${i % 2 === 1 ? 'lg:order-2' : ''}`}
+                >
+                  {/* Icon + name */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: tool.accent + '18', color: tool.accent }}
+                    >
+                      {tool.icon}
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#1e3a6e]/40 tracking-widest uppercase">{tool.tagline}</p>
+                      <h3 className="font-heading font-extrabold text-[#1e3a6e] text-xl">{tool.name}</h3>
+                    </div>
+                  </div>
 
-        {/* Features Grid */}
-        <section className="py-20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold font-heading text-dark-text mb-4">
-                Our Complete Feature Suite
-              </h2>
-              <p className="text-lg text-dark-text/70 max-w-2xl mx-auto">
-                Click on any available feature to explore it now
-              </p>
-            </div>
+                  <p className="text-[#1e3a6e]/60 text-sm leading-relaxed mb-8 max-w-sm">
+                    {tool.description}
+                  </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature) => (
-                <FeatureCard
-                  key={feature.title}
-                  feature={feature}
-                />
-              ))}
-            </div>
-
-            {/* Feature Legend */}
-            <div className="mt-12 text-center">
-              <div className="inline-flex items-center gap-6 bg-white px-8 py-4 rounded-2xl shadow-lg">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                  <span className="text-sm text-gray-600">Available Now ({availableCount})</span>
+                  <div
+                    className="flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all w-fit"
+                    style={{ color: tool.accent }}
+                  >
+                    <span>Open {tool.name}</span>
+                    <IconArrow />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-gray-400"></span>
-                  <span className="text-sm text-gray-600">Coming Soon ({totalCount - availableCount})</span>
+
+                {/* Image side */}
+                <div className={`h-56 lg:h-auto overflow-hidden ${i % 2 === 1 ? 'lg:order-1' : ''}`}>
+                  <img
+                    src={tool.image}
+                    alt={tool.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
                 </div>
               </div>
-            </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─── SUPPORTING TOOLS ─────────────────────────────────────────────────────────
+
+const SupportingTools: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <section className="py-20 md:py-28 bg-[#1e3a6e]">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+        <Reveal>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px w-8 bg-[#e9924b]" />
+            <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">Supporting Tools</span>
           </div>
-        </section>
+          <h2 className="font-heading text-3xl md:text-4xl font-extrabold text-white mb-4 max-w-lg leading-tight">
+            The rest of the ecosystem.
+          </h2>
+          <p className="text-white/50 text-sm mb-14 max-w-md leading-relaxed">
+            No single tool solves everything. These features complete the picture — connecting families, professionals, and children.
+          </p>
+        </Reveal>
 
-        {/* Feature Highlights */}
-        <section className="py-20 bg-gradient-to-br from-teal/5 to-blue-500/5">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold font-heading text-dark-text mb-4">
-                Your wellness journey starts here.
-              </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {supportingTools.map((tool) => (
+            <Reveal key={tool.name}>
+              <div
+                className="group bg-white/5 border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer h-full flex flex-col"
+                onClick={() => navigate(tool.action)}
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 flex-shrink-0"
+                  style={{ backgroundColor: tool.accent + '28', color: tool.accent }}
+                >
+                  {tool.icon}
+                </div>
+
+                <p className="text-white/40 text-xs tracking-widest uppercase mb-1">{tool.tagline}</p>
+                <h3 className="font-heading font-extrabold text-white text-lg mb-3">{tool.name}</h3>
+                <p className="text-white/55 text-sm leading-relaxed flex-1 mb-6">{tool.description}</p>
+
+                <div
+                  className="flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all w-fit mt-auto"
+                  style={{ color: tool.accent }}
+                >
+                  <span>Explore</span>
+                  <IconArrow />
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─── SYSTEM VALUES ────────────────────────────────────────────────────────────
+
+const SystemValues: React.FC = () => {
+  return (
+    <section className="py-20 md:py-28 bg-[#fbfbfb]">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+          {/* Left */}
+          <Reveal>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-px w-8 bg-[#e9924b]" />
+              <span className="text-[#e9924b] text-xs font-semibold tracking-[0.2em] uppercase">Why It Works Together</span>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-                <div className="text-4xl mb-4">🤖</div>
-                <h3 className="text-xl font-bold text-dark-text mb-3">AI-Powered Support</h3>
-                <p className="text-dark-text/70">
-                  Get instant, intelligent guidance with TalkEasy's conversational AI
-                </p>
-              </div>
-
-              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-                <div className="text-4xl mb-4">👨‍👩‍👧‍👦</div>
-                <h3 className="text-xl font-bold text-dark-text mb-3">Community Driven</h3>
-                <p className="text-dark-text/70">
-                  Connect with other parents in ParentCircle for peer support
-                </p>
-              </div>
-
-              <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-                <div className="text-4xl mb-4">📊</div>
-                <h3 className="text-xl font-bold text-dark-text mb-3">Track Progress</h3>
-                <p className="text-dark-text/70">
-                  Monitor moods and behaviors with GrowTrack's AI insights
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Call to Action */}
-        <section className="py-20 bg-gradient-to-r from-teal to-[#347EAD]">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
-              Ready to Experience Our Features?
+            <h2 className="font-heading text-3xl md:text-4xl font-extrabold text-[#1e3a6e] leading-tight mb-6">
+              Designed as a system,<br />not a collection of apps.
             </h2>
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Start exploring today with our growing suite of family wellness tools.
+            <p className="text-[#1e3a6e]/55 text-sm leading-relaxed max-w-md">
+              Each tool solves a specific problem. Together, they form a support structure that meets caregivers wherever they are — in a difficult moment, over time, or when professional help is needed.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-              <button
-                onClick={() => navigate('/growtrack')}
-                className="bg-white text-teal font-bold py-4 px-8 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
-              >
-                Try GrowTrack 🆕
-              </button>
-              <button
-                onClick={() => navigate('/talkeasy')}
-                className="bg-transparent text-white border-2 border-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all transform hover:scale-105"
-              >
-                Try TalkEasy AI
-              </button>
-              <button
-                onClick={() => navigate('/signup')}
-                className="bg-[#F09232] text-white font-bold py-4 px-8 rounded-full hover:bg-[#F09232]/90 transition-all transform hover:scale-105"
-              >
-                Get Started Free
-              </button>
-            </div>
-          </div>
-        </section>
-      </main>
 
+            {/* Visual image */}
+            <div className="mt-10 rounded-2xl overflow-hidden shadow-lg">
+              <img
+                src="https://images.unsplash.com/photo-1591474200742-8e512e6f98f8?w=900&auto=format&fit=crop&q=70"
+                alt="Caregiver and child"
+                className="w-full h-56 object-cover"
+              />
+            </div>
+          </Reveal>
+
+          {/* Right — numbered list */}
+          <div className="space-y-6">
+            {systemValues.map((item, i) => (
+              <Reveal key={item.number}>
+                <div
+                  className="flex gap-5 p-6 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all"
+                  style={{ transitionDelay: `${i * 80}ms` }}
+                >
+                  <span className="font-heading font-extrabold text-[#e9924b]/40 text-2xl flex-shrink-0 w-8 leading-none">{item.number}</span>
+                  <div>
+                    <h4 className="font-heading font-bold text-[#1e3a6e] text-base mb-1">{item.title}</h4>
+                    <p className="text-[#1e3a6e]/55 text-sm leading-relaxed">{item.body}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─── CTA ─────────────────────────────────────────────────────────────────────
+
+const CTA: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <section className="relative py-20 md:py-28 overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1536337005238-94b997371b40?w=1800&auto=format&fit=crop&q=70')` }}
+      />
+      <div className="absolute inset-0 bg-[#e9924b]/92" />
+
+      <Reveal>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-20 text-center">
+          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
+            Start with the tool<br />that fits right now.
+          </h2>
+          <p className="text-white/75 text-sm md:text-base max-w-md mx-auto mb-10 leading-relaxed">
+            You do not need to use everything at once. Pick one tool, explore it, and build from there.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-4">
+            <button
+              onClick={() => navigate('/talkeasy')}
+              className="bg-white text-[#e9924b] font-bold py-3 px-8 rounded-full text-sm hover:shadow-xl hover:-translate-y-0.5 transition-all"
+            >
+              Try TalkEasy
+            </button>
+            <button
+              onClick={() => navigate('/growtrack')}
+              className="bg-white/15 border border-white/40 text-white font-semibold py-3 px-8 rounded-full text-sm hover:bg-white/25 transition-all"
+            >
+              Open GrowTrack
+            </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="bg-[#1e3a6e] text-white font-bold py-3 px-8 rounded-full text-sm hover:bg-[#1e3a6e]/90 transition-all hover:-translate-y-0.5"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+};
+
+// ─── PAGE ─────────────────────────────────────────────────────────────────────
+
+const Features: React.FC = () => {
+  return (
+    <div className="bg-[#fbfbfb] overflow-x-hidden min-h-screen">
+      <Navbar />
+      <main className="pt-20">
+        <Hero />
+        <CoreTools />
+        <SupportingTools />
+        <SystemValues />
+        <CTA />
+      </main>
       <Footer />
     </div>
   );

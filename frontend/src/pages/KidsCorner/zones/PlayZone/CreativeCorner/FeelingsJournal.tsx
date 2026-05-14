@@ -1,271 +1,235 @@
+/**
+ * ============================================
+ * FEELINGS JOURNAL — CREATIVE CORNER
+ * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
+ * @description Mood pick → prompt → write → save.
+ *              No scary red error messages. Warm brand colours.
+ *              10 words minimum to save. Sticker earned on save.
+ * ============================================
+ */
+
 import React, { useState } from 'react';
-import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
-  onComplete: () => void;
+  onComplete: (icon?: string) => void;
   onBack: () => void;
 }
 
 type Mood = 'happy' | 'excited' | 'calm' | 'sad' | 'worried' | 'angry';
 
-const MOODS = [
-  { type: 'happy' as Mood, emoji: '😊', label: 'Happy', color: 'yellow' },
-  { type: 'excited' as Mood, emoji: '🤩', label: 'Excited', color: 'orange' },
-  { type: 'calm' as Mood, emoji: '😌', label: 'Calm', color: 'blue' },
-  { type: 'sad' as Mood, emoji: '😢', label: 'Sad', color: 'gray' },
-  { type: 'worried' as Mood, emoji: '😟', label: 'Worried', color: 'purple' },
-  { type: 'angry' as Mood, emoji: '😠', label: 'Angry', color: 'red' },
+const spring = { type: 'spring' as const, stiffness: 360, damping: 26 };
+
+const MOODS: { type: Mood; emoji: string; label: string; color: string; bg: string }[] = [
+  { type: 'happy',   emoji: '😊', label: 'Happy',   color: '#e9924b', bg: '#fff4ec' },
+  { type: 'excited', emoji: '🤩', label: 'Excited',  color: '#fbbf24', bg: '#fffbeb' },
+  { type: 'calm',    emoji: '😌', label: 'Calm',    color: '#3a9e7e', bg: '#ecfaf5' },
+  { type: 'sad',     emoji: '😢', label: 'Sad',     color: '#659ec3', bg: '#edf5fb' },
+  { type: 'worried', emoji: '😟', label: 'Worried', color: '#7c5cbf', bg: '#f3eeff' },
+  { type: 'angry',   emoji: '😠', label: 'Angry',   color: '#d4762a', bg: '#fff0e6' },
 ];
 
 const PROMPTS = [
-  "Today I felt... because...",
-  "Something that made me smile today was...",
-  "If I could tell my future self one thing, it would be...",
-  "I'm grateful for...",
-  "A challenge I faced today was...",
-  "My favorite moment today was...",
-  "Something I learned about myself is...",
-  "Tomorrow I want to...",
+  'Today I felt… because…',
+  'Something that made me smile today was…',
+  "If I could tell my future self one thing, it would be…",
+  "I'm grateful for…",
+  "A challenge I faced today was…",
+  "My favourite moment today was…",
+  "Something I learned about myself is…",
+  "Tomorrow I want to…",
 ];
 
-const FeelingsJournal: React.FC<Props> = ({ onComplete, onBack }) => {
-  const [entry, setEntry] = useState('');
-  const [wordCount, setWordCount] = useState(0);
-  const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
-  const [currentPrompt, setCurrentPrompt] = useState(PROMPTS[0]);
-  const [showPrompts, setShowPrompts] = useState(false);
-  const [hasCompleted, setHasCompleted] = useState(false);
+const NEEDED_WORDS = 10;
 
-  const handleChange = (text: string) => {
-    setEntry(text);
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-    setWordCount(words.length);
-  };
+const FeelingsJournal: React.FC<Props> = ({ onComplete, onBack }) => {
+  const [entry, setEntry]             = useState('');
+  const [mood, setMood]               = useState<Mood | null>(null);
+  const [showPrompts, setShowPrompts] = useState(false);
+  const [saved, setSaved]             = useState(false);
+
+  const wordCount = entry.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const progress  = Math.min((wordCount / NEEDED_WORDS) * 100, 100);
+  const canSave   = wordCount >= NEEDED_WORDS && mood !== null && !saved;
+
+  const moodConfig = MOODS.find(m => m.type === mood);
 
   const handleSave = () => {
-    if (wordCount < 10) {
-      toast.error('Write at least 10 words to save your journal entry! 📝', {
-        duration: 3000,
-      });
-      return;
-    }
-
-    if (!selectedMood) {
-      toast.error('Pick a mood before saving! 😊', {
-        duration: 3000,
-      });
-      return;
-    }
-
-    // Save successful
-    toast.success('📔 Journal entry saved! Great job expressing yourself!', {
-      duration: 3000,
-      icon: '✨',
-    });
-
-    setHasCompleted(true);
-    
-    setTimeout(() => {
-      onComplete();
-      setEntry('');
-      setWordCount(0);
-      setSelectedMood(null);
-    }, 500);
+    if (!canSave) return;
+    setSaved(true);
+    setTimeout(() => onComplete('📝'), 2000);
   };
 
-  const usePrompt = (prompt: string) => {
-    setEntry(prompt + ' ');
-    setCurrentPrompt(prompt);
+  const usePrompt = (p: string) => {
+    setEntry(p + ' ');
     setShowPrompts(false);
-    toast('Prompt added! Start writing! ✍️', { icon: '💡' });
   };
-
-  const progress = Math.min((wordCount / 10) * 100, 100);
-  const moodSelected = selectedMood !== null;
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <button 
-          onClick={onBack}
-          className="bg-white px-6 py-3 rounded-full font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-        >
-          ⬅ Back
-        </button>
-        <h2 className="text-2xl md:text-3xl font-black text-pink-800 flex items-center gap-3">
-          <span className="text-4xl">📔</span> My Secret Journal
-        </h2>
-      </div>
+    <div className="space-y-5 max-w-2xl mx-auto">
+      {/* Back */}
+      <motion.button whileTap={{ scale: 0.93 }} onClick={onBack}
+        className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-base"
+        style={{ background: '#fff4ec', color: '#e9924b', border: '2.5px solid #e9924b20', fontFamily: "'Nunito', sans-serif" }}>
+        ← Back to create
+      </motion.button>
 
-      {/* Intro Card */}
-      <div className="bg-gradient-to-r from-pink-100 via-purple-100 to-blue-100 p-6 rounded-2xl border-2 border-pink-200 shadow-lg">
-        <div className="flex items-start gap-4">
-          <span className="text-5xl">✨</span>
-          <div>
-            <h3 className="font-bold text-gray-800 text-lg mb-2">Your Safe Writing Space</h3>
-            <p className="text-gray-700 text-sm leading-relaxed">
-              This is your private journal where you can write about anything! 
-              Your feelings, dreams, adventures, or just your day. 
-              Everything you write here is safe and private. 🔒
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Title */}
+      <h3 className="font-black text-2xl" style={{ fontFamily: "'Nunito', sans-serif", color: '#e9924b' }}>
+        My Secret Journal 📔
+      </h3>
 
-      {/* Step 1: Pick Your Mood */}
-      <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-100">
+      {/* Step 1: Mood */}
+      <div className="rounded-[2rem] p-6" style={{ background: '#fff', border: '3px solid #1e3a6e08', boxShadow: '0 8px 28px rgba(0,0,0,0.05)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-            <span className="text-2xl">💭</span> Step 1: How are you feeling?
-          </h4>
-          {moodSelected && <span className="text-2xl">✅</span>}
+          <p className="font-black text-base" style={{ fontFamily: "'Nunito', sans-serif", color: '#1e3a6e' }}>
+            Step 1 — How are you feeling?
+          </p>
+          {mood && <span className="text-xl" aria-label="Done">✅</span>}
         </div>
-        
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-          {MOODS.map((mood) => (
-            <button
-              key={mood.type}
-              onClick={() => setSelectedMood(mood.type)}
-              className={`p-4 rounded-2xl border-2 transition-all transform ${
-                selectedMood === mood.type
-                  ? 'border-pink-400 bg-pink-50 scale-110 shadow-lg'
-                  : 'border-gray-200 hover:border-pink-200 hover:scale-105 hover:bg-gray-50'
-              }`}
+
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {MOODS.map(m => (
+            <motion.button
+              key={m.type}
+              whileHover={{ scale: 1.08, y: -3 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setMood(m.type)}
+              className="flex flex-col items-center gap-2 py-4 rounded-2xl"
+              style={{
+                background: mood === m.type ? m.bg : '#f8f8f8',
+                border: `2.5px solid ${mood === m.type ? m.color + '40' : 'transparent'}`,
+                boxShadow: mood === m.type ? `0 6px 18px ${m.color}25` : 'none',
+              }}
+              aria-label={`I'm feeling ${m.label}`}
             >
-              <div className="text-4xl mb-2">{mood.emoji}</div>
-              <div className="text-xs font-bold text-gray-700">{mood.label}</div>
-            </button>
+              <span className="text-4xl select-none leading-none" aria-hidden="true">{m.emoji}</span>
+              <span className="font-black text-xs" style={{ color: mood === m.type ? m.color : '#1e3a6e60', fontFamily: "'Nunito', sans-serif" }}>
+                {m.label}
+              </span>
+            </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Step 2: Writing Prompts */}
-      <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-            <span className="text-2xl">💡</span> Step 2: Need inspiration?
-          </h4>
-          <button
-            onClick={() => setShowPrompts(!showPrompts)}
-            className="text-sm bg-purple-100 text-purple-700 px-4 py-2 rounded-full font-bold hover:bg-purple-200 transition-all"
-          >
-            {showPrompts ? 'Hide Prompts' : 'Show Prompts'}
-          </button>
+      {/* Step 2: Prompt */}
+      <div className="rounded-[2rem] p-6" style={{ background: '#fff', border: '3px solid #1e3a6e08', boxShadow: '0 8px 28px rgba(0,0,0,0.05)' }}>
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-black text-base" style={{ fontFamily: "'Nunito', sans-serif", color: '#1e3a6e' }}>
+            Step 2 — Need a starting idea?
+          </p>
+          <motion.button whileTap={{ scale: 0.94 }} onClick={() => setShowPrompts(p => !p)}
+            className="px-4 py-2 rounded-2xl font-black text-sm"
+            style={{ background: '#7c5cbf18', color: '#7c5cbf' }}>
+            {showPrompts ? 'Hide' : 'Show ideas'}
+          </motion.button>
         </div>
 
-        {showPrompts && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {PROMPTS.map((prompt, index) => (
-              <button
-                key={index}
-                onClick={() => usePrompt(prompt)}
-                className="text-left p-4 bg-purple-50 hover:bg-purple-100 rounded-xl border-2 border-purple-200 hover:border-purple-300 transition-all group"
-              >
-                <span className="text-sm text-purple-700 font-medium group-hover:font-bold">
-                  "{prompt}"
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
+        <AnimatePresence>
+          {showPrompts && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-hidden"
+            >
+              {PROMPTS.map((p, i) => (
+                <motion.button
+                  key={i}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => usePrompt(p)}
+                  className="text-left px-4 py-3 rounded-2xl font-bold text-sm"
+                  style={{ background: '#7c5cbf08', color: '#7c5cbf', border: '2px solid #7c5cbf15', fontFamily: "'Nunito', sans-serif" }}
+                >
+                  "{p}"
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Step 3: Write Your Entry */}
-      <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-100">
+      {/* Step 3: Write */}
+      <div className="rounded-[2rem] p-6" style={{ background: '#fff', border: '3px solid #1e3a6e08', boxShadow: '0 8px 28px rgba(0,0,0,0.05)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-            <span className="text-2xl">✍️</span> Step 3: Start writing!
-          </h4>
-          {wordCount >= 10 && <span className="text-2xl">✅</span>}
+          <p className="font-black text-base" style={{ fontFamily: "'Nunito', sans-serif", color: '#1e3a6e' }}>
+            Step 3 — Start writing!
+          </p>
+          {wordCount >= NEEDED_WORDS && <span className="text-xl" aria-label="Done">✅</span>}
         </div>
 
-        {/* Progress Bar */}
-        <div className="bg-pink-50 p-4 rounded-xl mb-4 border-2 border-pink-200">
+        {/* Progress bar */}
+        <div className="rounded-2xl p-4 mb-4"
+          style={{ background: moodConfig ? moodConfig.bg : '#fff9f0', border: `2px solid ${moodConfig?.color ?? '#e9924b'}20` }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="font-bold text-pink-700">Writing Progress</span>
-            <span className="text-2xl">{wordCount >= 10 ? '✅' : '✍️'}</span>
+            <span className="font-black text-sm" style={{ color: moodConfig?.color ?? '#e9924b', fontFamily: "'Nunito', sans-serif" }}>
+              Writing progress
+            </span>
+            <span className="font-black text-xs" style={{ color: moodConfig?.color ?? '#e9924b' }}>
+              {wordCount}/{NEEDED_WORDS} words
+            </span>
           </div>
-          <div className="w-full bg-white rounded-full h-4 overflow-hidden border border-pink-300 shadow-inner">
-            <div 
-              className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 h-full transition-all duration-500 flex items-center justify-center"
-              style={{ width: `${progress}%` }}
-            >
-              {progress > 15 && (
-                <span className="text-xs font-bold text-white">{wordCount} words</span>
-              )}
-            </div>
+          <div className="rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.6)', height: '10px' }}>
+            <motion.div className="h-full rounded-full" animate={{ width: `${progress}%` }}
+              style={{ background: moodConfig?.color ?? '#e9924b' }} transition={spring} />
           </div>
-          <p className="text-sm text-pink-600 mt-2">
-            {wordCount < 10 
-              ? `Write ${10 - wordCount} more ${10 - wordCount === 1 ? 'word' : 'words'} to save! (${wordCount}/10)` 
-              : `Amazing! You wrote ${wordCount} words! Ready to save! 🎉`
-            }
+          <p className="font-bold text-xs mt-2" style={{ color: moodConfig?.color ?? '#e9924b' }}>
+            {wordCount < NEEDED_WORDS
+              ? `Write ${NEEDED_WORDS - wordCount} more word${NEEDED_WORDS - wordCount !== 1 ? 's' : ''} to save`
+              : 'Ready to save! 🎉'}
           </p>
         </div>
 
-        {/* Journal Textarea */}
-        <textarea 
+        <textarea
           value={entry}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder="Start writing here... ✨
-
-You can write about:
-• How you're feeling right now
-• Something fun that happened today
-• A dream you had last night
-• A goal you want to achieve
-• Anything on your mind!"
-          className="w-full h-80 p-6 border-2 border-pink-200 rounded-2xl focus:ring-4 focus:ring-pink-300 focus:border-pink-400 outline-none resize-none text-base leading-relaxed bg-gradient-to-br from-pink-50/30 via-purple-50/30 to-blue-50/30"
-          style={{ fontFamily: 'Georgia, serif' }}
+          onChange={e => setEntry(e.target.value)}
+          placeholder={"Start writing here…\n\nYou can write about:\n• How you're feeling right now\n• Something fun that happened\n• A dream you had\n• Anything on your mind!"}
+          rows={8}
+          className="w-full px-5 py-4 rounded-2xl font-bold text-base resize-none focus:outline-none"
+          style={{
+            fontFamily: "'Nunito', sans-serif",
+            background: '#fffdf8',
+            border: `2.5px solid ${moodConfig?.color ?? '#e9924b'}20`,
+            color: '#1e3a6e',
+            lineHeight: 1.7,
+          }}
         />
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 mt-4">
-          <button 
-            onClick={() => {
-              setEntry('');
-              setWordCount(0);
-              setSelectedMood(null);
-              toast('Journal cleared! Start fresh! 📝', { icon: '🗑️' });
-            }}
-            className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all shadow-md"
-          >
-            🗑️ Clear
-          </button>
-          <button 
-            onClick={handleSave}
-            disabled={wordCount < 10 || !selectedMood || hasCompleted}
-            className="flex-1 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 text-white py-4 rounded-2xl font-bold hover:from-pink-600 hover:via-purple-600 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-pink-500"
-          >
-            💾 Save Entry {wordCount >= 10 && moodSelected && '& Earn Sticker!'}
-          </button>
-        </div>
-      </div>
+        {/* Saved confirmation */}
+        <AnimatePresence>
+          {saved && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring}
+              className="mt-4 px-5 py-4 rounded-2xl text-center font-black text-base"
+              style={{ background: '#3a9e7e', color: '#fff' }}
+            >
+              Saved! Well done for sharing your feelings 🌟 Sticker earned!
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Benefits Section */}
-      <div className="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-2xl border-2 border-green-200">
-        <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2">
-          <span className="text-2xl">🌟</span> Why Journaling Helps
-        </h4>
-        <ul className="space-y-2 text-sm text-green-700">
-          <li className="flex items-start gap-2">
-            <span className="text-lg">💭</span>
-            <span><strong>Understand your feelings:</strong> Writing helps you figure out what you're feeling and why</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-lg">🧘</span>
-            <span><strong>Calm your mind:</strong> Getting thoughts on paper can make you feel less worried</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-lg">📈</span>
-            <span><strong>Track your growth:</strong> Look back and see how much you've learned and grown!</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-lg">✨</span>
-            <span><strong>Boost creativity:</strong> Free writing sparks new ideas and imagination</span>
-          </li>
-        </ul>
+        <div className="flex gap-3 mt-4">
+          <motion.button whileTap={{ scale: 0.95 }} onClick={() => setEntry('')}
+            className="px-5 py-3 rounded-2xl font-black text-sm"
+            style={{ background: '#f8f8f8', color: '#1e3a6e60', border: '2px solid #1e3a6e10' }}>
+            Clear
+          </motion.button>
+          <motion.button
+            whileHover={canSave ? { scale: 1.03 } : {}}
+            whileTap={canSave ? { scale: 0.96 } : {}}
+            onClick={handleSave}
+            disabled={!canSave}
+            className="flex-1 py-3 rounded-2xl font-black text-base text-white"
+            style={{
+              background: canSave ? (moodConfig?.color ?? '#e9924b') : '#1e3a6e15',
+              color: canSave ? '#fff' : '#1e3a6e40',
+              boxShadow: canSave ? `0 8px 24px ${moodConfig?.color ?? '#e9924b'}35` : 'none',
+              cursor: canSave ? 'pointer' : 'not-allowed',
+              fontFamily: "'Nunito', sans-serif",
+            }}>
+            {saved ? '📔 Saved!' : canSave ? 'Save & earn sticker 📝' : 'Save my entry'}
+          </motion.button>
+        </div>
       </div>
     </div>
   );

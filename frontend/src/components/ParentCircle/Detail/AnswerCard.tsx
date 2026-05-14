@@ -1,7 +1,9 @@
 /**
- * AnswerCard - Displays individual answer with actions
- * @version 2. 0. 0
- * @description Clean, reusable answer display component
+ * ============================================
+ * ANSWER CARD — PARENTCIRCLE
+ * ============================================
+ * @version     3.0.0
+ * @updated     2025-04-23
  */
 
 import React, { useState } from 'react';
@@ -30,110 +32,107 @@ interface AnswerCardProps {
   onAccept?: () => void;
 }
 
-const AnswerCard: React.FC<AnswerCardProps> = ({ 
-  answer, 
-  onMarkHelpful,
-  canAccept = false,
-  onAccept
+const AnswerCard: React.FC<AnswerCardProps> = ({
+  answer, onMarkHelpful, canAccept = false, onAccept,
 }) => {
   const [isHelpful, setIsHelpful] = useState(false);
-  const [helpfulCount, setHelpfulCount] = useState(answer.helpfulCount);
+  const [helpfulCount, setHelpfulCount] = useState(answer.helpfulCount ?? 0);
 
   const handleMarkHelpful = () => {
-    setIsHelpful(!isHelpful);
-    setHelpfulCount(isHelpful ? helpfulCount - 1 : helpfulCount + 1);
+    setIsHelpful(prev => !prev);
+    setHelpfulCount(prev => isHelpful ? prev - 1 : prev + 1);
     onMarkHelpful();
   };
 
+  const isEdited = answer.updatedAt && answer.updatedAt !== answer.createdAt;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`bg-white p-6 rounded-xl border-2 transition-all ${
-        answer.isAccepted 
-          ? 'border-green-300 bg-green-50/50' 
+      className={`bg-white rounded-2xl border overflow-hidden transition-all ${
+        answer.isAccepted
+          ? 'border-[#659ec3]/40'
           : answer.isVerified
-          ? 'border-blue-200 bg-blue-50/30'
-          : 'border-gray-200 hover:border-gray-300'
+          ? 'border-[#659ec3]/20'
+          : 'border-[#1e3a6e]/8'
       }`}
     >
-      {/* Accepted Badge */}
+      {/* Accepted strip */}
       {answer.isAccepted && (
-        <div className="flex items-center gap-2 mb-4 text-green-700 font-bold">
-          <CheckCircleIconSolid className="w-6 h-6" />
-          <span>Best Answer</span>
-        </div>
+        <div className="h-0.5 bg-gradient-to-r from-[#659ec3] to-[#659ec3]/30" />
       )}
 
-      {/* Author Info */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <UserAvatar 
-            name={answer.authorName}
-            size="md"
-            isVerified={answer.isVerified}
-          />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-900">{answer.authorName}</span>
-              {answer.isVerified && (
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                  ✓ Verified Expert
-                </span>
-              )}
-            </div>
-            {answer.authorRole && (
-              <p className="text-sm text-gray-600">{answer.authorRole}</p>
-            )}
-            <TimeAgo date={answer.createdAt} className="text-xs" />
+      <div className="p-5">
+        {/* Accepted badge */}
+        {answer.isAccepted && (
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircleIconSolid className="w-4 h-4 text-[#659ec3]" />
+            <span className="text-[#659ec3] text-xs font-bold uppercase tracking-widest">Best answer</span>
           </div>
+        )}
+
+        {/* Author row */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <UserAvatar name={answer.authorName} size="md" isVerified={answer.isVerified} />
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-[#1e3a6e] text-sm">{answer.authorName}</span>
+                {answer.isVerified && (
+                  <span className="px-2 py-0.5 bg-[#659ec3]/10 text-[#659ec3] text-[10px] font-bold uppercase tracking-widest rounded-full">
+                    Verified expert
+                  </span>
+                )}
+              </div>
+              {answer.authorRole && (
+                <p className="text-[#1e3a6e]/45 text-xs mt-0.5">{answer.authorRole}</p>
+              )}
+              <TimeAgo date={answer.createdAt} className="text-xs text-[#1e3a6e]/35 mt-0.5" />
+            </div>
+          </div>
+
+          {/* Accept button */}
+          {canAccept && !answer.isAccepted && onAccept && (
+            <button
+              onClick={onAccept}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#659ec3] bg-[#659ec3]/8 hover:bg-[#659ec3]/15 rounded-xl transition-all border border-[#659ec3]/20 flex-shrink-0"
+            >
+              <CheckCircleIcon className="w-3.5 h-3.5" />
+              Mark as best
+            </button>
+          )}
         </div>
 
-        {/* Accept Answer Button (for question author) */}
-        {canAccept && ! answer.isAccepted && onAccept && (
-          <button
-            onClick={onAccept}
-            className="flex items-center gap-1 px-3 py-1. 5 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-all border border-green-200"
-          >
-            <CheckCircleIcon className="w-4 h-4" />
-            Accept
-          </button>
-        )}
-      </div>
-
-      {/* Answer Content */}
-      <div className="prose prose-sm max-w-none mb-4">
-        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+        {/* Content */}
+        <p className="text-[#1e3a6e]/70 text-sm leading-[1.85] whitespace-pre-wrap mb-4">
           {answer.content}
         </p>
-      </div>
 
-      {/* Updated Badge */}
-      {answer.updatedAt && answer.updatedAt !== answer.createdAt && (
-        <p className="text-xs text-gray-500 mb-3">
-          Last edited <TimeAgo date={answer.updatedAt} />
-        </p>
-      )}
+        {/* Edited note */}
+        {isEdited && (
+          <p className="text-[#1e3a6e]/30 text-xs mb-3">
+            Edited <TimeAgo date={answer.updatedAt!} />
+          </p>
+        )}
 
-      {/* Action Bar */}
-      <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
-        <button
-          onClick={handleMarkHelpful}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
-            isHelpful
-              ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-              : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-2 border-gray-200'
-          }`}
-        >
-          {isHelpful ? (
-            <HandThumbUpIconSolid className="w-5 h-5" />
-          ) : (
-            <HandThumbUpIcon className="w-5 h-5" />
-          )}
-          <span>Helpful ({helpfulCount})</span>
-        </button>
-
-        {/* Additional actions can go here */}
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-4 border-t border-[#1e3a6e]/6">
+          <button
+            onClick={handleMarkHelpful}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              isHelpful
+                ? 'bg-[#659ec3]/10 text-[#659ec3] border border-[#659ec3]/20'
+                : 'bg-[#1e3a6e]/5 text-[#1e3a6e]/50 hover:bg-[#659ec3]/8 hover:text-[#659ec3] border border-transparent'
+            }`}
+          >
+            {isHelpful
+              ? <HandThumbUpIconSolid className="w-4 h-4" />
+              : <HandThumbUpIcon className="w-4 h-4" />
+            }
+            <span>Helpful{helpfulCount > 0 ? ` (${helpfulCount})` : ''}</span>
+          </button>
+        </div>
       </div>
     </motion.div>
   );

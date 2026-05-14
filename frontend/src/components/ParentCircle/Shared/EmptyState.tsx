@@ -1,15 +1,13 @@
 /**
  * ============================================
- * EMPTY STATE COMPONENT
+ * EMPTY STATE — PARENTCIRCLE SHARED
  * ============================================
- * @version     1.0.0
- * @author      ArogoClin
- * @updated     2025-11-23 06:41:53 UTC
- * ============================================
+ * @version     2.0.0
+ * @updated     2025-04-23
  */
 
 import React from 'react';
-import { MagnifyingGlassIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ChatBubbleLeftRightIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface EmptyStateProps {
   type?: 'search' | 'content' | 'error';
@@ -19,46 +17,56 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ 
+const CONFIG = {
+  search: {
+    Icon: MagnifyingGlassIcon,
+    accent: '#659ec3',
+    defaultMessage: 'No results found',
+    defaultSubmessage: 'Try adjusting your search or filters',
+  },
+  content: {
+    Icon: ChatBubbleLeftRightIcon,
+    accent: '#e9924b',
+    defaultMessage: 'Nothing here yet',
+    defaultSubmessage: 'Be the first to contribute.',
+  },
+  error: {
+    Icon: ExclamationTriangleIcon,
+    accent: '#e9924b',
+    defaultMessage: 'Something went wrong',
+    defaultSubmessage: 'Please try again later.',
+  },
+};
+
+const EmptyState: React.FC<EmptyStateProps> = ({
   type = 'content',
   message,
   submessage,
   actionLabel,
-  onAction
+  onAction,
 }) => {
-  const config = {
-    search: {
-      icon: <MagnifyingGlassIcon className="w-16 h-16 text-gray-300" />,
-      defaultMessage: 'No results found',
-      defaultSubmessage: 'Try adjusting your search or filters'
-    },
-    content: {
-      icon: <ChatBubbleLeftRightIcon className="w-16 h-16 text-gray-300" />,
-      defaultMessage: 'No posts yet',
-      defaultSubmessage: 'Be the first to share!'
-    },
-    error: {
-      icon: <span className="text-6xl">⚠️</span>,
-      defaultMessage: 'Something went wrong',
-      defaultSubmessage: 'Please try again later'
-    }
-  };
-
-  const { icon, defaultMessage, defaultSubmessage } = config[type];
+  const { Icon, accent, defaultMessage, defaultSubmessage } = CONFIG[type] ?? CONFIG.content;
 
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="mb-4">{icon}</div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">
+      <div
+        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+        style={{ backgroundColor: `${accent}12` }}
+      >
+        <Icon className="w-7 h-7" style={{ color: accent }} />
+      </div>
+
+      <p className="font-heading font-bold text-[#1e3a6e] text-base mb-1.5">
         {message || defaultMessage}
-      </h3>
-      <p className="text-gray-500 mb-6 max-w-md">
+      </p>
+      <p className="text-[#1e3a6e]/45 text-sm max-w-xs leading-relaxed">
         {submessage || defaultSubmessage}
       </p>
+
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="bg-teal text-white font-bold py-3 px-6 rounded-full hover:bg-teal/90 transition-all transform hover:scale-105 shadow-lg"
+          className="mt-7 px-6 py-2.5 bg-[#e9924b] hover:bg-[#d4762a] text-white text-sm font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#e9924b]/20"
         >
           {actionLabel}
         </button>
