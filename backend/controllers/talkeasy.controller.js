@@ -22,7 +22,7 @@ const CONFIG = {
     SESSION_TIMEOUT_HOURS: 24
   },
   AI: {
-    MODEL: 'gemini-2.5-flash',
+    MODEL: 'gemini-2.0-flash',
     MAX_RETRIES: 2
   },
   RECOMMENDATIONS: {
@@ -385,8 +385,9 @@ class AIService {
       return response.text;
     } catch (error) {
       if (retries > 0 && (error.status === 503 || error.status === 500)) {
-        console.warn(`AI request failed, retrying... (${retries} attempts left)`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const delay = (CONFIG.AI.MAX_RETRIES - retries + 1) * 2000; // 2s, 4s, 6s...
+        console.warn(`AI request failed, retrying in ${delay}ms... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
         return this.generateResponse(prompt, retries - 1);
       }
 
@@ -980,14 +981,15 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    if (error.message?.includes('quota') || error.status === 429) {
-      return res.status(503).json({
-        success: false,
-        message: 'AI service is temporarily unavailable. Please try again in a few minutes.',
-        errorCode: 'AI_QUOTA_EXCEEDED',
-        retryAfter: 60
-      });
-    }
+    if (error.message?.includes('quota') || error.message?.includes('429') ||
+      error.message?.includes('503') || error.message?.includes('high demand')) {
+    return res.status(503).json({
+      success: false,
+      message: 'AI service is temporarily busy. Please try again in a moment.',
+      errorCode: 'AI_UNAVAILABLE',
+      retryAfter: 10
+    });
+  }
 
     if (error.code === 'P2002') {
       return res.status(409).json({
