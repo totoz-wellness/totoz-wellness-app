@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Edit, LogOut, ChevronLeft, AlertCircle, Tag, Info, Shield } from 'lucide-react';
 import api from '../../config/api';
 import { getCurrentUser, getRolePermissions, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
-import { clearAuth } from '../../utils/auth';
+import { clearAuth, getAccessToken } from '../../utils/auth';
 
 
 interface ArticleFormData {
@@ -93,7 +93,7 @@ const CreateArticle: React.FC = () => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       if (!token) throw new Error('No authentication token');
 
       console.log(`✍️ [${getCurrentDateTime()}] ${currentUser?.name} creating new article:`, {

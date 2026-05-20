@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../config/api';
 import { getCurrentUser, getRolePermissions, hasRole, getRoleDisplayName } from '../../utils/roleUtils';
-import { clearAuth } from '../../utils/auth'; 
+import { clearAuth, getAccessToken } from '../../utils/auth'; 
 
 interface Article {
   id: string;
@@ -60,7 +60,7 @@ const ArticleManagement: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       
       if (!token) {
         throw new Error('No authentication token found');
