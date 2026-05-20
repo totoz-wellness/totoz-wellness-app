@@ -12,7 +12,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../config/api';
 import { getCurrentUser, getRolePermissions, hasRole, hasAnyRole, getRoleDisplayName, getRoleColor } from '../../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
-import { clearAuth } from '../../utils/auth'; 
+import { clearAuth, getAccessToken } from '../../utils/auth'; 
 
 
 interface DashboardStats {
@@ -96,7 +96,7 @@ const AdminDashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       
       if (!token) {
         throw new Error('No authentication token found');
